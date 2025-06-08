@@ -14,11 +14,11 @@ const Contact: React.FC = () => {
       <div className="bg-black/40 rounded-lg p-6 shadow-md space-y-4">
         <div>
           <h2 className="text-lg font-semibold">📞 Phone</h2>
-          <p className="text-gray-200">+64 22 544 6816</p>
+          <p className="text-gray-200">Gayan - +64 22 544 6816</p>
         </div>
         <div>
           <h2 className="text-lg font-semibold">📧 Email</h2>
-          <p className="text-gray-200">events@kiwilanka.co.nz</p>
+          <p className="text-gray-200">Gayan@kiwilanka.co.nz</p>
         </div>
       </div>
     </div>
