@@ -1,0 +1,93 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Autoplay, Pagination, EffectCoverflow } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/pagination';
+import 'swiper/css/effect-coverflow';
+import axios from 'axios';
+
+interface Event {
+  id: number;
+  title: string;
+  imageUrl: string;
+  price: number;
+}
+
+const HeroCarousel: React.FC = () => {
+  const [events, setEvents] = useState<Event[]>([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    axios.get<Event[]>('http://localhost:5290/api/Events')
+      .then(res => setEvents(res.data))
+      .catch(err => console.error(err));
+  }, []);
+
+  return (
+    <div className="relative w-full overflow-hidden pt-20">
+      {/* Background image layer */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: "url('/background.jpg')" }}
+      >
+        <div className="absolute inset-0 bg-black bg-opacity-50" />
+      </div>
+
+      {/* Swiper carousel */}
+      <div className="relative z-10 py-10 px-4 max-w-7xl mx-auto">
+            <Swiper
+            modules={[Autoplay, Pagination, EffectCoverflow]}
+            effect={'coverflow'}
+            grabCursor={true}
+            centeredSlides={true}
+            slidesPerView={'auto'}
+            loop={true}
+            speed={3000} // ⬅️ Smooth transition speed (1s)
+            autoplay={{
+                delay: 0, // ⬅️ Slower autoplay delay (5s between slides)
+                disableOnInteraction: false,
+                pauseOnMouseEnter: true,
+            }}
+            coverflowEffect={{
+                rotate: 30,
+                stretch: 0,
+                depth: 100,
+                modifier: 1,
+                slideShadows: true,
+            }}
+            pagination={{ clickable: true }}
+            >
+          {events.map((event) => (
+            <SwiperSlide
+              key={event.id}
+              style={{ width: '300px' }}
+              className="cursor-pointer"
+              onClick={() =>
+                navigate(`/event/${event.id}/tickets`, {
+                  state: {
+                    eventTitle: event.title,
+                    eventPrice: event.price,
+                  },
+                })
+              }
+            >
+              <div className="bg-white rounded-xl overflow-hidden shadow-lg">
+                <img
+                  src={event.imageUrl || '/events/fallback.jpg'}
+                  alt={event.title}
+                  className="w-full h-[420px] object-cover"
+                />
+                <div className="p-3 text-center font-semibold text-sm text-gray-700">
+                  {event.title}
+                </div>
+              </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      </div>
+    </div>
+  );
+};
+
+export default HeroCarousel;

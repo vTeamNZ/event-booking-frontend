@@ -1,27 +1,34 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Link } from 'react-router-dom';
+import HeroCarousel from './components/HeroCarousel';
+import AnimatedHeader from './components/AnimatedHeader';
 import EventsList from './pages/EventsList';
 import EventDetails from './pages/EventDetails';
 import About from './pages/About';
 import Food from './pages/Food';
 import Payment from './pages/Payment';
 import TicketSelection from './pages/TicketSelection';
+import Contact from './pages/Contact';
 
 const App: React.FC = () => {
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <h1 className="text-2xl font-bold text-blue-800 mb-6 text-center">
-        📅 Upcoming Events
-      </h1>
-
-      <Routes>
-        <Route path="/" element={<EventsList />} />
-        <Route path="/event/:id/tickets" element={<TicketSelection />} />
-        <Route path="/event/:id/food" element={<Food />} />
-        <Route path="/event/:id" element={<EventDetails />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/payment" element={<Payment />} />
-      </Routes>
+    <div className="min-h-screen bg-gray-50">
+      {/* Top Ribbon */}
+      <div className="bg-red-900 h-1 w-full" />
+      {/* Page Content */}
+      <AnimatedHeader />
+      <HeroCarousel />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <Routes>
+          <Route path="/" element={<EventsList />} />
+          <Route path="/event/:id/tickets" element={<TicketSelection />} />
+          <Route path="/event/:id/food" element={<Food />} />
+          <Route path="/event/:id" element={<EventDetails />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/payment" element={<Payment />} />
+          <Route path="/contact" element={<Contact />} />
+        </Routes>
+      </main>
     </div>
   );
 };
