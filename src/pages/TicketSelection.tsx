@@ -33,70 +33,101 @@ const TicketSelection: React.FC = () => {
     0
   );
 
-const ticketTypes: { type: string; price: number }[] = [
-  { type: "Adult", price: 25 },
-  { type: "Group", price: 200 },
-  { type: "Child", price: 15 },
-  { type: "Family", price: 60 },
-];
+  const ticketTypes: { type: string; price: number }[] = [
+    { type: "Adult", price: 25 },
+    { type: "Group", price: 200 },
+    { type: "Child", price: 15 },
+    { type: "Family", price: 60 },
+  ];
 
-
-const selectedTickets = Object.entries(quantities).map(([type, qty]) => ({
-        type,
-        quantity: qty,
-        price: prices[type as keyof typeof prices] * qty,
-    })).filter(ticket => ticket.quantity > 0);
-
-
-const totalPrice = Object.entries(quantities).reduce((sum, [type, count]) => {
-  const ticket = ticketTypes.find((t) => t.type === type);
-  return sum + (ticket ? ticket.price * (count as number) : 0);
-}, 0);
-
+  const selectedTickets = Object.entries(quantities).map(([type, qty]) => ({
+    type,
+    quantity: qty,
+    price: prices[type as keyof typeof prices] * qty,
+  })).filter(ticket => ticket.quantity > 0);
 
   const proceed = () => {
-        navigate(`/event/${eventId}/food`, {
-        state: {
-            eventTitle: state.eventTitle,
-            ticketPrice: total, // calculated ticket total
-            ticketDetails: selectedTickets, // optional: includes breakdown
-        },
+    navigate(`/event/${eventId}/food`, {
+      state: {
+        eventTitle: state.eventTitle,
+        ticketPrice: total,
+        ticketDetails: selectedTickets,
+      },
     });
   };
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">🎟️ Select Tickets</h1>
-      <h2 className="text-xl font-semibold mb-2">🎉 Event: {state?.eventTitle}</h2>
-      {Object.entries(prices).map(([type, price]) => (
-        <div key={type} className="flex justify-between items-center border p-3 rounded mb-3">
-          <div className="capitalize">{type} - ${price}</div>
-          <div className="flex items-center space-x-2">
-            <button onClick={() => handleQtyChange(type as any, -1)} className="px-3 py-1 bg-gray-200">-</button>
-            <span>{quantities[type as keyof typeof quantities]}</span>
-            <button onClick={() => handleQtyChange(type as any, 1)} className="px-3 py-1 bg-blue-500 text-white">+</button>
+    <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8 mt-6">
+      <div className="border-b pb-4 mb-6">
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">Choose Your Tickets</h1>
+        <h2 className="text-xl text-gray-600">{state?.eventTitle}</h2>
+      </div>
+
+      <div className="space-y-4">
+        {Object.entries(prices).map(([type, price]) => (
+          <div 
+            key={type} 
+            className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+          >
+            <div className="flex-1">
+              <div className="flex items-baseline">
+                <span className="text-lg font-semibold text-gray-800 capitalize">{type}</span>
+                <span className="ml-2 text-sm text-gray-500">ticket</span>
+              </div>
+              <div className="text-gray-600 font-medium">
+                ${price.toFixed(2)}
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <button 
+                onClick={() => handleQtyChange(type as keyof typeof quantities, -1)}
+                className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors duration-200"
+                disabled={quantities[type as keyof typeof quantities] === 0}
+              >
+                -
+              </button>
+              <span className="w-8 text-center font-semibold text-gray-800">
+                {quantities[type as keyof typeof quantities]}
+              </span>
+              <button 
+                onClick={() => handleQtyChange(type as keyof typeof quantities, 1)}
+                className="w-10 h-10 rounded-full bg-primary text-white hover:bg-red-600 flex items-center justify-center transition-colors duration-200"
+              >
+                +
+              </button>
+            </div>
           </div>
+        ))}
+      </div>
+
+      <div className="mt-8 pt-6 border-t">
+        <div className="flex items-center justify-between mb-6">
+          <span className="text-gray-600 font-medium">Total Amount</span>
+          <span className="text-2xl font-bold text-gray-800">${total.toFixed(2)}</span>
         </div>
-      ))}
 
-        <div className="mt-6 flex justify-between">
-        <button
+        <div className="flex justify-between space-x-4">
+          <button
             onClick={() => navigate(-1)}
-            className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
-        >
-            ⬅️ Back
-        </button>
+            className="px-6 py-3 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors duration-200 flex items-center"
+          >
+            <span className="mr-2">←</span> Back
+          </button>
 
-        <div className="text-lg font-semibold">Total: ${total}</div>
-
-        <button
+          <button
             disabled={total === 0}
             onClick={proceed}
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-        >
-            Next ➡️
-        </button>
+            className={`flex-1 px-6 py-3 rounded-lg ${
+              total === 0 
+                ? 'bg-gray-200 text-gray-500 cursor-not-allowed' 
+                : 'bg-primary text-white hover:bg-red-600'
+            } transition-colors duration-200 flex items-center justify-center`}
+          >
+            Continue to Food Selection <span className="ml-2">→</span>
+          </button>
         </div>
+      </div>
     </div>
   );
 };

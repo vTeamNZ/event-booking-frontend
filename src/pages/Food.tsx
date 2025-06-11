@@ -1,19 +1,43 @@
 import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
-
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface FoodItem {
   name: string;
   price: number;
   quantity: number;
+  description: string;
+  image: string;
 }
 
 const initialMenu: FoodItem[] = [
-  { name: "Chicken Biryani", price: 12, quantity: 0 },
-  { name: "Veg Kottu", price: 10, quantity: 0 },
-  { name: "Fish Curry Rice", price: 14, quantity: 0 },
-  { name: "Watalappam", price: 6, quantity: 0 },
+  { 
+    name: "Chicken Biryani", 
+    price: 12, 
+    quantity: 0,
+    description: "Fragrant basmati rice cooked with tender chicken and aromatic spices",
+    image: "https://example.com/biryani.jpg"  // You can add actual image URLs
+  },
+  { 
+    name: "Veg Kottu", 
+    price: 10, 
+    quantity: 0,
+    description: "Shredded roti stir-fried with vegetables and authentic Sri Lankan spices",
+    image: "https://example.com/kottu.jpg"
+  },
+  { 
+    name: "Fish Curry Rice", 
+    price: 14, 
+    quantity: 0,
+    description: "Fresh fish cooked in coconut curry sauce served with steamed rice",
+    image: "https://example.com/curry.jpg"
+  },
+  { 
+    name: "Watalappam", 
+    price: 6, 
+    quantity: 0,
+    description: "Traditional Sri Lankan dessert made with jaggery and coconut milk",
+    image: "https://example.com/watalappam.jpg"
+  },
 ];
 
 const FoodSelection: React.FC = () => {
@@ -27,88 +51,100 @@ const FoodSelection: React.FC = () => {
     setMenu(updated);
   };
 
-  const { eventTitle, ticketPrice, ticketDetails } = location.state || {};
+  const { eventTitle, ticketPrice } = location.state || {};
   const selectedFoods = menu.filter(item => item.quantity > 0);
   const totalCost = selectedFoods.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-    const goToPayment = () => {
+  const goToPayment = () => {
     navigate("/payment", {
-        state: {
+      state: {
         eventTitle,
-        ticketPrice, //  Use the actual ticketPrice variable
-        //selectedFoods,
+        ticketPrice,
+        selectedFoods,
         foodCost: totalCost,
-        totalAmount: (ticketPrice || 0) + totalCost, //  Safer sum
-        },
+        totalAmount: (ticketPrice || 0) + totalCost,
+      },
     });
-    };
+  };
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">🍛 Select Your Food</h1>
-      <h2 className="text-xl font-semibold mb-2">🎉 Event: {eventTitle}</h2>
-        <div className="flex justify-between items-center mb-4">
-        <button
-            onClick={() => navigate(-1)}
-            className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
-        >
-            ⬅️ Back
-        </button>
+    <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8 mt-6">
+      <div className="border-b pb-4 mb-6">
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">Add Food & Beverages</h1>
+        <h2 className="text-xl text-gray-600">{eventTitle}</h2>
+      </div>
 
-        <button
-            onClick={() =>
-            navigate("/payment", {
-                state: {
-                eventTitle,
-                ticketPrice,
-                selectedFoods: [],
-                foodCost: 0,
-                totalAmount: ticketPrice || 0,
-                },
-            })
-            }
-            className="text-blue-600 underline hover:text-blue-800"
-        >
-            Skip ➡️
-        </button>
-        </div>
-      <p className="text-gray-600 mb-2">💵 Ticket Price: ${ticketPrice}</p>
-      <ul className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {menu.map((item, idx) => (
-          <li key={idx} className="flex justify-between items-center border p-3 rounded shadow">
-            <div>
-              <p className="font-medium">{item.name}</p>
-              <p className="text-sm text-gray-600">${item.price}</p>
+          <div 
+            key={idx} 
+            className="bg-gray-50 rounded-xl p-4 hover:shadow-md transition-shadow duration-200"
+          >
+            <div className="flex flex-col h-full">
+              <div className="flex-1">
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{item.name}</h3>
+                <p className="text-gray-600 text-sm mb-2">{item.description}</p>
+                <p className="text-primary font-bold">${item.price.toFixed(2)}</p>
+              </div>
+              
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={() => handleQtyChange(idx, -1)}
+                    className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 transition-colors duration-200"
+                    disabled={item.quantity === 0}
+                  >
+                    -
+                  </button>
+                  <span className="w-8 text-center font-semibold">{item.quantity}</span>
+                  <button
+                    onClick={() => handleQtyChange(idx, 1)}
+                    className="w-8 h-8 rounded-full bg-primary text-white hover:bg-red-600 flex items-center justify-center transition-colors duration-200"
+                  >
+                    +
+                  </button>
+                </div>
+                <span className="text-gray-700 font-medium">
+                  ${(item.price * item.quantity).toFixed(2)}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => handleQtyChange(idx, -1)}
-                className="px-2 py-1 bg-gray-200 rounded"
-              >−</button>
-              <span>{item.quantity}</span>
-              <button
-                onClick={() => handleQtyChange(idx, 1)}
-                className="px-2 py-1 bg-blue-600 text-white rounded"
-              >+</button>
-            </div>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
 
-    <div className="mt-6 space-y-2">
-    <p className="text-lg font-semibold">💵 Ticket Price: ${ticketPrice}</p>
-    <p className="text-lg font-semibold">🍽️ Food Total: ${totalCost.toFixed(2)}</p>
-    <p className="text-xl font-bold text-blue-800">
-        💰 Total to Pay: ${(ticketPrice || 0) + totalCost}
-    </p>
-    <button
-        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mt-4"
-        onClick={goToPayment}
-        disabled={selectedFoods.length === 0}
-    >
-        Next ➡️
-    </button>
-    </div>
+      <div className="mt-8 pt-6 border-t">
+        <div className="space-y-2 mb-6">
+          <div className="flex justify-between text-gray-600">
+            <span>Ticket Total</span>
+            <span>${ticketPrice.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-gray-600">
+            <span>Food Total</span>
+            <span>${totalCost.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-xl font-bold text-gray-800 pt-2 border-t">
+            <span>Total</span>
+            <span>${((ticketPrice || 0) + totalCost).toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div className="flex justify-between space-x-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="px-6 py-3 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors duration-200 flex items-center"
+          >
+            <span className="mr-2">←</span> Back
+          </button>
+
+          <button
+            onClick={goToPayment}
+            className="flex-1 px-6 py-3 rounded-lg bg-primary text-white hover:bg-red-600 transition-colors duration-200 flex items-center justify-center"
+          >
+            Continue to Payment <span className="ml-2">→</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
