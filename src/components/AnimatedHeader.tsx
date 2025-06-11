@@ -24,14 +24,14 @@ const AnimatedHeader: React.FC = () => {
 >
 
   <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-    <Link to="/" className="flex items-center h-full space-x-3 mb-2 sm:mb-0">
+    <Link to="/" className="flex justify-center items-center w-full h-full space-x-3 mb-2 sm:mb-0 sm:justify-start sm:w-auto">
       <img src="/kiwilanka-logo.png" alt="Logo" className="h-full max-h-14 w-auto object-contain" />
-      <span className="text-white text-xl font-semibold tracking-wide opacity-80">
+      {/* <span className="text-white text-xl font-semibold tracking-wide opacity-80">
         KIWI LANKA Event Booking
-      </span>
+      </span> */}
     </Link>
 
-<nav className="flex space-x-6 text-white text-base font-medium">
+<nav className="flex space-x-6 text-white text-base font-medium justify-center">
   <Link to="/" className="hover:underline hover:opacity-100 opacity-80 transition">Home</Link>
   <span className="opacity-50">•</span>
   <Link to="/about" className="hover:underline hover:opacity-100 opacity-80 transition">About</Link>

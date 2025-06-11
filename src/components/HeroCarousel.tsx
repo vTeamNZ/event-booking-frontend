@@ -19,7 +19,7 @@ const HeroCarousel: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get<Event[]>('http://localhost:5290/api/Events')
+    axios.get<Event[]>('https://kiwilanka.co.nz/api/Events')
       .then(res => setEvents(res.data))
       .catch(err => console.error(err));
   }, []);
@@ -43,9 +43,9 @@ const HeroCarousel: React.FC = () => {
             centeredSlides={true}
             slidesPerView={'auto'}
             loop={true}
-            speed={3000} // ⬅️ Smooth transition speed (1s)
+            speed={3000} // Smooth transition speed (1s)
             autoplay={{
-                delay: 0, // ⬅️ Slower autoplay delay (5s between slides)
+                delay: 0, // Slower autoplay delay (5s between slides)
                 disableOnInteraction: false,
                 pauseOnMouseEnter: true,
             }}

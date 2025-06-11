@@ -19,7 +19,7 @@ const EventsList: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get<Event[]>('http://localhost:5290/api/Events')
+    axios.get<Event[]>('https://kiwilanka.co.nz/api/Events')
       .then(response => setEvents(response.data))
       .catch(error => console.error('Error fetching events:', error));
   }, []);

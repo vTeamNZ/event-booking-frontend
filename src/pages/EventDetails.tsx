@@ -17,7 +17,7 @@ const EventDetails: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
 useEffect(() => {
-  axios.get<Event>(`http://localhost:5290/api/Events/${id}`)
+  axios.get<Event>('https://kiwilanka.co.nz/api/Events/${id}')
     .then(response => {
       setEvent(response.data);
       setLoading(false);
