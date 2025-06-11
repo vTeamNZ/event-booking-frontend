@@ -10,9 +10,14 @@ export interface Event {
   capacity: number;
   organizerId: number;
   organizer: any;
+  isActive?: boolean;
 }
 
 export const getAllEvents = async (): Promise<Event[]> => {
   const response = await axios.get('http://localhost:5290/api/Events');
-  return response.data as Event[]; // Force it to use correct type
+  const events = (response.data as Event[]).map((event) => ({
+    ...event,
+    isActive: new Date(event.date) > new Date() // Events in the future are active
+  }));
+  return events;
 };

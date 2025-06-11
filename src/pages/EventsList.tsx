@@ -12,6 +12,7 @@ interface Event {
   location: string;
   price: number;
   imageUrl?: string;
+  isActive?: boolean;
 }
 
 const EventsList: React.FC = () => {
@@ -20,9 +21,25 @@ const EventsList: React.FC = () => {
 
   useEffect(() => {
     axios.get<Event[]>('https://kiwilanka.co.nz/api/Events')
-      .then(response => setEvents(response.data))
+      .then(response => {
+        const eventsWithActive = response.data.map(event => ({
+          ...event,
+          isActive: new Date(event.date) > new Date()
+        }));
+        setEvents(eventsWithActive);
+      })
       .catch(error => console.error('Error fetching events:', error));
   }, []);
+
+  const handleEventClick = (event: Event) => {
+    if (!event.isActive) return; // Don't navigate if event is inactive
+    navigate(`/event/${event.id}/tickets`, {
+      state: {
+        eventTitle: event.title,
+        eventPrice: event.price,
+      },
+    });
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -34,15 +51,12 @@ const EventsList: React.FC = () => {
           {events.map((event) => (
             <div
                 key={event.id}
-                onClick={() =>
-                    navigate(`/event/${event.id}/tickets`, {
-                    state: {
-                        eventTitle: event.title,
-                        eventPrice: event.price,
-                    },
-                    })
-                }
-                className="cursor-pointer bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group overflow-hidden"
+                onClick={() => handleEventClick(event)}
+                className={`relative cursor-pointer bg-white rounded-xl shadow-lg transition-all duration-300 group overflow-hidden
+                ${event.isActive 
+                  ? 'hover:shadow-xl' 
+                  : 'opacity-75 hover:cursor-not-allowed'
+                }`}
                 >
                 {/* Image + Hover Overlay */}
                 <div className="relative">
@@ -52,15 +66,24 @@ const EventsList: React.FC = () => {
                     onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src = '/events/fallback.jpg';
                     }}
-                    className="w-full h-[450px] object-cover transition duration-300 group-hover:brightness-75 rounded-t-xl"
+                    className={`w-full h-[450px] object-cover transition duration-300 rounded-t-xl
+                    ${event.isActive ? 'group-hover:brightness-75' : 'grayscale brightness-50'}`}
                     loading="lazy"
                     />
-                    {/* Hover Button */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
+                    {/* Hover Button or Past Event Label */}
+                    <div className={`absolute inset-0 flex items-center justify-center transition duration-300
+                  ${event.isActive ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}
+                >
+                  {event.isActive ? (
                     <span className="bg-primary text-white font-semibold px-6 py-3 rounded-full shadow-lg hover:bg-red-700 transition-all duration-300 text-lg">
-                    🎫 BUY TICKETS
+                      🎫 BUY TICKETS
                     </span>
+                  ) : (
+                    <div className="bg-gray-900/80 text-white px-6 py-3 rounded-full">
+                      PAST EVENT
                     </div>
+                  )}
+                </div>
                 </div>
 
                 {/* Event Info */}
@@ -70,7 +93,8 @@ const EventsList: React.FC = () => {
                     {/* <p className="text-sm text-gray-500 mb-1">📍 {event.location}</p> */}
                     <p className="text-sm text-gray-500 mb-1" style={{ textIndent: '-1.7em', paddingLeft: '1.7em' }}> 📍 {event.location}</p>
                     {/* <p className="text-sm text-gray-500 mb-1">🕒 {new Date(event.date).toLocaleString()}</p> */}
-                    <p className="text-sm text-gray-500 mb-1" style={{ textIndent: '-1.2em', paddingLeft: '1.2em' }}> 🕒 {new Date(event.date).toLocaleString()}</p>
+                    <p className="text-sm text-gray-500 mb-1" style={{ textIndent: '-1.2em', paddingLeft: '1.2em' }}> 🕒 {new Date(event.date).toLocaleString()}
+                    {!event.isActive && <span className="ml-2 text-red-500">(Ended)</span>}</p>
 
                     {/* <p className="text-md font-bold text-green-700 mt-2">💵 ${event.price}</p> */}
                 </div>

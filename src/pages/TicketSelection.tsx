@@ -1,11 +1,38 @@
 // src/pages/TicketSelection.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
+
+interface Event {
+  id: number;
+  date: string;
+  isActive?: boolean;
+}
 
 const TicketSelection: React.FC = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
   const { id: eventId } = useParams();
+  const [isActive, setIsActive] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    // Fetch event details to check if it's active
+    axios.get<Event>(`https://kiwilanka.co.nz/api/Events/${eventId}`)
+      .then(response => {
+        const event = response.data;
+        const active = new Date(event.date) > new Date();
+        setIsActive(active);
+        if (!active) {
+          setTimeout(() => {
+            navigate('/');
+          }, 5000); // Redirect after 5 seconds
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching event:', error);
+        setIsActive(false);
+      });
+  }, [eventId, navigate]);
 
   const [quantities, setQuantities] = useState({
     adult: 0,
@@ -13,6 +40,25 @@ const TicketSelection: React.FC = () => {
     child: 0,
     family: 0,
   });
+
+  // If we know the event is not active, show the message
+  if (isActive === false) {
+    return (
+      <div className="max-w-3xl mx-auto mt-20 p-8 bg-white rounded-xl shadow-lg text-center">
+        <div className="text-6xl mb-6">⚠️</div>
+        <h1 className="text-2xl font-bold text-gray-800 mb-4">This Event Has Ended</h1>
+        <p className="text-gray-600 mb-8">
+          Sorry, this event is no longer available for booking. You will be redirected to the events page in a few seconds.
+        </p>
+        <button
+          onClick={() => navigate('/')}
+          className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
+        >
+          Return to Events
+        </button>
+      </div>
+    );
+  }
 
   const prices = {
     adult: 25,
@@ -32,13 +78,6 @@ const TicketSelection: React.FC = () => {
     (sum, [key, qty]) => sum + prices[key as keyof typeof prices] * qty,
     0
   );
-
-  const ticketTypes: { type: string; price: number }[] = [
-    { type: "Adult", price: 25 },
-    { type: "Group", price: 200 },
-    { type: "Child", price: 15 },
-    { type: "Family", price: 60 },
-  ];
 
   const selectedTickets = Object.entries(quantities).map(([type, qty]) => ({
     type,
@@ -124,7 +163,7 @@ const TicketSelection: React.FC = () => {
                 : 'bg-primary text-white hover:bg-red-600'
             } transition-colors duration-200 flex items-center justify-center`}
           >
-            Continue to Food Selection <span className="ml-2">→</span>
+            Continue to Food & Payment <span className="ml-2">→</span>
           </button>
         </div>
       </div>
