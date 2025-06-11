@@ -28,10 +28,10 @@ const Contact: React.FC = () => {
                   <div>
                     <h3 className="font-medium text-gray-800">Email</h3>
                     <a 
-                      href="mailto:Gayan@kiwilanka.co.nz" 
+                      href="mailto:gayan@kiwilanka.co.nz" 
                       className="text-primary hover:text-red-600 transition-colors duration-200"
                     >
-                      Gayan@kiwilanka.co.nz
+                      gayan@kiwilanka.co.nz
                     </a>
                   </div>
                 </div>

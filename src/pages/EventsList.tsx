@@ -55,10 +55,10 @@ const EventsList: React.FC = () => {
                 className={`relative cursor-pointer bg-white rounded-xl shadow-lg transition-all duration-300 group overflow-hidden
                 ${event.isActive 
                   ? 'hover:shadow-xl' 
-                  : 'opacity-75 hover:cursor-not-allowed'
+                  : 'hover:cursor-not-allowed'
                 }`}
                 >
-                {/* Image + Hover Overlay */}
+                {/* Image Container */}
                 <div className="relative">
                     <img
                     src={event.imageUrl || '/events/fallback.jpg'}
@@ -66,37 +66,39 @@ const EventsList: React.FC = () => {
                     onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src = '/events/fallback.jpg';
                     }}
-                    className={`w-full h-[450px] object-cover transition duration-300 rounded-t-xl
-                    ${event.isActive ? 'group-hover:brightness-75' : 'grayscale brightness-50'}`}
+                    className="w-full h-[450px] object-cover transition duration-300 rounded-t-xl"
                     loading="lazy"
                     />
-                    {/* Hover Button or Past Event Label */}
-                    <div className={`absolute inset-0 flex items-center justify-center transition duration-300
-                  ${event.isActive ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}
-                >
-                  {event.isActive ? (
-                    <span className="bg-primary text-white font-semibold px-6 py-3 rounded-full shadow-lg hover:bg-red-700 transition-all duration-300 text-lg">
-                      🎫 BUY TICKETS
-                    </span>
-                  ) : (
-                    <div className="bg-gray-900/80 text-white px-6 py-3 rounded-full">
-                      PAST EVENT
-                    </div>
-                  )}
-                </div>
+                      {/* Overlay for past events */}
+                    {!event.isActive && (
+                      <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-[2px] flex items-center justify-center">
+                        <div className="bg-gray-900/80 text-white px-6 py-3 rounded-full shadow-md">
+                          PAST EVENT
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Hover overlay for active events */}
+                    {event.isActive && (
+                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center">
+                        <span className="bg-primary text-white font-semibold px-6 py-3 rounded-full shadow-lg hover:bg-red-700 transition-all duration-300 text-lg">
+                          🎫 BUY TICKETS
+                        </span>
+                      </div>
+                    )}
                 </div>
 
                 {/* Event Info */}
                 <div className="p-5">
                     <h2 className="text-xl font-bold text-gray-800 mb-2">{event.title}</h2>
                     <p className="text-sm text-gray-600 mb-2 line-clamp-3">{event.description}</p>
-                    {/* <p className="text-sm text-gray-500 mb-1">📍 {event.location}</p> */}
                     <p className="text-sm text-gray-500 mb-1" style={{ textIndent: '-1.7em', paddingLeft: '1.7em' }}> 📍 {event.location}</p>
-                    {/* <p className="text-sm text-gray-500 mb-1">🕒 {new Date(event.date).toLocaleString()}</p> */}
-                    <p className="text-sm text-gray-500 mb-1" style={{ textIndent: '-1.2em', paddingLeft: '1.2em' }}> 🕒 {new Date(event.date).toLocaleString()}
-                    {!event.isActive && <span className="ml-2 text-red-500">(Ended)</span>}</p>
-
-                    {/* <p className="text-md font-bold text-green-700 mt-2">💵 ${event.price}</p> */}
+                    <p className="text-sm text-gray-500 mb-1" style={{ textIndent: '-1.2em', paddingLeft: '1.2em' }}> 
+                      🕒 {new Date(event.date).toLocaleString()}
+                      {!event.isActive && (
+                        <span className="ml-2 text-primary font-medium">(Event Ended)</span>
+                      )}
+                    </p>
                 </div>
                 </div>
           ))}
