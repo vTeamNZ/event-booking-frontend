@@ -53,13 +53,10 @@ const FoodSelection: React.FC = () => {
 
   const { eventTitle, ticketPrice } = location.state || {};
   const selectedFoods = menu.filter(item => item.quantity > 0);
-  const totalCost = selectedFoods.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
-  const goToPayment = () => {
+  const totalCost = selectedFoods.reduce((sum, item) => sum + item.price * item.quantity, 0);  const goToPayment = () => {
     navigate("/payment", {
       state: {
-        eventTitle,
-        ticketPrice,
+        ...location.state, // Pass through all event and ticket details
         selectedFoods,
         foodCost: totalCost,
         totalAmount: (ticketPrice || 0) + totalCost,

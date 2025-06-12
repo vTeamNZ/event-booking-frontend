@@ -3,7 +3,6 @@ import { Routes, Route, Link } from 'react-router-dom';
 import HeroCarousel from './components/HeroCarousel';
 import AnimatedHeader from './components/AnimatedHeader';
 import EventsList from './pages/EventsList';
-import EventDetails from './pages/EventDetails';
 import About from './pages/About';
 import Food from './pages/Food';
 import Payment from './pages/Payment';
@@ -18,12 +17,10 @@ const App: React.FC = () => {
       {/* Page Content */}
       <AnimatedHeader />
       <HeroCarousel />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <Routes>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">      <Routes>
           <Route path="/" element={<EventsList />} />
-          <Route path="/event/:id/tickets" element={<TicketSelection />} />
-          <Route path="/event/:id/food" element={<Food />} />
-          <Route path="/event/:id" element={<EventDetails />} />
+          <Route path="/event/:eventTitle/tickets" element={<TicketSelection />} />
+          <Route path="/event/:eventTitle/food" element={<Food />} />
           <Route path="/about" element={<About />} />
           <Route path="/payment" element={<Payment />} />
           <Route path="/contact" element={<Contact />} />

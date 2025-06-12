@@ -9,15 +9,23 @@ interface Event {
   isActive?: boolean;
 }
 
-const TicketSelection: React.FC = () => {
-  const navigate = useNavigate();
-  const { state } = useLocation();
-  const { id: eventId } = useParams();
-  const [isActive, setIsActive] = useState<boolean | null>(null);
+interface TicketDetail {
+  type: string;
+  quantity: number;
+  price: number;
+  unitPrice: number;
+}
 
+const TicketSelection: React.FC = () => {
+  const navigate = useNavigate();  const { state } = useLocation();  const { eventTitle } = useParams();
+  const [isActive, setIsActive] = useState<boolean | null>(null);
   useEffect(() => {
+    if (!state?.eventId) {
+      navigate('/');
+      return;
+    }
     // Fetch event details to check if it's active
-    axios.get<Event>(`https://kiwilanka.co.nz/api/Events/${eventId}`)
+    axios.get<Event>(`https://kiwilanka.co.nz/api/Events/${state.eventId}`)
       .then(response => {
         const event = response.data;
         const active = new Date(event.date) > new Date();
@@ -32,7 +40,7 @@ const TicketSelection: React.FC = () => {
         console.error('Error fetching event:', error);
         setIsActive(false);
       });
-  }, [eventId, navigate]);
+  }, [state?.eventId, navigate]);
 
   const [quantities, setQuantities] = useState({
     adult: 0,
@@ -79,16 +87,19 @@ const TicketSelection: React.FC = () => {
     0
   );
 
-  const selectedTickets = Object.entries(quantities).map(([type, qty]) => ({
-    type,
-    quantity: qty,
-    price: prices[type as keyof typeof prices] * qty,
-  })).filter(ticket => ticket.quantity > 0);
-
+  const selectedTickets = Object.entries(quantities)
+    .map(([type, quantity]) => ({
+      type,
+      quantity,
+      unitPrice: prices[type as keyof typeof prices],
+      price: prices[type as keyof typeof prices] * quantity,
+    }))
+    .filter(ticket => ticket.quantity > 0);
   const proceed = () => {
-    navigate(`/event/${eventId}/food`, {
+    if (!eventTitle) return;
+    navigate(`/event/${eventTitle}/food`, {
       state: {
-        eventTitle: state.eventTitle,
+        ...state, // Pass through all event details
         ticketPrice: total,
         ticketDetails: selectedTickets,
       },
@@ -99,7 +110,11 @@ const TicketSelection: React.FC = () => {
     <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8 mt-6">
       <div className="border-b pb-4 mb-6">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Choose Your Tickets</h1>
-        <h2 className="text-xl text-gray-600">{state?.eventTitle}</h2>
+        <h2 className="text-xl text-gray-600 mb-2">{state?.eventTitle}</h2>
+        <div className="space-y-1 text-sm text-gray-600">
+          <p>📍 {state?.eventLocation}</p>
+          <p>🕒 {new Date(state?.eventDate).toLocaleString()}</p>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -163,7 +178,7 @@ const TicketSelection: React.FC = () => {
                 : 'bg-primary text-white hover:bg-red-600'
             } transition-colors duration-200 flex items-center justify-center`}
           >
-            Continue to Food & Payment <span className="ml-2">→</span>
+            Continue to Food Selection <span className="ml-2">→</span>
           </button>
         </div>
       </div>

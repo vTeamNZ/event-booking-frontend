@@ -1,8 +1,13 @@
 // src/pages/EventsList.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
+
+interface Organizer {
+  id: number;
+  name: string;
+}
 
 interface Event {
   id: number;
@@ -13,63 +18,225 @@ interface Event {
   price: number;
   imageUrl?: string;
   isActive?: boolean;
+  facebookUrl?: string;
+  youtubeUrl?: string;
+  organizerId: number;
+  organizerName?: string;
+  city: string;
 }
+
+// Helper function to create URL-friendly slug
+const createSlug = (name: string) => {
+  return name
+    .toLowerCase()
+    .replace(/\s+/g, '-')     // Replace spaces with -
+    .replace(/[^\w\-]+/g, '') // Remove all non-word chars
+    .replace(/\-\-+/g, '-')   // Replace multiple - with single -
+    .trim();                  // Trim - from start and end
+};
 
 const EventsList: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
+  const [selectedCity, setSelectedCity] = useState<string>('all');
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const { organizerSlug } = useParams<{ organizerSlug?: string }>();
 
   useEffect(() => {
-    axios.get<Event[]>('https://kiwilanka.co.nz/api/Events')
-      .then(response => {
-        const eventsWithActive = response.data.map(event => ({
-          ...event,
-          isActive: new Date(event.date) > new Date()
-        }));
-        setEvents(eventsWithActive);
-      })
-      .catch(error => console.error('Error fetching events:', error));
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        // First, fetch all events
+        const eventsResponse = await axios.get<Event[]>('https://kiwilanka.co.nz/api/Events');
+        
+        // Get unique organizer IDs from events
+        const organizerIds = eventsResponse.data
+          .map(event => event.organizerId)
+          .filter((value, index, self) => self.indexOf(value) === index);
+        
+        // Fetch organizer details for each unique organizerId
+        const organizerPromises = organizerIds.map(id => 
+          axios.get<Organizer>(`https://kiwilanka.co.nz/api/Organizers/${id}`)
+        );
+        
+        const organizerResponses = await Promise.all(organizerPromises);
+        
+        // Create a map of organizerId to organizer name
+        const organizerMap = new Map(
+          organizerResponses.map(response => [response.data.id, response.data.name])
+        );
+        
+        // Extract city and combine event data with organizer names and active status
+        const eventsWithDetails = eventsResponse.data.map(event => {
+          // Extract city from location (assumes format like "Venue Name, Street, City, Region")
+          const locationParts = event.location.split(',').map(part => part.trim());
+          const city = locationParts[locationParts.length - 2] || locationParts[0];
+          const organizerName = organizerMap.get(event.organizerId) || 'Unknown Organizer';
+
+          return {
+            ...event,
+            isActive: new Date(event.date) > new Date(),
+            organizerName,
+            city,
+            organizerSlug: createSlug(organizerName)
+          };
+        });
+        
+        setEvents(eventsWithDetails);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
+  const cities = useMemo(() => {
+    const uniqueCities = events
+      .map(event => event.city)
+      .filter((value, index, self) => self.indexOf(value) === index)
+      .sort();
+    return ['all', ...uniqueCities];
+  }, [events]);
+
+  const filteredEvents = useMemo(() => {
+    return events.filter(event => {
+      const matchesOrganizer = !organizerSlug || createSlug(event.organizerName || '') === organizerSlug;
+      const matchesCity = selectedCity === 'all' || event.city === selectedCity;
+      return matchesOrganizer && matchesCity;
+    });
+  }, [events, organizerSlug, selectedCity]);
+  const createUrlSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .replace(/\s+/g, '-')     // Replace spaces with -
+      .replace(/[^\w\-]+/g, '') // Remove all non-word chars
+      .replace(/\-\-+/g, '-')   // Replace multiple - with single -
+      .trim();                  // Trim - from start and end
+  };
+
   const handleEventClick = (event: Event) => {
-    if (!event.isActive) return; // Don't navigate if event is inactive
-    navigate(`/event/${event.id}/tickets`, {
+    if (!event.isActive) return;
+    const eventSlug = createUrlSlug(event.title);
+    navigate(`/event/${eventSlug}/tickets`, {
       state: {
+        eventId: event.id,
         eventTitle: event.title,
         eventPrice: event.price,
+        eventDate: event.date,
+        eventLocation: event.location,
+        eventDescription: event.description,
+        organizerName: event.organizerName
       },
     });
   };
 
+  const handleSocialClick = (url: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      {/* <h1 className="text-2xl font text-center text-primary mb-10">The Place to discover Sri Lankan Events in New Zealand</h1> */}
-      {events.length === 0 ? (
-        <p className="text-center text-gray-500">No events found.</p>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {events.map((event) => (
-            <div
-                key={event.id}
-                onClick={() => handleEventClick(event)}
-                className={`relative cursor-pointer bg-white rounded-xl shadow-lg transition-all duration-300 group overflow-hidden
-                ${event.isActive 
-                  ? 'hover:shadow-xl' 
-                  : 'hover:cursor-not-allowed'
-                }`}
+        <>
+          {/* Filters Section */}
+          <div className="mb-8 space-y-6">
+            {/* Page Title with Organizer if present */}
+            {organizerSlug && (
+              <div className="border-b pb-4">
+                <div className="flex items-center justify-between">
+                  <h1 className="text-3xl font-bold text-gray-800">
+                    {events.find(e => createSlug(e.organizerName || '') === organizerSlug)?.organizerName || 'Events'}
+                  </h1>
+                  <Link 
+                    to="/"
+                    className="text-primary hover:text-red-700 transition-colors flex items-center gap-2"
+                  >
+                    ← All Events
+                  </Link>
+                </div>
+              </div>
+            )}            {/* City Filter - Pills Style */}
+            <div className="w-full">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setSelectedCity('all')}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200
+                    ${selectedCity === 'all'
+                      ? 'bg-primary text-white shadow-md'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
                 >
-                {/* Image Container */}
-                <div className="relative">
+                  All Cities
+                </button>
+                {cities.filter(city => city !== 'all').map((city) => (
+                  <button
+                    key={city}
+                    onClick={() => setSelectedCity(city)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200
+                      ${selectedCity === city
+                        ? 'bg-primary text-white shadow-md'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                  >
+                    {city}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Results Count */}
+          <div className="mb-6">
+            <p className="text-gray-600">
+              Showing {filteredEvents.length} {filteredEvents.length === 1 ? 'event' : 'events'}
+              {organizerSlug && ' for this organizer'}
+            </p>
+          </div>
+
+          {/* Events Grid */}
+          {filteredEvents.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">No events found matching your filters.</p>
+              <button
+                onClick={() => {
+                  setSelectedCity('all');
+                }}
+                className="mt-4 text-primary hover:text-red-700 font-medium"
+              >
+                Clear all filters
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredEvents.map((event) => (
+                <div
+                  key={event.id}
+                  className={`relative bg-white rounded-xl shadow-lg transition-all duration-300 group overflow-hidden
+                    ${event.isActive ? 'hover:shadow-xl' : ''}`}
+                >
+                  {/* Image Container - Clickable */}
+                  <div 
+                    className="relative cursor-pointer"
+                    onClick={() => event.isActive && handleEventClick(event)}
+                  >
                     <img
-                    src={event.imageUrl || '/events/fallback.jpg'}
-                    alt={event.title}
-                    onError={(e) => {
+                      src={event.imageUrl || '/events/fallback.jpg'}
+                      alt={event.title}
+                      onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src = '/events/fallback.jpg';
-                    }}
-                    className="w-full h-[450px] object-cover transition duration-300 rounded-t-xl"
-                    loading="lazy"
+                      }}
+                      className="w-full h-[450px] object-cover transition duration-300 rounded-t-xl"
+                      loading="lazy"
                     />
-                      {/* Overlay for past events */}
+                    {/* Overlay for past events */}
                     {!event.isActive && (
                       <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-[2px] flex items-center justify-center">
                         <div className="bg-gray-900/80 text-white px-6 py-3 rounded-full shadow-md">
@@ -86,23 +253,57 @@ const EventsList: React.FC = () => {
                         </span>
                       </div>
                     )}
-                </div>
+                  </div>
 
-                {/* Event Info */}
-                <div className="p-5">
-                    <h2 className="text-xl font-bold text-gray-800 mb-2">{event.title}</h2>
-                    <p className="text-sm text-gray-600 mb-2 line-clamp-3">{event.description}</p>
-                    <p className="text-sm text-gray-500 mb-1" style={{ textIndent: '-1.7em', paddingLeft: '1.7em' }}> 📍 {event.location}</p>
-                    <p className="text-sm text-gray-500 mb-1" style={{ textIndent: '-1.2em', paddingLeft: '1.2em' }}> 
-                      🕒 {new Date(event.date).toLocaleString()}
-                      {!event.isActive && (
-                        <span className="ml-2 text-primary font-medium">(Event Ended)</span>
-                      )}
-                    </p>
+                  {/* Event Info */}
+                  <div className="p-5">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">                        <div className="flex items-center gap-2 mb-2">
+                          <h2 className="text-xl font-bold text-gray-800">{event.title}</h2>
+                          <Link 
+                            to={`/event/${createSlug(event.organizerName || '')}/tickets`}
+                            className="text-sm text-primary hover:text-red-700 transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            by {event.organizerName}
+                          </Link>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2 line-clamp-3">{event.description}</p>
+                        <p className="text-sm text-gray-500 mb-1" style={{ textIndent: '-1.7em', paddingLeft: '1.7em' }}> 📍 {event.location}</p>
+                        <p className="text-sm text-gray-500 mb-1" style={{ textIndent: '-1.2em', paddingLeft: '1.2em' }}> 
+                          🕒 {new Date(event.date).toLocaleString()}
+                          {!event.isActive && (
+                            <span className="ml-2 text-primary font-medium">(Event Ended)</span>
+                          )}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <button
+                          onClick={(e) => handleSocialClick(event.facebookUrl || 'https://facebook.com', e)}
+                          className="p-2 text-blue-600 hover:text-blue-700 transition-colors duration-200"
+                          aria-label="Visit Facebook page"
+                        >
+                          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"/>
+                          </svg>
+                        </button>
+                        <button
+                          onClick={(e) => handleSocialClick(event.youtubeUrl || 'https://youtube.com', e)}
+                          className="p-2 text-red-600 hover:text-red-700 transition-colors duration-200"
+                          aria-label="Visit YouTube channel"
+                        >
+                          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                </div>
-          ))}
-        </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

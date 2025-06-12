@@ -62,15 +62,21 @@ const HeroCarousel: React.FC = () => {
             <SwiperSlide
               key={event.id}
               style={{ width: '300px' }}
-              className="cursor-pointer"
-              onClick={() =>
-                navigate(`/event/${event.id}/tickets`, {
+              className="cursor-pointer"              onClick={() => {
+                const eventSlug = event.title
+                  .toLowerCase()
+                  .replace(/\s+/g, '-')
+                  .replace(/[^\w\-]+/g, '')
+                  .replace(/\-\-+/g, '-')
+                  .trim();
+                navigate(`/event/${eventSlug}/tickets`, {
                   state: {
+                    eventId: event.id,
                     eventTitle: event.title,
                     eventPrice: event.price,
                   },
-                })
-              }
+                });
+              }}
             >
               <div className="bg-white rounded-xl overflow-hidden shadow-lg">
                 <img

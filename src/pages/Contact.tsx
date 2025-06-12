@@ -90,12 +90,12 @@ const Contact: React.FC = () => {
               </div>
 
               <div className="mt-6">
-                <a 
+                {/* <a 
                   href="mailto:Gayan@kiwilanka.co.nz?subject=New%20Event%20Listing%20Request"
                   className="inline-block px-6 py-3 bg-primary text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
                 >
                   Submit Your Event →
-                </a>
+                </a> */}
               </div>
             </div>
           </div>

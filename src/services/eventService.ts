@@ -9,8 +9,13 @@ export interface Event {
   price: number;
   capacity: number;
   organizerId: number;
-  organizer: any;
+  organizer: {
+    id: number;
+    name: string;
+  };
   isActive?: boolean;
+  organizerName?: string;
+  organizerSlug?: string;
 }
 
 export const getAllEvents = async (): Promise<Event[]> => {
