@@ -51,17 +51,26 @@ const FoodSelection: React.FC = () => {
     setMenu(updated);
   };
 
-  const { eventTitle, ticketPrice } = location.state || {};
+  const { eventTitle, ticketPrice, ticketDetails } = location.state || {};
   const selectedFoods = menu.filter(item => item.quantity > 0);
-  const totalCost = selectedFoods.reduce((sum, item) => sum + item.price * item.quantity, 0);  const goToPayment = () => {
-    navigate("/payment", {
-      state: {
-        ...location.state, // Pass through all event and ticket details
-        selectedFoods,
-        foodCost: totalCost,
-        totalAmount: (ticketPrice || 0) + totalCost,
-      },
-    });
+  const totalCost = selectedFoods.reduce((sum, item) => sum + item.price * item.quantity, 0);  
+  const goToPayment = () => {
+    const paymentState = {
+      eventId: location.state?.eventId,
+      eventTitle,
+      ticketDetails: location.state?.ticketDetails,
+      selectedFoods,
+      amount: (ticketPrice || 0) + totalCost,  // Ensure amount is passed correctly
+    };
+
+    // Validate required data before navigation
+    if (!paymentState.eventId || !paymentState.eventTitle || !paymentState.ticketDetails) {
+      console.error('Missing required payment information');
+      navigate('/');
+      return;
+    }
+
+    navigate("/payment", { state: paymentState });
   };
 
   return (

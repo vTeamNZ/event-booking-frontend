@@ -2,6 +2,23 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { getStripe, createPaymentIntent } from '../services/stripeService';
+import { CustomerDetails } from '../types/payment';
+
+interface PaymentLocationState {
+  amount: number;
+  eventTitle: string;
+  eventId: number;
+  ticketDetails: Array<{
+    type: string;
+    quantity: number;
+    price: number;
+  }>;
+  selectedFoods?: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+  }>;
+}
 
 const PaymentForm: React.FC<{ clientSecret: string; totalAmount: number }> = ({ clientSecret, totalAmount }) => {
   const stripe = useStripe();
@@ -9,6 +26,7 @@ const PaymentForm: React.FC<{ clientSecret: string; totalAmount: number }> = ({ 
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const navigate = useNavigate();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stripe || !elements) return;
@@ -33,121 +51,85 @@ const PaymentForm: React.FC<{ clientSecret: string; totalAmount: number }> = ({ 
             email: customerDetails.email,
             phone: customerDetails.mobile,
           },
-        }
+        },
       });
 
       if (stripeError) {
         setError(stripeError.message || 'Payment failed');
       } else if (paymentIntent.status === 'succeeded') {
-        // Payment successful
-        navigate('/payment-success', { 
-          state: { 
-            paymentId: paymentIntent.id,
-            amount: totalAmount
-          }
-        });
+        // Navigate to success page or show success message
+        navigate('/payment-success');
       }
-    } catch (err) {
-      setError('Payment processing failed');
-    } finally {
-      setProcessing(false);
+    } catch (err: any) {
+      setError(err.message || 'Payment failed');
     }
+
+    setProcessing(false);
   };
+
   return (
-    <form onSubmit={handleSubmit}>
-      {/* Customer Details */}
-      <div className="mb-6 space-y-4">
-        <h3 className="text-lg font-semibold text-gray-700">Customer Details</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="firstName">
-              First Name
-            </label>
-            <input
-              type="text"
-              id="firstName"
-              name="firstName"
-              required
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="lastName">
-              Last Name
-            </label>
-            <input
-              type="text"
-              id="lastName"
-              name="lastName"
-              required
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-            />
-          </div>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-4">
+        <div>
+          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">First Name</label>
+          <input
+            type="text"
+            id="firstName"
+            name="firstName"
+            required
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+          />
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="email">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              required
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="mobile">
-              Mobile Number
-            </label>
-            <input
-              type="tel"
-              id="mobile"
-              name="mobile"
-              required
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-            />
+        <div>
+          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Last Name</label>
+          <input
+            type="text"
+            id="lastName"
+            name="lastName"
+            required
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+          />
+        </div>
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            required
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+          />
+        </div>
+        <div>
+          <label htmlFor="mobile" className="block text-sm font-medium text-gray-700">Mobile</label>
+          <input
+            type="tel"
+            id="mobile"
+            name="mobile"
+            required
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+          />
+        </div>
+        <div>
+          <label htmlFor="card" className="block text-sm font-medium text-gray-700">Card Details</label>
+          <div className="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+            <CardElement />
           </div>
         </div>
       </div>
 
-      {/* Payment Details */}
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-700 mb-4">Payment Details</h3>
-        <label className="block text-gray-700 text-sm font-medium mb-2">
-          Card Details
-        </label>
-        <div className="border rounded-lg p-4 bg-white">
-          <CardElement 
-            options={{
-              style: {
-                base: {
-                  fontSize: '16px',
-                  color: '#424770',
-                  '::placeholder': {
-                    color: '#aab7c4',
-                  },
-                },
-                invalid: {
-                  color: '#9e2146',
-                },
-              },
-            }}
-          />
-        </div>
-      </div>
       {error && (
-        <div className="text-red-600 mb-4 text-sm">
+        <div className="text-red-600 text-sm">
           {error}
         </div>
       )}
+
       <button
         type="submit"
         disabled={!stripe || processing}
-        className="w-full bg-primary text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 disabled:bg-gray-400"
+        className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
       >
-        {processing ? 'Processing...' : `Pay $${totalAmount?.toFixed(2)}`}
+        {processing ? 'Processing...' : `Pay $${(totalAmount).toFixed(2)}`}
       </button>
     </form>
   );
@@ -156,142 +138,154 @@ const PaymentForm: React.FC<{ clientSecret: string; totalAmount: number }> = ({ 
 const Payment: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [stripePromise, setStripePromise] = useState<Promise<any> | null>(null);
-  const {
-    eventTitle,
-    ticketPrice,
-    selectedFoods,
-    foodCost,
-    totalAmount,
-  } = location.state || {};  useEffect(() => {
-    // Load Stripe on component mount
-    const loadStripe = async () => {
-      try {
-        const stripe = await getStripe();
-        setStripePromise(stripe);
-      } catch (error) {
-        console.error('Failed to load Stripe:', error);
-      }
-    };
-    loadStripe();
-  }, [navigate, location]);
+  const [clientSecret, setClientSecret] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
+  const [initializing, setInitializing] = useState(true);
+  const [stripePromise, setStripePromise] = useState<any>(null);
+
   useEffect(() => {
-    if (!totalAmount) {
-      navigate('/');
-      return;
-    }    // Create payment intent when component mounts
     const initializePayment = async () => {
       try {
-        const { clientSecret: secret } = await createPaymentIntent(totalAmount, location.state);
-        setClientSecret(secret);      } catch (error: any) {
-        console.error('Failed to initialize payment:', error);
-        // Show error to user or handle appropriately
+        // Check if we have the required payment state
+        if (!location.state || !('amount' in location.state)) {
+          throw new Error('Missing payment information');
+        }
+
+        const paymentState = location.state as PaymentLocationState;
+        const { amount, eventId, eventTitle, ticketDetails, selectedFoods } = paymentState;
+
+        if (!amount || !eventId || !eventTitle || !ticketDetails) {
+          throw new Error('Missing required payment information');
+        }
+
+        console.log('Initializing payment with:', { amount, eventId, eventTitle, ticketDetails, selectedFoods });
+        
+        const stripe = await getStripe();
+        setStripePromise(stripe);
+        
+        const paymentIntent = await createPaymentIntent(
+          amount,
+          { eventId, eventTitle, ticketDetails, selectedFoods }
+        );
+
+        setClientSecret(paymentIntent.clientSecret);
+        setError(null);
+      } catch (err: any) {
+        console.error('Failed to initialize payment:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Failed to create payment';
+        setError(errorMessage);
+      } finally {
+        setInitializing(false);
       }
     };
 
     initializePayment();
-  }, [totalAmount, navigate, location]);
+  }, []); // Only run once on mount
 
+  // Render functions
+  const renderError = (message: string) => (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+      <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+        <h2 className="text-2xl font-bold text-red-600 mb-4">Payment Error</h2>
+        <p className="text-gray-700 mb-4">{message}</p>
+        <button
+          onClick={() => navigate('/')}
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+        >
+          Return to Home
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderLoading = () => (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+      <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Initializing Payment</h2>
+        <p className="text-gray-600">Please wait...</p>
+      </div>
+    </div>
+  );
+
+  // Handle different states
+  if (initializing) {
+    return renderLoading();
+  }
+
+  if (error) {
+    return renderError(error);
+  }
+
+  if (!clientSecret || !stripePromise || !location.state) {
+    return renderError('Unable to initialize payment. Please try again.');
+  }
+
+  const { amount, eventTitle, ticketDetails, selectedFoods } = location.state as PaymentLocationState;
+
+  // Render the payment form
   return (
-    <div className="max-w-3xl mx-auto mt-6">
-      <div className="bg-white rounded-xl shadow-lg p-8">
-        <div className="border-b pb-4 mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Payment Summary</h1>
-          <h2 className="text-xl text-gray-600">{eventTitle}</h2>
-        </div>
+    <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto">
+        <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+          <div className="px-6 py-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-6">Payment Details</h1>
+            <h2 className="text-xl text-gray-600">{eventTitle}</h2>
 
-        <div className="space-y-6">
-          {/* Ticket Summary */}
-          <div className="bg-gray-50 rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">Ticket Details</h3>
-              <div className="bg-primary/10 px-3 py-1 rounded-full">
-                <span className="text-primary font-medium">${ticketPrice?.toFixed(2)}</span>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              {location.state?.ticketDetails?.map((ticket: any) => (
-                <div key={ticket.type} className="flex justify-between items-center text-gray-600 py-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="capitalize font-medium">{ticket.type}</span>
-                    <span className="text-gray-400">×</span>
-                    <span>{ticket.quantity}</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <span className="text-sm text-gray-500">(${ticket.unitPrice} each)</span>
-                    <span className="font-medium">${(ticket.price).toFixed(2)}</span>
-                  </div>
+            <div className="mt-8 border-t border-gray-200 pt-6">
+              <h3 className="text-lg font-medium text-gray-900">Tickets</h3>
+              <div className="mt-4">
+                <div className="flex justify-between text-gray-500">
+                  <span>Total for Tickets:</span>
+                  <span className="text-primary font-medium">
+                    ${ticketDetails?.reduce((total: number, item: any) => total + item.price * item.quantity, 0)?.toFixed(2)}
+                  </span>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Food Summary */}
-          {foodCost > 0 && (
-            <div className="bg-gray-50 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Food & Beverages</h3>
-                <div className="bg-primary/10 px-3 py-1 rounded-full">
-                  <span className="text-primary font-medium">${foodCost?.toFixed(2)}</span>
+                <div className="mt-2 space-y-2">
+                  {ticketDetails?.map((item: any, idx: number) => (
+                    <div key={idx} className="flex justify-between text-sm text-gray-500">
+                      <span>{item.quantity}x {item.type}</span>
+                      <span>${(item.price).toFixed(2)}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-              
-              <div className="space-y-2">
-                {selectedFoods?.map((item: any, idx: number) => (
-                  <div key={idx} className="flex justify-between items-center text-gray-600 py-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium">{item.name}</span>
-                      <span className="text-gray-400">×</span>
-                      <span>{item.quantity}</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <span className="text-sm text-gray-500">(${item.price} each)</span>
-                      <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
-                    </div>
+            </div>
+
+            {selectedFoods && selectedFoods.length > 0 && (
+              <div className="mt-8 border-t border-gray-200 pt-6">
+                <h3 className="text-lg font-medium text-gray-900">Food Items</h3>
+                <div className="mt-4">
+                  <div className="flex justify-between text-gray-500">
+                    <span>Total for Food:</span>
+                    <span className="text-primary font-medium">
+                      ${selectedFoods.reduce((total: number, item: any) => total + item.price * item.quantity, 0).toFixed(2)}
+                    </span>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Total Amount */}
-          <div className="bg-gray-800 text-white rounded-lg p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm mb-1">Total Amount</p>
-                <p className="text-white font-semibold">Includes all tickets and food items</p>
-              </div>
-              <span className="text-2xl font-bold">${totalAmount?.toFixed(2)}</span>
-            </div>
-          </div>
-
-          {/* Stripe Payment Form */}
-          <div className="mt-6 space-y-4">
-            <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
-              <p className="flex items-center">
-                <span className="mr-2">🔒</span>
-                Secure payment processed by Stripe
-              </p>
-            </div>
-            
-            {clientSecret && stripePromise ? (
-              <Elements stripe={stripePromise}>
-                <PaymentForm clientSecret={clientSecret} totalAmount={totalAmount} />
-              </Elements>
-            ) : (
-              <div className="flex justify-center py-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+                  <div className="mt-2 space-y-2">
+                    {selectedFoods.map((item: any, idx: number) => (
+                      <div key={idx} className="flex justify-between text-sm text-gray-500">
+                        <span>{item.quantity}x {item.name}</span>
+                        <span>${(item.price).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
-            <button
-              onClick={() => navigate(-1)}
-              className="w-full px-6 py-3 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center"
-            >
-              <span className="mr-2">←</span> Back to Food Selection
-            </button>
+            <div className="mt-8 border-t border-gray-200 pt-6">
+              <div className="flex justify-between text-lg font-medium text-gray-900">
+                <span>Total Amount</span>
+                <span className="text-primary">${amount.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="mt-8">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Enter Payment Information</h3>
+              <Elements stripe={stripePromise}>
+                <PaymentForm clientSecret={clientSecret} totalAmount={amount} />
+              </Elements>
+            </div>
           </div>
         </div>
       </div>

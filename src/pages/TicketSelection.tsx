@@ -99,7 +99,8 @@ const TicketSelection: React.FC = () => {
     if (!eventTitle) return;
     navigate(`/event/${eventTitle}/food`, {
       state: {
-        ...state, // Pass through all event details
+        eventId: state?.eventId,
+        eventTitle: state.eventTitle,
         ticketPrice: total,
         ticketDetails: selectedTickets,
       },
