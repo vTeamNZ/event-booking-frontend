@@ -94,9 +94,7 @@ const Payment: React.FC = () => {
     selectedFoods,
     foodCost,
     totalAmount,
-  } = location.state || {};
-
-  useEffect(() => {
+  } = location.state || {};  useEffect(() => {
     // Load Stripe on component mount
     const loadStripe = async () => {
       try {
@@ -107,27 +105,23 @@ const Payment: React.FC = () => {
       }
     };
     loadStripe();
-  }, []);
-
+  }, [navigate, location]);
   useEffect(() => {
     if (!totalAmount) {
       navigate('/');
       return;
-    }
-
-    // Create payment intent when component mounts
+    }    // Create payment intent when component mounts
     const initializePayment = async () => {
       try {
         const { clientSecret: secret } = await createPaymentIntent(totalAmount, location.state);
-        setClientSecret(secret);
-      } catch (error) {
+        setClientSecret(secret);      } catch (error: any) {
         console.error('Failed to initialize payment:', error);
-        // Handle error appropriately
+        // Show error to user or handle appropriately
       }
     };
 
     initializePayment();
-  }, [totalAmount, navigate, location.state]);
+  }, [totalAmount, navigate, location]);
 
   return (
     <div className="max-w-3xl mx-auto mt-6">
