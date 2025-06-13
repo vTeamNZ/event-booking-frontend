@@ -31,12 +31,7 @@ const PaymentSuccess: React.FC = () => {
             <span className="font-bold text-primary">${amount?.toFixed(2)}</span>
           </div>
         </div>
-      </div>
-
-      <div className="space-y-4">
-        <p className="text-sm text-gray-600">
-          A confirmation email with your tickets has been sent to your email address.
-        </p>
+      </div>      <div className="space-y-4">
         <button
           onClick={() => navigate('/')}
           className="w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-red-700 transition-colors duration-200"

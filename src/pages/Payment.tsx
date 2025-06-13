@@ -55,10 +55,14 @@ const PaymentForm: React.FC<{ clientSecret: string; totalAmount: number }> = ({ 
       });
 
       if (stripeError) {
-        setError(stripeError.message || 'Payment failed');
-      } else if (paymentIntent.status === 'succeeded') {
-        // Navigate to success page or show success message
-        navigate('/payment-success');
+        setError(stripeError.message || 'Payment failed');      } else if (paymentIntent.status === 'succeeded') {
+        // Navigate to success page with payment details
+        navigate('/payment-success', {
+          state: {
+            paymentId: paymentIntent.id,
+            amount: paymentIntent.amount / 100, // Convert from cents to dollars
+          }
+        });
       }
     } catch (err: any) {
       setError(err.message || 'Payment failed');
