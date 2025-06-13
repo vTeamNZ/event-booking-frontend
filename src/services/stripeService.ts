@@ -74,7 +74,7 @@ export const createPaymentIntent = async (
     const description = `Tickets for ${eventDetails.eventTitle}`;
     const requestData = {
       amount: Math.round(amount * 100), // Convert to cents
-      currency: 'nzd',
+      currency: 'NZD',
       description: description,
       eventId: eventDetails.eventId,
       eventTitle: eventDetails.eventTitle,

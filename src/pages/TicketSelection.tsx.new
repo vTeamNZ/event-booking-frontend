@@ -9,7 +9,7 @@ interface Event {
   isActive?: boolean;
 }
 
-interface TicketDetail {
+interface SelectedTicket {
   type: string;
   quantity: number;
   price: number;
@@ -21,16 +21,17 @@ const TicketSelection: React.FC = () => {
   const { state } = useLocation();
   const { eventTitle } = useParams();
   const [isActive, setIsActive] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [quantities, setQuantities] = useState<Record<number, number>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!state?.eventId) {
       navigate('/');
       return;
     }
+
     // Fetch event details to check if it's active
     axios.get<Event>(`https://kiwilanka.co.nz/api/Events/${state.eventId}`)
       .then(response => {
@@ -53,11 +54,10 @@ const TicketSelection: React.FC = () => {
     const fetchTicketTypes = async () => {
       if (!state?.eventId) return;
       try {
-        setLoading(true);
         const types = await getTicketTypesForEvent(state.eventId);
-        setTicketTypes(types || []);
+        setTicketTypes(types);
         // Initialize quantities for each ticket type
-        const initialQuantities = (types || []).reduce((acc, ticket) => {
+        const initialQuantities = types.reduce((acc, ticket) => {
           acc[ticket.id] = 0;
           return acc;
         }, {} as Record<number, number>);
@@ -66,7 +66,6 @@ const TicketSelection: React.FC = () => {
       } catch (err) {
         console.error('Error fetching ticket types:', err);
         setError('Failed to load ticket types. Please try again later.');
-        setTicketTypes([]);
       } finally {
         setLoading(false);
       }
@@ -138,29 +137,32 @@ const TicketSelection: React.FC = () => {
         </div>
       </div>
 
-      {loading ? (
-        <div className="text-center py-8">
-          <div className="text-gray-600">Loading ticket types...</div>
-        </div>
-      ) : error ? (
-        <div className="text-center py-8">
-          <div className="text-red-600">{error}</div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {ticketTypes.map((ticket) => (
+      <div className="space-y-4">
+        {loading ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : error ? (
+          <div className="text-red-500 text-center py-8">{error}</div>
+        ) : ticketTypes.length === 0 ? (
+          <div className="text-gray-500 text-center py-8">No ticket types available for this event.</div>
+        ) : (
+          ticketTypes.map((ticket) => (
             <div 
               key={ticket.id} 
               className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
             >
               <div className="flex-1">
                 <div className="flex items-baseline">
-                  <span className="text-lg font-semibold text-gray-800 capitalize">{ticket.type}</span>
+                  <span className="text-lg font-semibold text-gray-800">{ticket.type}</span>
                   <span className="ml-2 text-sm text-gray-500">ticket</span>
                 </div>
                 <div className="text-gray-600 font-medium">
                   ${ticket.price.toFixed(2)}
                 </div>
+                {ticket.description && (
+                  <div className="text-sm text-gray-500">{ticket.description}</div>
+                )}
               </div>
 
               <div className="flex items-center space-x-3">
@@ -182,9 +184,9 @@ const TicketSelection: React.FC = () => {
                 </button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
 
       <div className="mt-8 pt-6 border-t">
         <div className="flex items-center justify-between mb-6">
@@ -207,9 +209,9 @@ const TicketSelection: React.FC = () => {
               total === 0 
                 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' 
                 : 'bg-primary text-white hover:bg-red-600'
-            } transition-colors duration-200 flex items-center justify-center`}
+            } transition-colors duration-200`}
           >
-            Next
+            {total === 0 ? 'Select Tickets to Continue' : 'Proceed to Food Selection'}
           </button>
         </div>
       </div>
