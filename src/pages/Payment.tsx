@@ -1,9 +1,93 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { getStripe, createPaymentIntent } from '../services/stripeService';
+
+const PaymentForm: React.FC<{ clientSecret: string; totalAmount: number }> = ({ clientSecret, totalAmount }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [error, setError] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setProcessing(true);
+    setError(null);
+
+    try {
+      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: elements.getElement(CardElement)!,
+        }
+      });
+
+      if (stripeError) {
+        setError(stripeError.message || 'Payment failed');
+      } else if (paymentIntent.status === 'succeeded') {
+        // Payment successful
+        navigate('/payment-success', { 
+          state: { 
+            paymentId: paymentIntent.id,
+            amount: totalAmount
+          }
+        });
+      }
+    } catch (err) {
+      setError('Payment processing failed');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="mb-6">
+        <label className="block text-gray-700 text-sm font-bold mb-2">
+          Card Details
+        </label>
+        <div className="border rounded-lg p-4 bg-white">
+          <CardElement 
+            options={{
+              style: {
+                base: {
+                  fontSize: '16px',
+                  color: '#424770',
+                  '::placeholder': {
+                    color: '#aab7c4',
+                  },
+                },
+                invalid: {
+                  color: '#9e2146',
+                },
+              },
+            }}
+          />
+        </div>
+      </div>
+      {error && (
+        <div className="text-red-600 mb-4 text-sm">
+          {error}
+        </div>
+      )}
+      <button
+        type="submit"
+        disabled={!stripe || processing}
+        className="w-full bg-primary text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 disabled:bg-gray-400"
+      >
+        {processing ? 'Processing...' : `Pay $${totalAmount?.toFixed(2)}`}
+      </button>
+    </form>
+  );
+};
 
 const Payment: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [stripePromise, setStripePromise] = useState<Promise<any> | null>(null);
   const {
     eventTitle,
     ticketPrice,
@@ -12,16 +96,38 @@ const Payment: React.FC = () => {
     totalAmount,
   } = location.state || {};
 
-  // Inject Stripe script dynamically
   useEffect(() => {
-    const existingScript = document.querySelector('script[src="https://js.stripe.com/v3/buy-button.js"]');
-    if (!existingScript) {
-      const script = document.createElement('script');
-      script.src = 'https://js.stripe.com/v3/buy-button.js';
-      script.async = true;
-      document.body.appendChild(script);
-    }
+    // Load Stripe on component mount
+    const loadStripe = async () => {
+      try {
+        const stripe = await getStripe();
+        setStripePromise(stripe);
+      } catch (error) {
+        console.error('Failed to load Stripe:', error);
+      }
+    };
+    loadStripe();
   }, []);
+
+  useEffect(() => {
+    if (!totalAmount) {
+      navigate('/');
+      return;
+    }
+
+    // Create payment intent when component mounts
+    const initializePayment = async () => {
+      try {
+        const { clientSecret: secret } = await createPaymentIntent(totalAmount, location.state);
+        setClientSecret(secret);
+      } catch (error) {
+        console.error('Failed to initialize payment:', error);
+        // Handle error appropriately
+      }
+    };
+
+    initializePayment();
+  }, [totalAmount, navigate, location.state]);
 
   return (
     <div className="max-w-3xl mx-auto mt-6">
@@ -97,7 +203,7 @@ const Payment: React.FC = () => {
             </div>
           </div>
 
-          {/* Stripe Payment Button */}
+          {/* Stripe Payment Form */}
           <div className="mt-6 space-y-4">
             <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
               <p className="flex items-center">
@@ -106,18 +212,15 @@ const Payment: React.FC = () => {
               </p>
             </div>
             
-            <div>
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: `
-                    <stripe-buy-button
-                      buy-button-id="buy_btn_1RWBUZ03DpFjygI0bakfQMGy"
-                      publishable-key="pk_live_51PB5Tt03DpFjygI0i03z2ndj0FxRzaomXGtlEkPU2HCGgb4PfCtym3K0bctOVtoiRMs0Iyq7Ce0PxACYw4si1zP200lfTlmNTI"
-                    ></stripe-buy-button>
-                  `,
-                }}
-              />
-            </div>
+            {clientSecret && stripePromise ? (
+              <Elements stripe={stripePromise}>
+                <PaymentForm clientSecret={clientSecret} totalAmount={totalAmount} />
+              </Elements>
+            ) : (
+              <div className="flex justify-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+              </div>
+            )}
 
             <button
               onClick={() => navigate(-1)}

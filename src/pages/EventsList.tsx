@@ -115,9 +115,7 @@ const EventsList: React.FC = () => {
       .replace(/[^\w\-]+/g, '') // Remove all non-word chars
       .replace(/\-\-+/g, '-')   // Replace multiple - with single -
       .trim();                  // Trim - from start and end
-  };
-
-  const handleEventClick = (event: Event) => {
+  };  const handleEventClick = (event: Event) => {
     if (!event.isActive) return;
     const eventSlug = createUrlSlug(event.title);
     navigate(`/event/${eventSlug}/tickets`, {
