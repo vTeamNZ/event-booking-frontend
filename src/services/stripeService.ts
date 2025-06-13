@@ -1,5 +1,6 @@
 import { loadStripe } from '@stripe/stripe-js';
 import axios from 'axios';
+import { CustomerDetails } from '../types/payment';
 
 interface StripeConfig {
   publishableKey: string;
@@ -27,14 +28,24 @@ interface EventDetails {
   selectedFoods: any;
 }
 
-export const createPaymentIntent = async (amount: number, eventDetails: EventDetails) => {
-  try {    const response = await axios.post<PaymentIntent>('http://localhost:5290/api/payment/create-payment-intent', {
+export const createPaymentIntent = async (
+  amount: number, 
+  eventDetails: EventDetails,
+  customerDetails: CustomerDetails
+) => {
+  try {
+    const response = await axios.post<PaymentIntent>('http://localhost:5290/api/payment/create-payment-intent', {
       amount: Math.round(amount * 100), // Convert to cents
       currency: 'nzd',
       description: `Tickets for ${eventDetails.eventTitle}`,
       eventId: eventDetails.eventId,
+      eventTitle: eventDetails.eventTitle,
       ticketDetails: JSON.stringify(eventDetails.ticketDetails),
-      foodDetails: JSON.stringify(eventDetails.selectedFoods)
+      foodDetails: JSON.stringify(eventDetails.selectedFoods),
+      firstName: customerDetails.firstName,
+      lastName: customerDetails.lastName,
+      email: customerDetails.email,
+      mobile: customerDetails.mobile
     });
 
     return response.data;  } catch (error: any) {

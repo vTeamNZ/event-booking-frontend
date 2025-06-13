@@ -9,7 +9,6 @@ const PaymentForm: React.FC<{ clientSecret: string; totalAmount: number }> = ({ 
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const navigate = useNavigate();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stripe || !elements) return;
@@ -18,9 +17,22 @@ const PaymentForm: React.FC<{ clientSecret: string; totalAmount: number }> = ({ 
     setError(null);
 
     try {
+      const form = e.target as HTMLFormElement;
+      const customerDetails = {
+        firstName: form.firstName.value,
+        lastName: form.lastName.value,
+        email: form.email.value,
+        mobile: form.mobile.value,
+      };
+
       const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
           card: elements.getElement(CardElement)!,
+          billing_details: {
+            name: `${customerDetails.firstName} ${customerDetails.lastName}`,
+            email: customerDetails.email,
+            phone: customerDetails.mobile,
+          },
         }
       });
 
@@ -41,11 +53,69 @@ const PaymentForm: React.FC<{ clientSecret: string; totalAmount: number }> = ({ 
       setProcessing(false);
     }
   };
-
   return (
     <form onSubmit={handleSubmit}>
+      {/* Customer Details */}
+      <div className="mb-6 space-y-4">
+        <h3 className="text-lg font-semibold text-gray-700">Customer Details</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="firstName">
+              First Name
+            </label>
+            <input
+              type="text"
+              id="firstName"
+              name="firstName"
+              required
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="lastName">
+              Last Name
+            </label>
+            <input
+              type="text"
+              id="lastName"
+              name="lastName"
+              required
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="email">
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              required
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="mobile">
+              Mobile Number
+            </label>
+            <input
+              type="tel"
+              id="mobile"
+              name="mobile"
+              required
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Details */}
       <div className="mb-6">
-        <label className="block text-gray-700 text-sm font-bold mb-2">
+        <h3 className="text-lg font-semibold text-gray-700 mb-4">Payment Details</h3>
+        <label className="block text-gray-700 text-sm font-medium mb-2">
           Card Details
         </label>
         <div className="border rounded-lg p-4 bg-white">
