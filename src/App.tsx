@@ -5,7 +5,7 @@ import AnimatedHeader from './components/AnimatedHeader';
 import { PrivateRoute } from './components/PrivateRoute';
 import EventsList from './pages/EventsList';
 import About from './pages/About';
-import Food from './pages/Food';
+import FoodSelection from './pages/FoodSelection';
 import Payment from './pages/Payment';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFailed from './pages/PaymentFailed';
@@ -24,7 +24,7 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<EventsList />} />
           <Route path="/event/:eventTitle/tickets" element={<TicketSelection />} />
-          <Route path="/event/:eventTitle/food" element={<Food />} />
+          <Route path="/event/:eventTitle/food" element={<FoodSelection />} />
           <Route path="/about" element={<About />} />
           <Route path="/login" element={<Login />} />
           <Route path="/payment" element={<Payment />} />

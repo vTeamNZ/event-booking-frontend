@@ -20,7 +20,11 @@ interface PaymentLocationState {
   }>;
 }
 
-const PaymentForm: React.FC<{ clientSecret: string; totalAmount: number }> = ({ clientSecret, totalAmount }) => {
+const PaymentForm: React.FC<{ clientSecret: string; totalAmount: number; onCustomerDetails: (details: CustomerDetails) => void }> = ({ 
+  clientSecret, 
+  totalAmount,
+  onCustomerDetails 
+}) => {
   const stripe = useStripe();
   const elements = useElements();
   const [error, setError] = useState<string | null>(null);
@@ -43,15 +47,20 @@ const PaymentForm: React.FC<{ clientSecret: string; totalAmount: number }> = ({ 
         mobile: form.mobile.value,
       };
 
+      // Pass customer details to parent for payment intent
+      onCustomerDetails(customerDetails);
+
+      // Create payment intent with customer email for receipt
       const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
           card: elements.getElement(CardElement)!,
           billing_details: {
             name: `${customerDetails.firstName} ${customerDetails.lastName}`,
-            email: customerDetails.email,
+            email: customerDetails.email, // Include email for receipt
             phone: customerDetails.mobile,
           },
         },
+        receipt_email: customerDetails.email, // Explicitly set receipt_email
       });
 
       if (stripeError) {
@@ -177,45 +186,53 @@ const Payment: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [initializing, setInitializing] = useState(true);
   const [stripePromise, setStripePromise] = useState<any>(null);
+  const [customerDetails, setCustomerDetails] = useState<CustomerDetails | null>(null);
+
+  const initializePayment = async (details?: CustomerDetails) => {
+    try {
+      // Check if we have the required payment state
+      if (!location.state || !('amount' in location.state)) {
+        throw new Error('Missing payment information');
+      }
+
+      const paymentState = location.state as PaymentLocationState;
+      const { amount, eventId, eventTitle, ticketDetails, selectedFoods } = paymentState;
+
+      if (!amount || !eventId || !eventTitle || !ticketDetails) {
+        throw new Error('Missing required payment information');
+      }
+
+      console.log('Initializing payment with:', { amount, eventId, eventTitle, ticketDetails, selectedFoods });
+      
+      const stripe = await getStripe();
+      setStripePromise(stripe);
+      
+      const paymentIntent = await createPaymentIntent(
+        amount,
+        { eventId, eventTitle, ticketDetails, selectedFoods },
+        details // Pass customer details if available
+      );
+
+      setClientSecret(paymentIntent.clientSecret);
+      setError(null);
+    } catch (err: any) {
+      console.error('Failed to initialize payment:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create payment';
+      setError(errorMessage);
+    } finally {
+      setInitializing(false);
+    }
+  };
 
   useEffect(() => {
-    const initializePayment = async () => {
-      try {
-        // Check if we have the required payment state
-        if (!location.state || !('amount' in location.state)) {
-          throw new Error('Missing payment information');
-        }
-
-        const paymentState = location.state as PaymentLocationState;
-        const { amount, eventId, eventTitle, ticketDetails, selectedFoods } = paymentState;
-
-        if (!amount || !eventId || !eventTitle || !ticketDetails) {
-          throw new Error('Missing required payment information');
-        }
-
-        console.log('Initializing payment with:', { amount, eventId, eventTitle, ticketDetails, selectedFoods });
-        
-        const stripe = await getStripe();
-        setStripePromise(stripe);
-        
-        const paymentIntent = await createPaymentIntent(
-          amount,
-          { eventId, eventTitle, ticketDetails, selectedFoods }
-        );
-
-        setClientSecret(paymentIntent.clientSecret);
-        setError(null);
-      } catch (err: any) {
-        console.error('Failed to initialize payment:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Failed to create payment';
-        setError(errorMessage);
-      } finally {
-        setInitializing(false);
-      }
-    };
-
     initializePayment();
   }, []); // Only run once on mount
+
+  const handleCustomerDetails = async (details: CustomerDetails) => {
+    setCustomerDetails(details);
+    // Reinitialize payment with customer details to update the payment intent
+    await initializePayment(details);
+  };
 
   // Render functions
   const renderError = (message: string) => (
@@ -318,7 +335,11 @@ const Payment: React.FC = () => {
             <div className="mt-8">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Enter Payment Information</h3>
               <Elements stripe={stripePromise}>
-                <PaymentForm clientSecret={clientSecret} totalAmount={amount} />
+                <PaymentForm 
+                  clientSecret={clientSecret} 
+                  totalAmount={amount}
+                  onCustomerDetails={handleCustomerDetails} 
+                />
               </Elements>
             </div>
           </div>

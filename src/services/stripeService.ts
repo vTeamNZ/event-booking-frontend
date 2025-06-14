@@ -86,7 +86,8 @@ export const createPaymentIntent = async (
       eventId: eventDetails.eventId,
       eventTitle: eventDetails.eventTitle,
       ticketDetails: JSON.stringify(ticketDetails),
-      foodDetails: foodDetails.length > 0 ? JSON.stringify(foodDetails) : null
+      foodDetails: foodDetails.length > 0 ? JSON.stringify(foodDetails) : null,
+      email: customerDetails?.email // Add the customer email
     };
 
     console.log('Creating payment intent with data:', JSON.stringify(requestData, null, 2));
