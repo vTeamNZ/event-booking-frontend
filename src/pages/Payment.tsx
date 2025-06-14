@@ -289,14 +289,13 @@ const Payment: React.FC = () => {
                 <div className="flex justify-between text-gray-500">
                   <span>Total for Tickets:</span>
                   <span className="text-primary font-medium">
-                    ${ticketDetails?.reduce((total: number, item: any) => total + item.price * item.quantity, 0)?.toFixed(2)}
+                    ${ticketDetails?.reduce((total: number, item: any) => total + item.unitPrice * item.quantity, 0)?.toFixed(2)}
                   </span>
                 </div>
                 <div className="mt-2 space-y-2">
                   {ticketDetails?.map((item: any, idx: number) => (
-                    <div key={idx} className="flex justify-between text-sm text-gray-500">
-                      <span>{item.quantity}x {item.type}</span>
-                      <span>${(item.price).toFixed(2)}</span>
+                    <div key={idx} className="flex justify-between text-sm text-gray-500">                      <span>{item.quantity}x {item.type} (${item.unitPrice.toFixed(2)} each)</span>
+                      <span>${(item.quantity * item.unitPrice).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
