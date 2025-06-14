@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import config from '../config/api';
 
 interface Organizer {
   id: number;
@@ -58,7 +59,7 @@ const EventsList: React.FC = () => {
       try {
         setIsLoading(true);
         // First, fetch all events
-        const eventsResponse = await axios.get<EventFromAPI[]>('https://kiwilanka.co.nz/api/Events');
+        const eventsResponse = await axios.get<EventFromAPI[]>(`${config.apiBaseUrl}/Events`);
         console.log('Events from API:', eventsResponse.data);
         
         // Get unique organizer IDs from events
@@ -71,7 +72,7 @@ const EventsList: React.FC = () => {
         
         // Fetch organizer details for each unique organizerId
         const organizerPromises = organizerIds.map(id => 
-          axios.get<Organizer>(`https://kiwilanka.co.nz/api/Organizers/${id}`)
+          axios.get<Organizer>(`${config.apiBaseUrl}/Organizers/${id}`)
         );
         const organizerResponses = await Promise.all(organizerPromises);
         

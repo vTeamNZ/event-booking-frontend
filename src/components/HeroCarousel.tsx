@@ -6,6 +6,7 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/effect-coverflow';
 import axios from 'axios';
+import config from '../config/api';
 
 interface Event {
   id: number;
@@ -21,13 +22,18 @@ const HeroCarousel: React.FC = () => {
 
   useEffect(() => {
     setIsLoading(true);
-    axios.get<Event[]>('https://kiwilanka.co.nz/api/Events')
+    axios.get<Event[]>(`${config.apiBaseUrl}/Events`)
       .then(res => {
+        console.log('Events data:', res.data); // Debug log
         setEvents(res.data);
         setIsLoading(false);
       })
       .catch(err => {
-        console.error(err);
+        console.error('Error fetching events:', err);
+        if (err.response) {
+          console.error('Error response:', err.response.data);
+          console.error('Status:', err.response.status);
+        }
         setIsLoading(false);
       });
   }, []);
