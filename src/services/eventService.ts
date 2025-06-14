@@ -1,4 +1,5 @@
 import axios from 'axios';
+import config from '../config/api';
 
 export interface Event {
   id: number;
@@ -19,7 +20,7 @@ export interface Event {
 }
 
 export const getAllEvents = async (): Promise<Event[]> => {
-  const response = await axios.get('http://localhost:5290/api/Events');
+  const response = await axios.get(`${config.apiBaseUrl}/Events`);
   const events = (response.data as Event[]).map((event) => ({
     ...event,
     isActive: new Date(event.date) > new Date() // Events in the future are active

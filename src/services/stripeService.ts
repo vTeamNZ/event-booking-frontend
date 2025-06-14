@@ -1,6 +1,7 @@
 import { loadStripe } from '@stripe/stripe-js';
 import axios from 'axios';
 import { CustomerDetails } from '../types/payment';
+import config from '../config/api';
 
 interface StripeConfig {
   publishableKey: string;
@@ -37,7 +38,7 @@ interface PaymentStatusResponse {
 
 export const getStripe = async () => {
   if (!stripePromise) {
-    const response = await axios.get<StripeConfig>('http://localhost:5290/api/payment/config');
+    const response = await axios.get<StripeConfig>(`${config.apiBaseUrl}/payment/config`);
     stripePromise = loadStripe(response.data.publishableKey);
   }
   return stripePromise;
@@ -94,7 +95,7 @@ export const createPaymentIntent = async (
     
     try {
       const response = await axios.post<PaymentIntent>(
-        'http://localhost:5290/api/payment/create-payment-intent', 
+        `${config.apiBaseUrl}/payment/create-payment-intent`, 
         requestData
       );
       
@@ -129,7 +130,7 @@ export const createPaymentIntent = async (
 export const verifyPayment = async (paymentIntentId: string): Promise<PaymentStatusResponse> => {
   try {
     const response = await axios.get<PaymentStatusResponse>(
-      `http://localhost:5290/api/payment/verify-payment/${paymentIntentId}`
+      `${config.apiBaseUrl}/payment/verify-payment/${paymentIntentId}`
     );
     
     console.log('Payment verification result:', response.data);

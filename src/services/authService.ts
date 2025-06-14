@@ -1,4 +1,5 @@
 import axios from 'axios';
+import config from '../config/api';
 
 interface AuthResponse {
   token: string;
@@ -16,7 +17,7 @@ interface LoginData {
   password: string;
 }
 
-const API_URL = 'http://localhost:5290/api';
+const API_URL = config.apiBaseUrl;
 
 // Set up axios interceptor for authentication
 axios.interceptors.request.use(
