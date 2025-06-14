@@ -58,7 +58,7 @@ const EventsList: React.FC = () => {
       try {
         setIsLoading(true);
         // First, fetch all events
-        const eventsResponse = await axios.get<EventFromAPI[]>('http://localhost:5290/api/Events');
+        const eventsResponse = await axios.get<EventFromAPI[]>('https://kiwilanka.co.nz/api/Events');
         console.log('Events from API:', eventsResponse.data);
         
         // Get unique organizer IDs from events
@@ -71,7 +71,7 @@ const EventsList: React.FC = () => {
         
         // Fetch organizer details for each unique organizerId
         const organizerPromises = organizerIds.map(id => 
-          axios.get<Organizer>(`http://localhost:5290/api/Organizers/${id}`)
+          axios.get<Organizer>(`https://kiwilanka.co.nz/api/Organizers/${id}`)
         );
         const organizerResponses = await Promise.all(organizerPromises);
         
