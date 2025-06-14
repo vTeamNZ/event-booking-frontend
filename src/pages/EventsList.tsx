@@ -7,22 +7,33 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 interface Organizer {
   id: number;
   name: string;
+  contactEmail: string;
+  phoneNumber: string;
+  facebookUrl: string | null;
+  youtubeUrl: string | null;
+  userId: string;
 }
 
-interface Event {
+interface EventFromAPI {
   id: number;
   title: string;
   description: string;
-  date: string;
+  date: string | null;
   location: string;
-  price: number;
-  imageUrl?: string;
-  isActive?: boolean;
-  facebookUrl?: string;
-  youtubeUrl?: string;
-  organizerId: number;
-  organizerName?: string;
+  price: number | null;
+  capacity: number | null;
+  organizerId: number | null;
+  imageUrl: string | null;
+  isActive: boolean;
+}
+
+interface Event extends EventFromAPI {
+  isActive: boolean;
+  organizerName: string;
   city: string;
+  facebookUrl: string | null;
+  youtubeUrl: string | null;
+  organizerSlug: string;
 }
 
 // Helper function to create URL-friendly slug
@@ -47,23 +58,29 @@ const EventsList: React.FC = () => {
       try {
         setIsLoading(true);
         // First, fetch all events
-        const eventsResponse = await axios.get<Event[]>('https://kiwilanka.co.nz/api/Events');
+        const eventsResponse = await axios.get<EventFromAPI[]>('http://localhost:5290/api/Events');
+        console.log('Events from API:', eventsResponse.data);
         
         // Get unique organizer IDs from events
         const organizerIds = eventsResponse.data
           .map(event => event.organizerId)
-          .filter((value, index, self) => self.indexOf(value) === index);
+          .filter((value, index, self) => self.indexOf(value) === index)
+          .filter(id => id != null); // Filter out null organizerIds
+        
+        console.log('Fetching organizers for IDs:', organizerIds);
         
         // Fetch organizer details for each unique organizerId
         const organizerPromises = organizerIds.map(id => 
-          axios.get<Organizer>(`https://kiwilanka.co.nz/api/Organizers/${id}`)
+          axios.get<Organizer>(`http://localhost:5290/api/Organizers/${id}`)
         );
-        
         const organizerResponses = await Promise.all(organizerPromises);
         
-        // Create a map of organizerId to organizer name
-        const organizerMap = new Map(
-          organizerResponses.map(response => [response.data.id, response.data.name])
+        // Debug organizer responses
+        console.log('Organizer Responses:', organizerResponses.map(r => r.data));
+        
+        // Create a map of organizerId to organizer details
+        const organizerMap = new Map<number, Organizer>(
+          organizerResponses.map(response => [response.data.id, response.data])
         );
         
         // Extract city and combine event data with organizer names and active status
@@ -71,20 +88,40 @@ const EventsList: React.FC = () => {
           // Extract city from location (assumes format like "Venue Name, Street, City, Region")
           const locationParts = event.location.split(',').map(part => part.trim());
           const city = locationParts[locationParts.length - 2] || locationParts[0];
-          const organizerName = organizerMap.get(event.organizerId) || 'Unknown Organizer';
-
-          return {
+          const organizer = event.organizerId ? organizerMap.get(event.organizerId) : null;
+          const organizerName = organizer?.name || 'Unknown Organizer';
+          
+          const eventWithDetails = {
             ...event,
-            isActive: new Date(event.date) > new Date(),
+            isActive: event.date ? new Date(event.date) > new Date() : false,
             organizerName,
             city,
+            facebookUrl: organizer?.facebookUrl || null,
+            youtubeUrl: organizer?.youtubeUrl || null,
             organizerSlug: createSlug(organizerName)
           };
+          
+          // Debug event social media URLs
+          console.log(`Event ${event.id} (${event.title}) social URLs:`, {
+            organizerId: event.organizerId,
+            organizer: organizer,
+            facebookUrl: eventWithDetails.facebookUrl,
+            youtubeUrl: eventWithDetails.youtubeUrl
+          });
+          
+          return eventWithDetails;
         });
         
         setEvents(eventsWithDetails);
       } catch (error) {
         console.error('Error fetching data:', error);
+        if (error && typeof error === 'object' && 'response' in error) {
+          const axiosError = error as { response?: { data: any, status: number } };
+          console.error('API Error Details:', {
+            response: axiosError.response?.data,
+            status: axiosError.response?.status
+          });
+        }
       } finally {
         setIsLoading(false);
       }
@@ -115,7 +152,9 @@ const EventsList: React.FC = () => {
       .replace(/[^\w\-]+/g, '') // Remove all non-word chars
       .replace(/\-\-+/g, '-')   // Replace multiple - with single -
       .trim();                  // Trim - from start and end
-  };  const handleEventClick = (event: Event) => {
+  };
+  
+  const handleEventClick = (event: Event) => {
     if (!event.isActive) return;
     const eventSlug = createUrlSlug(event.title);
     navigate(`/event/${eventSlug}/tickets`, {
@@ -256,44 +295,38 @@ const EventsList: React.FC = () => {
                   {/* Event Info */}
                   <div className="p-5">
                     <div className="flex justify-between items-start">
-                      <div className="flex-1">                        <div className="flex items-center gap-2 mb-2">
+                      <div className="flex-1">                        <div className="mb-2">
                           <h2 className="text-xl font-bold text-gray-800">{event.title}</h2>
-                          <Link 
-                            to={`/event/${createSlug(event.organizerName || '')}/tickets`}
-                            className="text-sm text-primary hover:text-red-700 transition-colors"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            by {event.organizerName}
-                          </Link>
                         </div>
                         <p className="text-sm text-gray-600 mb-2 line-clamp-3">{event.description}</p>
                         <p className="text-sm text-gray-500 mb-1" style={{ textIndent: '-1.7em', paddingLeft: '1.7em' }}> 📍 {event.location}</p>
                         <p className="text-sm text-gray-500 mb-1" style={{ textIndent: '-1.2em', paddingLeft: '1.2em' }}> 
-                          🕒 {new Date(event.date).toLocaleString()}
+                          🕒 {event.date ? new Date(event.date).toLocaleString() : 'No date set'}
                           {!event.isActive && (
                             <span className="ml-2 text-primary font-medium">(Event Ended)</span>
                           )}
                         </p>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <button
-                          onClick={(e) => handleSocialClick(event.facebookUrl || 'https://facebook.com', e)}
-                          className="p-2 text-blue-600 hover:text-blue-700 transition-colors duration-200"
-                          aria-label="Visit Facebook page"
-                        >
-                          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"/>
-                          </svg>
-                        </button>
-                        <button
-                          onClick={(e) => handleSocialClick(event.youtubeUrl || 'https://youtube.com', e)}
-                          className="p-2 text-red-600 hover:text-red-700 transition-colors duration-200"
-                          aria-label="Visit YouTube channel"
-                        >
-                          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                          </svg>
-                        </button>
+                      </div>                      <div className="flex flex-col gap-2">                        {event.facebookUrl && event.facebookUrl !== 'null' && (
+                          <button
+                            onClick={(e) => handleSocialClick(event.facebookUrl!, e)}
+                            className="p-2 text-blue-600 hover:text-blue-700 transition-colors duration-200"
+                            aria-label="Visit Facebook page"
+                          >
+                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"/>
+                            </svg>
+                          </button>
+                        )}                        {event.youtubeUrl && event.youtubeUrl !== 'null' && (
+                          <button
+                            onClick={(e) => handleSocialClick(event.youtubeUrl!, e)}
+                            className="p-2 text-red-600 hover:text-red-700 transition-colors duration-200"
+                            aria-label="Visit YouTube channel"
+                          >
+                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                            </svg>
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
