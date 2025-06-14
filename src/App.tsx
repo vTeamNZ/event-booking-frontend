@@ -8,6 +8,7 @@ import About from './pages/About';
 import Food from './pages/Food';
 import Payment from './pages/Payment';
 import PaymentSuccess from './pages/PaymentSuccess';
+import PaymentFailed from './pages/PaymentFailed';
 import TicketSelection from './pages/TicketSelection';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
@@ -28,6 +29,7 @@ const App: React.FC = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/payment" element={<Payment />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/payment-failed" element={<PaymentFailed />} />
           <Route path="/contact" element={<Contact />} />
         </Routes>
       </main>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { getStripe, createPaymentIntent } from '../services/stripeService';
+import { getStripe, createPaymentIntent, verifyPayment } from '../services/stripeService';
 import { CustomerDetails } from '../types/payment';
 
 interface PaymentLocationState {
@@ -55,14 +55,45 @@ const PaymentForm: React.FC<{ clientSecret: string; totalAmount: number }> = ({ 
       });
 
       if (stripeError) {
-        setError(stripeError.message || 'Payment failed');      } else if (paymentIntent.status === 'succeeded') {
-        // Navigate to success page with payment details
-        navigate('/payment-success', {
-          state: {
-            paymentId: paymentIntent.id,
-            amount: paymentIntent.amount / 100, // Convert from cents to dollars
-          }
+        setError(stripeError.message || 'Payment failed');
+        navigate('/payment-failed', { 
+          state: { 
+            error: stripeError.message 
+          } 
         });
+      } else {
+        try {
+          // Verify payment status with backend
+          const verificationResult = await verifyPayment(paymentIntent.id);
+          
+          if (verificationResult.isSuccessful) {
+            // Payment verified as successful
+            navigate('/payment-success', {
+              state: {
+                paymentId: paymentIntent.id,
+                amount: verificationResult.amount / 100, // Convert from cents to dollars
+                email: verificationResult.receiptEmail
+              }
+            });
+          } else {
+            // Payment was not successful
+            setError('Payment was not completed successfully');
+            navigate('/payment-failed', { 
+              state: { 
+                error: 'Payment was not completed successfully',
+                status: verificationResult.status
+              } 
+            });
+          }
+        } catch (verificationError: any) {
+          console.error('Error verifying payment:', verificationError);
+          setError('Could not verify payment status');
+          navigate('/payment-failed', { 
+            state: { 
+              error: 'Could not verify payment status' 
+            } 
+          });
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Payment failed');

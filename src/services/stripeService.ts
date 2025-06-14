@@ -28,6 +28,13 @@ interface EventDetails {
   }>;
 }
 
+interface PaymentStatusResponse {
+  status: string;
+  isSuccessful: boolean;
+  receiptEmail: string;
+  amount: number;
+}
+
 export const getStripe = async () => {
   if (!stripePromise) {
     const response = await axios.get<StripeConfig>('http://localhost:5290/api/payment/config');
@@ -115,5 +122,19 @@ export const createPaymentIntent = async (
   } catch (error: any) {
     console.error('Error in createPaymentIntent:', error);
     throw error instanceof Error ? error : new Error('An unknown error occurred');
+  }
+};
+
+export const verifyPayment = async (paymentIntentId: string): Promise<PaymentStatusResponse> => {
+  try {
+    const response = await axios.get<PaymentStatusResponse>(
+      `http://localhost:5290/api/payment/verify-payment/${paymentIntentId}`
+    );
+    
+    console.log('Payment verification result:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error verifying payment:', error);
+    throw error;
   }
 };
