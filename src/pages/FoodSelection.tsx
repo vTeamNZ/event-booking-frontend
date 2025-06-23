@@ -139,13 +139,15 @@ const FoodSelection: React.FC = () => {
                 <div className="text-gray-600 font-medium mt-2">
                   ${item.price.toFixed(2)}
                 </div>
-              </div>
-
-              <div className="flex items-center space-x-3">
+              </div>              <div className="flex items-center space-x-3">
                 <button 
                   onClick={() => handleQtyChange(item.id, -1)}
-                  className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors duration-200"
-                  disabled={quantities[item.id] === 0}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-200 ${
+                    item.price === 0 
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                      : 'bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-gray-800'
+                  }`}
+                  disabled={quantities[item.id] === 0 || item.price === 0}
                 >
                   -
                 </button>
@@ -154,7 +156,12 @@ const FoodSelection: React.FC = () => {
                 </span>
                 <button 
                   onClick={() => handleQtyChange(item.id, 1)}
-                  className="w-10 h-10 rounded-full bg-primary text-white hover:bg-red-600 flex items-center justify-center transition-colors duration-200"
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-200 ${
+                    item.price === 0 
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                      : 'bg-primary text-white hover:bg-red-600'
+                  }`}
+                  disabled={item.price === 0}
                 >
                   +
                 </button>
