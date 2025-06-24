@@ -1,14 +1,21 @@
 // src/pages/Contact.tsx
 import React from 'react';
+import SEO from '../components/SEO';
 
 const Contact: React.FC = () => {
   return (
-    <div className="max-w-4xl mx-auto mt-6">
-      <div className="bg-white rounded-xl shadow-lg p-8">
-        <div className="border-b pb-4 mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Contact Us</h1>
-          <p className="text-gray-600">List Your Event with Kiwi Lanka or Get in Touch</p>
-        </div>
+    <>
+      <SEO 
+        title="Contact Us"
+        description="Get in touch with KiwiLanka Events. List your event, ask questions, or provide feedback. We'd love to hear from you!"
+        keywords={['Get Notified of Top Events', 'Support Community Events', 'List Your Sri Lankan Event']}
+      />
+      <div className="max-w-4xl mx-auto mt-6">
+        <div className="bg-white rounded-xl shadow-lg p-8">
+          <div className="border-b pb-4 mb-6">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Contact Us</h1>
+            <p className="text-gray-600">List Your Event with Kiwi Lanka or Get in Touch</p>
+          </div>
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* Left Column - Contact Information */}
@@ -97,11 +104,11 @@ const Contact: React.FC = () => {
                   Submit Your Event →
                 </a> */}
               </div>
-            </div>
-          </div>
+            </div>          </div>
         </div>
       </div>
     </div>
+    </>
   );
 };
 

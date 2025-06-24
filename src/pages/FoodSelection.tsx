@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { FoodItem, getFoodItemsForEvent } from '../services/foodItemService';
+import SEO from '../components/SEO';
 
 interface LocationState {
   eventId: number;
@@ -87,14 +88,19 @@ const FoodSelection: React.FC = () => {
       },
     });
   };
-
   return (
-    <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8 mt-6">
-      <div className="border-b pb-4 mb-6">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Add Food Items</h1>
-        <h2 className="text-xl text-gray-600 mb-2">{locationState?.eventTitle}</h2>
-        <p className="text-sm text-gray-500">Optional - Select any food items you'd like to add to your order</p>
-      </div>
+    <>
+      <SEO 
+        title={`Add Food - ${locationState?.eventTitle}`}
+        description="Book Food With Your Ticket. Enhance your event experience with delicious food options. Pay online securely with Stripe."
+        keywords={['Book Food With Your Ticket', 'Enjoy Food + Entertainment', 'Pay Securely With Stripe']}
+      />
+      <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8 mt-6">
+        <div className="border-b pb-4 mb-6">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Add Food Items</h1>
+          <h2 className="text-xl text-gray-600 mb-2">{locationState?.eventTitle}</h2>
+          <p className="text-sm text-gray-500">Optional - Select any food items you'd like to add to your order</p>
+        </div>
 
       {loading ? (
         <div className="text-center py-8">
@@ -200,10 +206,10 @@ const FoodSelection: React.FC = () => {
             className="flex-1 px-6 py-3 rounded-lg bg-primary text-white hover:bg-red-600 transition-colors duration-200 flex items-center justify-center"
           >
             Proceed to Payment
-          </button>
-        </div>
+          </button>        </div>
       </div>
     </div>
+    </>
   );
 };
 
