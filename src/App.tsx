@@ -3,6 +3,7 @@ import { Routes, Route, Link } from 'react-router-dom';
 import HeroCarousel from './components/HeroCarousel';
 import AnimatedHeader from './components/AnimatedHeader';
 import { PrivateRoute } from './components/PrivateRoute';
+import RouteTracker from './components/RouteTracker';
 import EventsList from './pages/EventsList';
 import About from './pages/About';
 import FoodSelection from './pages/FoodSelection';
@@ -16,6 +17,9 @@ import Login from './pages/Login';
 const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Google Analytics Route Tracker */}
+      <RouteTracker />
+      
       {/* Top Ribbon */}
       <div className="bg-red-900 h-1 w-full" />
       {/* Page Content */}
