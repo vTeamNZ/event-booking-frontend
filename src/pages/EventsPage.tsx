@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getAllEvents, Event } from '../services/eventService';
+import SEO from '../components/SEO';
 
 const EventsPage: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -12,6 +13,11 @@ const EventsPage: React.FC = () => {
 
   return (
     <>
+      <SEO 
+        title="Events Calendar" 
+        description="Browse all upcoming Sri Lankan cultural events across New Zealand. Find dates, venues, and book your tickets online with ease." 
+        keywords={["Sri Lankan Events NZ", "Cultural Events Calendar", "Upcoming Events", "Event Tickets Online"]}
+      />
       <h1 className="text-2xl font-bold text-blue-800 mb-6 text-center">
         📅 Upcoming Events
       </h1>

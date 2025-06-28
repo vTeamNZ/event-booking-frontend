@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { TicketType, getTicketTypesForEvent } from '../services/ticketTypeService';
+import SEO from '../components/SEO';
+import EventStructuredData from '../components/SEO/EventStructuredData';
 
 interface Event {
   id: number;
@@ -126,15 +128,32 @@ const TicketSelection: React.FC = () => {
       },
     });
   };
-
   return (
-    <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8 mt-6">
+    <>
+      <SEO 
+        title={`Book Tickets - ${state?.eventTitle}`}
+        description={`Secure Your Event Tickets for ${state?.eventTitle}. Simple and secure ticket booking with optional food ordering.`}
+        keywords={['Secure Your Event Tickets', 'Instant Ticket Booking', 'Easy Event Ticketing']}
+        article={true}
+      />
+      {state?.eventId && (
+        <EventStructuredData event={{
+          id: state.eventId,
+          title: state.eventTitle || 'Event',
+          description: state.eventDescription || 'Join us for this exciting event',
+          startDate: state.eventDate || new Date().toISOString(),
+          location: state.eventLocation,
+          price: state.eventPrice,
+          organizer: state.organizerName
+        }} />
+      )}
+      <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8 mt-6">
       <div className="border-b pb-4 mb-6">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Choose Your Tickets</h1>
         <h2 className="text-xl text-gray-600 mb-2">{state?.eventTitle}</h2>
         <div className="space-y-1 text-sm text-gray-600">
           <p>📍 {state?.eventLocation}</p>
-          <p>🕒 {new Date(state?.eventDate).toLocaleString()}</p>
+          <p>🕒 {state?.eventDate ? new Date(state.eventDate).toLocaleString() : 'Date not specified'}</p>
         </div>
       </div>
 
@@ -210,10 +229,10 @@ const TicketSelection: React.FC = () => {
             } transition-colors duration-200 flex items-center justify-center`}
           >
             Next
-          </button>
-        </div>
+          </button>        </div>
       </div>
     </div>
+    </>
   );
 };
 

@@ -1,0 +1,13 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build and start event-booking-frontend",
+			"type": "shell",
+			"command": "cd c:/Users/user/source/repos/vTeamNZ/event-booking-frontend && npm run build && npm start",
+			"group": "build",
+			"problemMatcher": [],
+			"isBackground": true
+		}
+	]
+}

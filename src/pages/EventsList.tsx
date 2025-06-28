@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import config from '../config/api';
+import SEO from '../components/SEO';
 
 interface Organizer {
   id: number;
@@ -175,9 +176,25 @@ const EventsList: React.FC = () => {
     e.stopPropagation();
     window.open(url, '_blank');
   };
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <>
+      <SEO 
+        title={organizerSlug 
+          ? `${events.find(e => createSlug(e.organizerName || '') === organizerSlug)?.organizerName || 'Events'}`
+          : "Browse Local Events Now"
+        }
+        description={organizerSlug
+          ? `Book tickets for events organized by ${events.find(e => createSlug(e.organizerName || '') === organizerSlug)?.organizerName}. Simple and secure ticket booking with optional food ordering.`
+          : "KiwiLanka brings you the best events from Christchurch to Auckland. Find your next event today."
+        }
+        keywords={[
+          'Find Sri Lankan Events NZ', 
+          'Events for Everyone in NZ', 
+          'Browse Local Events Now',
+          selectedCity !== 'all' ? `Events in ${selectedCity}` : ''
+        ].filter(Boolean)}
+      />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
@@ -333,11 +350,11 @@ const EventsList: React.FC = () => {
                   </div>
                 </div>
               ))}
-            </div>
-          )}
+            </div>      )}
         </>
       )}
     </div>
+    </>
   );
 };
 

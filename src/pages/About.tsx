@@ -1,14 +1,21 @@
 // src/pages/About.tsx
 import React from 'react';
+import SEO from '../components/SEO';
 
 const About: React.FC = () => {
   return (
-    <div className="max-w-4xl mx-auto mt-6">
-      <div className="bg-white rounded-xl shadow-lg p-8">
-        <div className="border-b pb-4 mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">About Kiwi Lanka Events</h1>
-          <p className="text-gray-600">Connecting Sri Lankan Culture with New Zealand Communities</p>
-        </div>
+    <>
+      <SEO 
+        title="About KiwiLanka Events"
+        description="KiwiLanka brings you the best events from Christchurch to Auckland. Trusted by event organizers across NZ. Support Community Events."
+        keywords={['Support Community Events', 'New Zealand Events Hub', 'Sri Lankan Events NZ']}
+      />
+      <div className="max-w-4xl mx-auto mt-6">
+        <div className="bg-white rounded-xl shadow-lg p-8">
+          <div className="border-b pb-4 mb-6">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">About Kiwi Lanka Events</h1>
+            <p className="text-gray-600">Connecting Sri Lankan Culture with New Zealand Communities</p>
+          </div>
 
         <div className="space-y-6 text-gray-600">
           <div className="bg-gray-50 rounded-lg p-6">
@@ -67,10 +74,10 @@ const About: React.FC = () => {
             >
               Contact Us <span className="ml-2">→</span>
             </a>
-          </div>
-        </div>
+          </div>        </div>
       </div>
     </div>
+    </>
   );
 };
 

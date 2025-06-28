@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { getStripe, createPaymentIntent, verifyPayment } from '../services/stripeService';
 import { CustomerDetails } from '../types/payment';
+import SEO from '../components/SEO';
 
 interface PaymentLocationState {
   amount: number;
@@ -273,15 +274,20 @@ const Payment: React.FC = () => {
   }
 
   const { amount, eventTitle, ticketDetails, selectedFoods } = location.state as PaymentLocationState;
-
   // Render the payment form
   return (
-    <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-          <div className="px-6 py-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-6">Payment Details</h1>
-            <h2 className="text-xl text-gray-600">{eventTitle}</h2>
+    <>
+      <SEO 
+        title={`Payment - ${eventTitle}`}
+        description="Pay Securely With Stripe. Complete your booking with our secure payment system. Get instant confirmation."
+        keywords={['Pay Securely With Stripe', 'Instant Ticket Booking', 'Secure Event Payments']}
+      />
+      <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto">
+          <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+            <div className="px-6 py-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">Payment Details</h1>
+              <h2 className="text-xl text-gray-600">{eventTitle}</h2>
 
             <div className="mt-8 border-t border-gray-200 pt-6">
               <h3 className="text-lg font-medium text-gray-900">Tickets</h3>
@@ -341,10 +347,10 @@ const Payment: React.FC = () => {
                 />
               </Elements>
             </div>
-          </div>
-        </div>
+          </div>        </div>
       </div>
     </div>
+    </>
   );
 };
 

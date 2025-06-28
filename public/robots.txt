@@ -1,3 +1,10 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+
+# Sitemap location
+Sitemap: https://kiwilanka.co.nz/sitemap.xml
+
+# Disallow admin or private areas if they exist
+Disallow: /admin/
+Disallow: /private/
