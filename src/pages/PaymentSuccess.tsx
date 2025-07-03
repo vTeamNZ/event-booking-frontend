@@ -67,8 +67,7 @@ const PaymentSuccess: React.FC = () => {
     );
   }
 
-  const paymentId = sessionData?.id;
-  const amount = sessionData?.amount_total / 100; // Assuming the amount is in cents
+  // Use the provided data from sessionData
 
   return (
     <>
@@ -84,9 +83,9 @@ const PaymentSuccess: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Payment Successful!</h1>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Booking Confirmed!</h1>
           <p className="text-gray-600 mb-4">
-            Thank you for your purchase. Your payment has been processed successfully.
+            {sessionData?.eventTitle ? `Your tickets for ${sessionData.eventTitle} have been booked.` : 'Thank you for your purchase.'}
           </p>
           <div className="text-sm text-gray-600 bg-blue-50 p-4 rounded-lg inline-flex items-center">
             <svg className="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -99,10 +98,12 @@ const PaymentSuccess: React.FC = () => {
         {sessionData && (
           <div className="bg-gray-50 rounded-lg p-6 mb-6">
             <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Session ID:</span>
-                <span className="font-mono text-sm">{sessionId}</span>
-              </div>
+              {sessionData.paymentId && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Payment Reference:</span>
+                  <span className="font-mono text-sm">{sessionData.paymentId}</span>
+                </div>
+              )}
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Amount Paid:</span>
                 <span className="font-bold text-primary">

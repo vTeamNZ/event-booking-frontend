@@ -36,6 +36,8 @@ interface CheckoutSessionStatusResponse {
   isSuccessful: boolean;
   customerEmail: string;
   amountTotal: number;
+  paymentId?: string;
+  eventTitle?: string;
 }
 
 export const createCheckoutSession = async (
