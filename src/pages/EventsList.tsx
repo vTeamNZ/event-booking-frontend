@@ -1,9 +1,8 @@
 // src/pages/EventsList.tsx
 
 import React, { useEffect, useState, useMemo } from 'react';
-import axios from 'axios';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import config from '../config/api';
+import { api } from '../services/api';
 import SEO from '../components/SEO';
 
 interface Organizer {
@@ -60,7 +59,7 @@ const EventsList: React.FC = () => {
       try {
         setIsLoading(true);
         // First, fetch all events
-        const eventsResponse = await axios.get<EventFromAPI[]>(`${config.apiBaseUrl}/Events`);
+        const eventsResponse = await api.get<EventFromAPI[]>('/api/Events');
         console.log('Events from API:', eventsResponse.data);
         
         // Get unique organizer IDs from events
@@ -73,7 +72,7 @@ const EventsList: React.FC = () => {
         
         // Fetch organizer details for each unique organizerId
         const organizerPromises = organizerIds.map(id => 
-          axios.get<Organizer>(`${config.apiBaseUrl}/Organizers/${id}`)
+          api.get<Organizer>(`/api/Organizers/${id}`)
         );
         const organizerResponses = await Promise.all(organizerPromises);
         

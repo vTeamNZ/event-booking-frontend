@@ -34,7 +34,7 @@ const TicketSelection: React.FC = () => {
       return;
     }
     // Fetch event details to check if it's active
-    axios.get<Event>(`https://kiwilanka.co.nz/api/Events/${state.eventId}`)
+    axios.get<Event>(`http://localhost:5290/api/Events/${state.eventId}`)
       .then(response => {
         const event = response.data;
         const active = new Date(event.date) > new Date();
