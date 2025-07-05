@@ -23,7 +23,7 @@ interface CustomerDetails {
   firstName: string;
   lastName: string;
   email: string;
-  mobile: string;
+  mobile: string | null;
 }
 
 const Payment: React.FC = () => {
@@ -54,11 +54,12 @@ const Payment: React.FC = () => {
       const form = e.target as HTMLFormElement;
       const formData = new FormData(form);
       
+      const mobileValue = formData.get('mobile') as string;
       const customerDetails: CustomerDetails = {
         firstName: formData.get('firstName') as string,
         lastName: formData.get('lastName') as string,
         email: formData.get('email') as string,
-        mobile: formData.get('mobile') as string,
+        mobile: mobileValue || null,
       };
 
       // Validate required fields
@@ -89,7 +90,7 @@ const Payment: React.FC = () => {
         email: customerDetails.email,
         firstName: customerDetails.firstName,
         lastName: customerDetails.lastName,
-        mobile: customerDetails.mobile,
+        mobile: customerDetails.mobile || undefined,
         successUrl: `${window.location.origin}/payment-success`,
         cancelUrl: `${window.location.origin}/payment-cancelled`,
         ticketDetails: ticketLineItems,

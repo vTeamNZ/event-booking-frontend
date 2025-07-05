@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
+import { api } from '../services/api';
 import { TicketType, getTicketTypesForEvent } from '../services/ticketTypeService';
 import SEO from '../components/SEO';
 import EventStructuredData from '../components/SEO/EventStructuredData';
@@ -34,7 +34,7 @@ const TicketSelection: React.FC = () => {
       return;
     }
     // Fetch event details to check if it's active
-    axios.get<Event>(`http://localhost:5290/api/Events/${state.eventId}`)
+    api.get<Event>(`/api/Events/${state.eventId}`)
       .then(response => {
         const event = response.data;
         const active = new Date(event.date) > new Date();

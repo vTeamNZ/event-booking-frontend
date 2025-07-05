@@ -140,10 +140,39 @@ const EventsList: React.FC = () => {
   }, [events]);
 
   const filteredEvents = useMemo(() => {
-    return events.filter(event => {
+    const filtered = events.filter(event => {
       const matchesOrganizer = !organizerSlug || createSlug(event.organizerName || '') === organizerSlug;
       const matchesCity = selectedCity === 'all' || event.city === selectedCity;
       return matchesOrganizer && matchesCity;
+    });
+
+    // Sort events: upcoming first (soonest first), then past events (most recent first)
+    return filtered.sort((a, b) => {
+      const now = new Date();
+      const dateA = a.date ? new Date(a.date) : null;
+      const dateB = b.date ? new Date(b.date) : null;
+
+      // Handle events without dates - put them at the end
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+
+      const isUpcomingA = dateA > now;
+      const isUpcomingB = dateB > now;
+
+      // If both are upcoming or both are past
+      if (isUpcomingA === isUpcomingB) {
+        if (isUpcomingA) {
+          // Both upcoming: sort ascending (soonest first)
+          return dateA.getTime() - dateB.getTime();
+        } else {
+          // Both past: sort descending (most recent first)
+          return dateB.getTime() - dateA.getTime();
+        }
+      }
+
+      // One upcoming, one past: upcoming comes first
+      return isUpcomingA ? -1 : 1;
     });
   }, [events, organizerSlug, selectedCity]);
   const createUrlSlug = (title: string) => {
