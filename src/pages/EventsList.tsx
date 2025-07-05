@@ -1,9 +1,8 @@
 // src/pages/EventsList.tsx
 
 import React, { useEffect, useState, useMemo } from 'react';
-import axios from 'axios';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import config from '../config/api';
+import { api } from '../services/api';
 import SEO from '../components/SEO';
 
 interface Organizer {
@@ -60,7 +59,7 @@ const EventsList: React.FC = () => {
       try {
         setIsLoading(true);
         // First, fetch all events
-        const eventsResponse = await axios.get<EventFromAPI[]>(`${config.apiBaseUrl}/Events`);
+        const eventsResponse = await api.get<EventFromAPI[]>('/api/Events');
         console.log('Events from API:', eventsResponse.data);
         
         // Get unique organizer IDs from events
@@ -73,7 +72,7 @@ const EventsList: React.FC = () => {
         
         // Fetch organizer details for each unique organizerId
         const organizerPromises = organizerIds.map(id => 
-          axios.get<Organizer>(`${config.apiBaseUrl}/Organizers/${id}`)
+          api.get<Organizer>(`/api/Organizers/${id}`)
         );
         const organizerResponses = await Promise.all(organizerPromises);
         
@@ -141,10 +140,39 @@ const EventsList: React.FC = () => {
   }, [events]);
 
   const filteredEvents = useMemo(() => {
-    return events.filter(event => {
+    const filtered = events.filter(event => {
       const matchesOrganizer = !organizerSlug || createSlug(event.organizerName || '') === organizerSlug;
       const matchesCity = selectedCity === 'all' || event.city === selectedCity;
       return matchesOrganizer && matchesCity;
+    });
+
+    // Sort events: upcoming first (soonest first), then past events (most recent first)
+    return filtered.sort((a, b) => {
+      const now = new Date();
+      const dateA = a.date ? new Date(a.date) : null;
+      const dateB = b.date ? new Date(b.date) : null;
+
+      // Handle events without dates - put them at the end
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+
+      const isUpcomingA = dateA > now;
+      const isUpcomingB = dateB > now;
+
+      // If both are upcoming or both are past
+      if (isUpcomingA === isUpcomingB) {
+        if (isUpcomingA) {
+          // Both upcoming: sort ascending (soonest first)
+          return dateA.getTime() - dateB.getTime();
+        } else {
+          // Both past: sort descending (most recent first)
+          return dateB.getTime() - dateA.getTime();
+        }
+      }
+
+      // One upcoming, one past: upcoming comes first
+      return isUpcomingA ? -1 : 1;
     });
   }, [events, organizerSlug, selectedCity]);
   const createUrlSlug = (title: string) => {

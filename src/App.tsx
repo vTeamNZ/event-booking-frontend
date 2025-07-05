@@ -10,6 +10,7 @@ import FoodSelection from './pages/FoodSelection';
 import Payment from './pages/Payment';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFailed from './pages/PaymentFailed';
+import PaymentCancelled from './pages/PaymentCancelled';
 import TicketSelection from './pages/TicketSelection';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
@@ -34,6 +35,7 @@ const App: React.FC = () => {
           <Route path="/payment" element={<Payment />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/payment-failed" element={<PaymentFailed />} />
+          <Route path="/payment-cancelled" element={<PaymentCancelled />} />
           <Route path="/contact" element={<Contact />} />
         </Routes>
       </main>

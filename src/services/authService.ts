@@ -1,5 +1,4 @@
-import axios from 'axios';
-import config from '../config/api';
+import { api } from './api';
 
 interface AuthResponse {
   token: string;
@@ -17,10 +16,11 @@ interface LoginData {
   password: string;
 }
 
-const API_URL = config.apiBaseUrl;
+// Remove this line as we'll use the centralized api service
+// const API_URL = config.apiBaseUrl;
 
-// Set up axios interceptor for authentication
-axios.interceptors.request.use(
+// Set up api interceptor for authentication
+api.interceptors.request.use(
   (config) => {
     const token = authService.getToken();
     if (token) {
@@ -38,7 +38,7 @@ axios.interceptors.request.use(
 
 export const authService = {
   async login(data: LoginData): Promise<AuthResponse> {
-    const response = await axios.post<AuthResponse>(`${API_URL}/auth/login`, data);
+    const response = await api.post<AuthResponse>('/api/auth/login', data);
     
     if (response.data.token) {
       localStorage.setItem('authToken', response.data.token);

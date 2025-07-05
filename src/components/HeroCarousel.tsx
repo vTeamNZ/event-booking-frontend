@@ -5,8 +5,7 @@ import { Autoplay, Pagination, EffectCoverflow } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/effect-coverflow';
-import axios from 'axios';
-import config from '../config/api';
+import { api } from '../services/api';
 
 interface Event {
   id: number;
@@ -22,7 +21,7 @@ const HeroCarousel: React.FC = () => {
 
   useEffect(() => {
     setIsLoading(true);
-    axios.get<Event[]>(`${config.apiBaseUrl}/Events`)
+    api.get<Event[]>('/api/Events')
       .then(res => {
         console.log('Events data:', res.data); // Debug log
         setEvents(res.data);

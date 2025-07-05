@@ -10,7 +10,9 @@ export interface TicketType {
 
 export const getTicketTypesForEvent = async (eventId: number): Promise<TicketType[]> => {
     try {
-        const response = await api.get<TicketType[]>(`/api/TicketTypes/event/${eventId}`);
+        const url = `/api/TicketTypes/event/${eventId}`;
+        console.log('Making API call to:', api.defaults.baseURL + url);
+        const response = await api.get<TicketType[]>(url);
         if (!Array.isArray(response.data)) {
             console.error('Unexpected response format:', response.data);
             return [];
