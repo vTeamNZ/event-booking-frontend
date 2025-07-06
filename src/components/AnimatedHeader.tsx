@@ -1,9 +1,19 @@
 // src/components/AnimatedHeader.tsx
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { authService } from '../services/authService';
 
 const AnimatedHeader: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const navigate = useNavigate();
+  const isAuthenticated = authService.isAuthenticated();
+  const currentUser = authService.getCurrentUser();
+
+  const handleLogout = () => {
+    authService.logout();
+    navigate('/');
+    window.location.reload(); // Refresh to update the nav
+  };
 
   useEffect(() => {
     const onScroll = () => {
@@ -31,13 +41,51 @@ const AnimatedHeader: React.FC = () => {
       </span> */}
     </Link>
 
-<nav className="flex space-x-6 text-white text-base font-medium justify-center">
-  <Link to="/" className="hover:underline hover:opacity-100 opacity-80 transition">Home</Link>
-  <span className="opacity-50">•</span>
-  <Link to="/about" className="hover:underline hover:opacity-100 opacity-80 transition">About</Link>
-  <span className="opacity-50">•</span>
-  <Link to="/contact" className="hover:underline hover:opacity-100 opacity-80 transition">Contact</Link>
-</nav>
+    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 space-y-2 sm:space-y-0">
+      <nav className="flex space-x-6 text-white text-base font-medium justify-center">
+        <Link to="/" className="hover:underline hover:opacity-100 opacity-80 transition">Home</Link>
+        <span className="opacity-50">•</span>
+        <Link to="/about" className="hover:underline hover:opacity-100 opacity-80 transition">About</Link>
+        <span className="opacity-50">•</span>
+        <Link to="/contact" className="hover:underline hover:opacity-100 opacity-80 transition">Contact</Link>
+      </nav>
+
+      <div className="flex items-center space-x-4 text-white text-sm justify-center">
+        {isAuthenticated ? (
+          <>
+            {currentUser?.roles?.includes('Admin') && (
+              <Link to="/admin" className="hover:underline hover:opacity-100 opacity-80 transition">
+                Admin
+              </Link>
+            )}
+            {currentUser?.roles?.includes('Organizer') && (
+              <Link to="/organizer/dashboard" className="hover:underline hover:opacity-100 opacity-80 transition">
+                Dashboard
+              </Link>
+            )}
+            <span className="opacity-80">Welcome, {currentUser?.fullName}</span>
+            <button 
+              onClick={handleLogout}
+              className="hover:underline hover:opacity-100 opacity-80 transition bg-transparent border-none cursor-pointer"
+            >
+              Logout
+            </button>
+          </>
+        ) : (
+          <>
+            <Link to="/login" className="hover:underline hover:opacity-100 opacity-80 transition">
+              Login
+            </Link>
+            <Link 
+              to="/register" 
+              className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-white hover:text-white transition"
+            >
+              Register
+            </Link>
+          </>
+        )}
+      </div>
+    </div>
   </div>
 </header>
 

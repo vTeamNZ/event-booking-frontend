@@ -9,6 +9,7 @@ interface Event {
   id: number;
   date: string;
   isActive?: boolean;
+  seatSelectionMode?: number;
 }
 
 interface TicketDetail {
@@ -16,6 +17,13 @@ interface TicketDetail {
   quantity: number;
   price: number;
   unitPrice: number;
+}
+
+// Constants for seat selection modes
+const SEAT_SELECTION_MODE = {
+  EVENT_HALL: 1,
+  TABLE_SEATING: 2,
+  GENERAL_ADMISSION: 3
 }
 
 const TicketSelection: React.FC = () => {
@@ -27,6 +35,7 @@ const TicketSelection: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [quantities, setQuantities] = useState<Record<number, number>>({});
+  const [eventSeatSelectionMode, setEventSeatSelectionMode] = useState<number>(SEAT_SELECTION_MODE.GENERAL_ADMISSION);
 
   useEffect(() => {
     if (!state?.eventId) {
@@ -39,6 +48,15 @@ const TicketSelection: React.FC = () => {
         const event = response.data;
         const active = new Date(event.date) > new Date();
         setIsActive(active);
+        
+        // Store the seat selection mode
+        if (event.seatSelectionMode) {
+          console.log(`Event ${state.eventId} has seat selection mode: ${event.seatSelectionMode}`);
+          setEventSeatSelectionMode(event.seatSelectionMode);
+        } else {
+          console.log(`Event ${state.eventId} has no seat selection mode, defaulting to General Admission`);
+        }
+        
         if (!active) {
           setTimeout(() => {
             navigate('/');
@@ -118,15 +136,59 @@ const TicketSelection: React.FC = () => {
     .filter(ticket => ticket.quantity > 0);
 
   const proceed = () => {
-    if (!eventTitle) return;
-    navigate(`/event/${eventTitle}/food`, {
-      state: {
+    console.log("************* PROCEED BUTTON CLICKED *************");
+    
+    if (!eventTitle) {
+      console.error("No eventTitle available, cannot proceed");
+      return;
+    }
+    
+    console.log(`Proceeding with eventSeatSelectionMode: ${eventSeatSelectionMode}`);
+    console.log(`SEAT_SELECTION_MODE.EVENT_HALL = ${SEAT_SELECTION_MODE.EVENT_HALL}`);
+    console.log(`SEAT_SELECTION_MODE.TABLE_SEATING = ${SEAT_SELECTION_MODE.TABLE_SEATING}`);
+    console.log(`Current state:`, state);
+    console.log(`Selected tickets:`, selectedTickets);
+    console.log(`Total price: ${total}`);
+    
+    // Check seat selection mode and navigate accordingly
+    if (
+      eventSeatSelectionMode === SEAT_SELECTION_MODE.EVENT_HALL || 
+      eventSeatSelectionMode === SEAT_SELECTION_MODE.TABLE_SEATING
+    ) {
+      // For events with seating layouts, navigate to seat selection
+      console.log("************* NAVIGATING TO SEAT SELECTION *************");
+      console.log(`Navigation path: /event/${eventTitle}/seats`);
+      
+      const navigationState = {
         eventId: state?.eventId,
-        eventTitle: state.eventTitle,
+        eventTitle: state?.eventTitle,
         ticketPrice: total,
         ticketDetails: selectedTickets,
-      },
-    });
+        eventDate: state?.eventDate,
+        eventLocation: state?.eventLocation,
+      };
+      
+      console.log("Navigation state:", navigationState);
+      
+      navigate(`/event/${eventTitle}/seats`, {
+        state: navigationState
+      });
+      
+      console.log("Navigation function called");
+    } else {
+      // For general admission events, skip seat selection and go to food
+      console.log("************* SKIPPING SEAT SELECTION, NAVIGATING TO FOOD *************");
+      console.log(`Navigation path: /event/${eventTitle}/food`);
+      
+      navigate(`/event/${eventTitle}/food`, {
+        state: {
+          eventId: state?.eventId,
+          eventTitle: state.eventTitle,
+          ticketPrice: total,
+          ticketDetails: selectedTickets,
+        },
+      });
+    }
   };
   return (
     <>

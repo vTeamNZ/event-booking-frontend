@@ -26,15 +26,18 @@ interface EventFromAPI {
   organizerId: number | null;
   imageUrl: string | null;
   isActive: boolean;
+  seatSelectionMode?: number;
 }
 
 interface Event extends EventFromAPI {
   isActive: boolean;
+  isAdminApproved: boolean;
   organizerName: string;
   city: string;
   facebookUrl: string | null;
   youtubeUrl: string | null;
   organizerSlug: string;
+  seatSelectionMode?: number;
 }
 
 // Helper function to create URL-friendly slug
@@ -94,7 +97,8 @@ const EventsList: React.FC = () => {
           
           const eventWithDetails = {
             ...event,
-            isActive: event.date ? new Date(event.date) > new Date() : false,
+            isActive: (event.date ? new Date(event.date) > new Date() : false) && event.isActive, // Consider both future date AND admin approval
+            isAdminApproved: event.isActive, // Store original admin approval status
             organizerName,
             city,
             facebookUrl: organizer?.facebookUrl || null,
@@ -143,7 +147,8 @@ const EventsList: React.FC = () => {
     const filtered = events.filter(event => {
       const matchesOrganizer = !organizerSlug || createSlug(event.organizerName || '') === organizerSlug;
       const matchesCity = selectedCity === 'all' || event.city === selectedCity;
-      return matchesOrganizer && matchesCity;
+      // Show events that are admin-approved, regardless of date (past events will show as disabled)
+      return matchesOrganizer && matchesCity && event.isAdminApproved;
     });
 
     // Sort events: upcoming first (soonest first), then past events (most recent first)
@@ -187,17 +192,42 @@ const EventsList: React.FC = () => {
   const handleEventClick = (event: Event) => {
     if (!event.isActive) return;
     const eventSlug = createUrlSlug(event.title);
-    navigate(`/event/${eventSlug}/tickets`, {
-      state: {
-        eventId: event.id,
-        eventTitle: event.title,
-        eventPrice: event.price,
-        eventDate: event.date,
-        eventLocation: event.location,
-        eventDescription: event.description,
-        organizerName: event.organizerName
-      },
-    });
+    
+    // Check if the event has seat selection (EventHall or TableSeating)
+    const hasSeatSelection = event.seatSelectionMode === 1 || event.seatSelectionMode === 2;
+    
+    // Redirect based on seat selection mode
+    if (hasSeatSelection) {
+      // Redirect to seat selection page
+      console.log(`Redirecting to seat selection for event ${event.id} with mode ${event.seatSelectionMode}`);
+      navigate(`/event/${eventSlug}/seats`, {
+        state: {
+          eventId: event.id,
+          eventTitle: event.title,
+          eventPrice: event.price,
+          eventDate: event.date,
+          eventLocation: event.location,
+          eventDescription: event.description,
+          organizerName: event.organizerName,
+          seatSelectionMode: event.seatSelectionMode
+        },
+      });
+    } else {
+      // Redirect to ticket selection page (general admission events)
+      console.log(`Redirecting to ticket selection for event ${event.id} with mode ${event.seatSelectionMode || 3}`);
+      navigate(`/event/${eventSlug}/tickets`, {
+        state: {
+          eventId: event.id,
+          eventTitle: event.title,
+          eventPrice: event.price,
+          eventDate: event.date,
+          eventLocation: event.location,
+          eventDescription: event.description,
+          organizerName: event.organizerName,
+          seatSelectionMode: event.seatSelectionMode || 3 // Default to GeneralAdmission if not specified
+        },
+      });
+    }
   };
 
   const handleSocialClick = (url: string, e: React.MouseEvent) => {
@@ -288,6 +318,7 @@ const EventsList: React.FC = () => {
           {filteredEvents.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500 text-lg">No events found matching your filters.</p>
+              <p className="text-gray-400 text-sm mt-2">Events must be approved by an admin before they appear here.</p>
               <button
                 onClick={() => {
                   setSelectedCity('all');
