@@ -2,10 +2,10 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { 
   SeatLayoutResponse, 
-  SelectedSeat, 
-  SeatStatus,
+  SelectedSeat,
   Seat 
 } from '../types/seatSelection';
+import { SeatStatus, getSeatStatusClasses } from '../types/seatStatus';
 import { cn, formatPrice } from '../utils/seatSelection';
 
 interface EventHallLayoutProps {
@@ -26,18 +26,7 @@ const EventHallLayout: React.FC<EventHallLayoutProps> = ({
       return 'bg-blue-600 text-white border-blue-700 shadow-lg scale-110';
     }
     
-    switch (seat.status) {
-      case SeatStatus.Available:
-        return 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200 hover:scale-105';
-      case SeatStatus.Reserved:
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300 cursor-not-allowed';
-      case SeatStatus.Booked:
-        return 'bg-red-100 text-red-800 border-red-300 cursor-not-allowed';
-      case SeatStatus.Unavailable:
-        return 'bg-gray-100 text-gray-500 border-gray-300 cursor-not-allowed';
-      default:
-        return 'bg-gray-100 text-gray-500 border-gray-300';
-    }
+    return getSeatStatusClasses(seat.status as SeatStatus);
   };
 
   const isClickable = (seat: Seat) => {

@@ -1,15 +1,11 @@
+import { TicketType } from './ticketTypes';
+
 export enum SeatSelectionMode {
   EventHall = 1,
-  TableSeating = 2,
   GeneralAdmission = 3
 }
 
-export enum SeatStatus {
-  Available = 0,
-  Reserved = 1,
-  Booked = 2,
-  Unavailable = 3
-}
+import { SeatStatus } from './seatStatus';
 
 export interface Venue {
   id: number;
@@ -43,7 +39,12 @@ export interface Seat {
   height: number;
   price: number;
   status: SeatStatus;
-  sectionId?: number;
+  sectionId: number;
+  section: {
+    id: number;
+    name: string;
+    color: string;
+  };
   tableId?: number;
   reservedUntil?: string;
 }
@@ -72,13 +73,13 @@ export interface SeatLayoutResponse {
   seats: Seat[];
   tables: Table[];
   sections: Section[];
-}
-
-export interface TicketType {
-  id: number;
-  name: string;
-  price: number;
-  description: string;
+  
+  // Aisle configuration
+  hasHorizontalAisles?: boolean;
+  horizontalAisleRows?: string;
+  hasVerticalAisles?: boolean;
+  verticalAisleSeats?: string;
+  aisleWidth?: number;
 }
 
 export interface PricingResponse {

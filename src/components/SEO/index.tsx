@@ -52,8 +52,10 @@ const SEO: React.FC<SEOProps> = ({
   const baseUrl = 'https://kiwilanka.co.nz';
   const currentUrl = canonical || `${baseUrl}${location.pathname}`;
   
-  // Image
-  const seoImage = image.startsWith('http') ? image : `${baseUrl}${image}`;
+  // Image - ensure image is not null or undefined before calling startsWith
+  const defaultImage = '/kiwilanka-logo-main.png';
+  const safeImage = image || defaultImage;
+  const seoImage = typeof safeImage === 'string' && safeImage.startsWith('http') ? safeImage : `${baseUrl}${safeImage}`;
 
   // Update document head directly using useEffect
   useEffect(() => {

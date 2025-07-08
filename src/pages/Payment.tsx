@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createCheckoutSession } from '../services/checkoutService';
+import { message, Button, Space } from 'antd';
 import SEO from '../components/SEO';
+import { useAuth } from '../hooks/useAuth';
+import { reservationService, TicketReservationRequest } from '../services/reservationService';
 
 interface PaymentLocationState {
   amount: number;
@@ -31,6 +34,7 @@ const Payment: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user, isAuthenticated, isOrganizer } = useAuth();
 
   // Check if we have the required payment state
   useEffect(() => {
@@ -103,6 +107,51 @@ const Payment: React.FC = () => {
     } catch (err: any) {
       console.error('Failed to create checkout session:', err);
       setError(err instanceof Error ? err.message : 'Failed to create checkout session');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReserveTickets = async (customerDetails: CustomerDetails) => {
+    if (!isAuthenticated || !isOrganizer()) {
+      message.error('Only organizers can reserve tickets without payment');
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      const reservationData: TicketReservationRequest = {
+        eventId,
+        userId: user!.id,
+        ticketDetails,
+        selectedFoods: selectedFoods || [],
+        customerDetails: {
+          firstName: customerDetails.firstName,
+          lastName: customerDetails.lastName,
+          email: customerDetails.email,
+          mobile: customerDetails.mobile || undefined
+        },
+        totalAmount: amount
+      };
+      
+      const result = await reservationService.reserveTickets(reservationData);
+      
+      if (result.success) {
+        message.success('Tickets reserved successfully!');
+        navigate(`/payment/success`, {
+          state: {
+            eventTitle,
+            reservationId: result.reservationId,
+            isReservation: true
+          }
+        });
+      } else {
+        setError('Failed to reserve tickets. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error reserving tickets:', err);
+      setError('An error occurred while reserving tickets. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -229,17 +278,53 @@ const Payment: React.FC = () => {
                 )}
 
                 <div className="border-t border-gray-200 pt-6">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                      loading 
-                        ? 'bg-gray-400 cursor-not-allowed' 
-                        : 'bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary'
-                    }`}
-                  >
-                    {loading ? 'Creating Checkout...' : `Pay $${amount.toFixed(2)} with Stripe`}
-                  </button>
+                  {isAuthenticated && isOrganizer() ? (
+                    <div className="flex flex-col space-y-4">
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+                          loading 
+                            ? 'bg-gray-400 cursor-not-allowed' 
+                            : 'bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary'
+                        }`}
+                      >
+                        {loading ? 'Processing...' : `Pay $${amount.toFixed(2)} with Stripe`}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => {
+                          const formData = new FormData(document.querySelector('form') as HTMLFormElement);
+                          const customerDetails = {
+                            firstName: formData.get('firstName') as string,
+                            lastName: formData.get('lastName') as string,
+                            email: formData.get('email') as string,
+                            mobile: formData.get('mobile') as string
+                          };
+                          handleReserveTickets(customerDetails);
+                        }}
+                        className="w-full flex justify-center py-3 px-4 border border-purple-500 rounded-md shadow-sm text-sm font-medium text-purple-500 bg-white hover:bg-purple-50"
+                      >
+                        {loading ? 'Processing...' : 'Reserve without Payment (Organizer Only)'}
+                      </button>
+                      <p className="text-xs text-gray-500 text-center mt-2">
+                        As an organizer, you can reserve tickets without payment.
+                      </p>
+                    </div>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+                        loading 
+                          ? 'bg-gray-400 cursor-not-allowed' 
+                          : 'bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary'
+                      }`}
+                    >
+                      {loading ? 'Creating Checkout...' : `Pay $${amount.toFixed(2)} with Stripe`}
+                    </button>
+                  )}
                 </div>
               </form>
             </div>

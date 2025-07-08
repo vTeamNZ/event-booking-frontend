@@ -4,7 +4,6 @@ import { api } from '../services/api';
 import toast from 'react-hot-toast';
 import SEO from './SEO';
 import { EventHallSeatLayout } from './EventHallSeatLayout';
-import { TableSeatLayout } from './TableSeatLayout';
 import { GeneralAdmissionLayout } from './GeneralAdmissionLayout';
 import { SeatLegend } from './SeatLegend';
 
@@ -16,7 +15,7 @@ interface Event {
   location: string;
   price: number;
   capacity: number;
-  seatSelectionMode: 1 | 2 | 3; // 1=EventHall, 2=TableSeating, 3=GeneralAdmission
+  seatSelectionMode: 1 | 3; // 1=EventHall, 3=GeneralAdmission
   imageUrl?: string;
 }
 
@@ -30,9 +29,7 @@ export const SeatSelectionContainer: React.FC = () => {
   
   // Selection state
   const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
-  const [selectedTables, setSelectedTables] = useState<number[]>([]);
   const [selectedTickets, setSelectedTickets] = useState<{ [ticketTypeId: number]: number }>({});
-  const [allowTableBooking, setAllowTableBooking] = useState(false);
 
   useEffect(() => {
     const loadEvent = async () => {
@@ -62,14 +59,6 @@ export const SeatSelectionContainer: React.FC = () => {
     );
   };
 
-  const handleTableSelect = (tableId: number, selected: boolean) => {
-    setSelectedTables(prev => 
-      selected 
-        ? [...prev, tableId]
-        : prev.filter(id => id !== tableId)
-    );
-  };
-
   const handleTicketSelect = (ticketTypeId: number, quantity: number) => {
     setSelectedTickets(prev => ({
       ...prev,
@@ -80,8 +69,6 @@ export const SeatSelectionContainer: React.FC = () => {
   const getTotalSelections = () => {
     if (event?.seatSelectionMode === 3) {
       return Object.values(selectedTickets).reduce((sum, qty) => sum + qty, 0);
-    } else if (event?.seatSelectionMode === 2 && allowTableBooking) {
-      return selectedTables.length;
     } else {
       return selectedSeats.length;
     }
@@ -99,9 +86,7 @@ export const SeatSelectionContainer: React.FC = () => {
       eventTitle: event?.title,
       seatSelectionMode: event?.seatSelectionMode,
       selectedSeats,
-      selectedTables,
-      selectedTickets,
-      allowTableBooking
+      selectedTickets
     };
     
     localStorage.setItem('seatSelection', JSON.stringify(selectionData));
@@ -117,7 +102,6 @@ export const SeatSelectionContainer: React.FC = () => {
   const getSeatSelectionModeText = (mode: number) => {
     switch (mode) {
       case 1: return 'Event Hall Seating';
-      case 2: return 'Table Seating';
       case 3: return 'General Admission';
       default: return 'Unknown';
     }
@@ -188,33 +172,7 @@ export const SeatSelectionContainer: React.FC = () => {
             </div>
 
             {/* Table Booking Toggle (only for table seating mode) */}
-            {event.seatSelectionMode === 2 && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="flex items-center space-x-4">
-                  <span className="text-sm font-medium text-gray-700">Booking Mode:</span>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="bookingMode"
-                      checked={!allowTableBooking}
-                      onChange={() => setAllowTableBooking(false)}
-                      className="mr-2"
-                    />
-                    <span className="text-sm">Individual Seats</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="bookingMode"
-                      checked={allowTableBooking}
-                      onChange={() => setAllowTableBooking(true)}
-                      className="mr-2"
-                    />
-                    <span className="text-sm">Whole Tables</span>
-                  </label>
-                </div>
-              </div>
-            )}
+            {/* Table booking mode removed */}
           </div>
 
           {/* Seat Selection Content */}
@@ -227,16 +185,7 @@ export const SeatSelectionContainer: React.FC = () => {
               />
             )}
 
-            {event.seatSelectionMode === 2 && (
-              <TableSeatLayout
-                eventId={event.id}
-                onSeatSelect={handleSeatSelect}
-                onTableSelect={handleTableSelect}
-                selectedSeats={selectedSeats}
-                selectedTables={selectedTables}
-                allowTableBooking={allowTableBooking}
-              />
-            )}
+            {/* Table booking mode removed */}
 
             {event.seatSelectionMode === 3 && (
               <GeneralAdmissionLayout
@@ -248,7 +197,7 @@ export const SeatSelectionContainer: React.FC = () => {
 
             {/* Seat Legend */}
             <div className="mt-4">
-              <SeatLegend showHeld={event.seatSelectionMode === 1 || event.seatSelectionMode === 2} />
+              <SeatLegend showHeld={event.seatSelectionMode === 1} />
             </div>
           </div>
 
@@ -265,8 +214,6 @@ export const SeatSelectionContainer: React.FC = () => {
               <p className="text-sm text-gray-600 mb-1">
                 {event.seatSelectionMode === 3 
                   ? `${getTotalSelections()} tickets selected`
-                  : event.seatSelectionMode === 2 && allowTableBooking
-                  ? `${getTotalSelections()} tables selected`
                   : `${getTotalSelections()} seats selected`
                 }
               </p>

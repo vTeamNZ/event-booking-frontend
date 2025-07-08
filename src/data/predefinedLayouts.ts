@@ -1,4 +1,5 @@
-import { SeatLayoutResponse, SeatSelectionMode, SeatStatus } from '../types/seatSelection';
+import { SeatLayoutResponse, SeatSelectionMode } from '../types/seatSelection';
+import { SeatStatus } from '../types/seatStatus';
 
 // Sample predefined layouts that can be used for different venues
 // These would be replaced with actual venue layouts in production

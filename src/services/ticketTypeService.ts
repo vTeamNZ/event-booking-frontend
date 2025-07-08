@@ -1,56 +1,38 @@
 import { api } from './api';
+import { TicketType, TicketTypeDisplay } from '../types/ticketTypes';
 
-export interface TicketType {
-    id: number;
-    type: string;
-    price: number;
-    description?: string;
-    eventId: number;
-}
+export type { TicketType, TicketTypeDisplay } from '../types/ticketTypes';
 
-export const getTicketTypesForEvent = async (eventId: number): Promise<TicketType[]> => {
-    // Enable mock data for testing
-    const useMockData = true;
-
-    if (useMockData) {
-        console.log('USING MOCK TICKET TYPE DATA FOR DEBUGGING');
-        // Return mock ticket types to help debug UI issues
-        return [
-            {
-                id: 1,
-                type: "VIP",
-                price: 120.00,
-                description: "Premium seating with the best view",
-                eventId: eventId
-            },
-            {
-                id: 2,
-                type: "Standard",
-                price: 80.00,
-                description: "Regular seating with good view",
-                eventId: eventId
-            },
-            {
-                id: 3,
-                type: "Economy",
-                price: 50.00,
-                description: "Budget-friendly seating option",
-                eventId: eventId
-            }
-        ];
-    }
-
+export const getTicketTypesForEvent = async (eventId: number): Promise<TicketTypeDisplay[]> => {
     try {
-        const url = `/api/TicketTypes/event/${eventId}`;
-        console.log('Making API call to:', api.defaults.baseURL + url);
-        const response = await api.get<TicketType[]>(url);
-        if (!Array.isArray(response.data)) {
-            console.error('Unexpected response format:', response.data);
-            return [];
-        }
-        return response.data;
+        console.log('Fetching ticket types for event:', eventId);
+        const response = await api.get<TicketType[]>(`/api/TicketTypes/event/${eventId}`);
+        console.log('Received ticket types:', response.data);
+        
+        // Transform TicketType to TicketTypeDisplay
+        return response.data.map(ticket => ({
+            id: ticket.id,
+            name: ticket.type,    // Map the 'type' field to 'name' for display
+            price: ticket.price,
+            description: ticket.description,
+            eventId: ticket.eventId
+        }));
     } catch (error) {
         console.error('Error fetching ticket types:', error);
-        throw error;
+        throw error; // Let the component handle the error
     }
+};
+
+export const createTicketType = async (ticketType: Omit<TicketType, 'id'>): Promise<TicketType> => {
+    const response = await api.post<TicketType>('/api/TicketTypes', ticketType);
+    return response.data;
+};
+
+export const updateTicketType = async (id: number, ticketType: Partial<TicketType>): Promise<TicketType> => {
+    const response = await api.put<TicketType>(`/api/TicketTypes/${id}`, ticketType);
+    return response.data;
+};
+
+export const deleteTicketType = async (id: number): Promise<void> => {
+    await api.delete(`/api/TicketTypes/${id}`);
 };

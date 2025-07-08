@@ -26,10 +26,20 @@ interface EventFromAPI {
   organizerId: number | null;
   imageUrl: string | null;
   isActive: boolean;
-  seatSelectionMode?: number;
+  seatSelectionMode?: 1 | 3; // 1=EventHall, 3=GeneralAdmission
+  venueId?: number | null;
+  venue?: {
+    id: number;
+    name: string;
+    description: string;
+    address: string;
+    city: string;
+    layoutType: string;
+    capacity: number;
+  } | null;
 }
 
-interface Event extends EventFromAPI {
+interface Event extends Omit<EventFromAPI, 'seatSelectionMode'> {
   isActive: boolean;
   isAdminApproved: boolean;
   organizerName: string;
@@ -37,7 +47,7 @@ interface Event extends EventFromAPI {
   facebookUrl: string | null;
   youtubeUrl: string | null;
   organizerSlug: string;
-  seatSelectionMode?: number;
+  seatSelectionMode?: 1 | 3; // Only EventHall or GeneralAdmission
 }
 
 // Helper function to create URL-friendly slug
@@ -193,41 +203,28 @@ const EventsList: React.FC = () => {
     if (!event.isActive) return;
     const eventSlug = createUrlSlug(event.title);
     
-    // Check if the event has seat selection (EventHall or TableSeating)
-    const hasSeatSelection = event.seatSelectionMode === 1 || event.seatSelectionMode === 2;
+    // Get the event's seat selection mode, defaulting to GeneralAdmission if not specified
+    const seatMode = event.seatSelectionMode ?? 3;
     
-    // Redirect based on seat selection mode
-    if (hasSeatSelection) {
-      // Redirect to seat selection page
-      console.log(`Redirecting to seat selection for event ${event.id} with mode ${event.seatSelectionMode}`);
-      navigate(`/event/${eventSlug}/seats`, {
-        state: {
-          eventId: event.id,
-          eventTitle: event.title,
-          eventPrice: event.price,
-          eventDate: event.date,
-          eventLocation: event.location,
-          eventDescription: event.description,
-          organizerName: event.organizerName,
-          seatSelectionMode: event.seatSelectionMode
-        },
-      });
-    } else {
-      // Redirect to ticket selection page (general admission events)
-      console.log(`Redirecting to ticket selection for event ${event.id} with mode ${event.seatSelectionMode || 3}`);
-      navigate(`/event/${eventSlug}/tickets`, {
-        state: {
-          eventId: event.id,
-          eventTitle: event.title,
-          eventPrice: event.price,
-          eventDate: event.date,
-          eventLocation: event.location,
-          eventDescription: event.description,
-          organizerName: event.organizerName,
-          seatSelectionMode: event.seatSelectionMode || 3 // Default to GeneralAdmission if not specified
-        },
-      });
-    }
+    // For allocated seating events, always go to seat selection first
+    // For general admission, go to ticket selection
+    const route = seatMode === 1 
+      ? `/event/${eventSlug}/seats` 
+      : `/event/${eventSlug}/tickets`;
+    
+    navigate(route, {
+      state: {
+        eventId: event.id,
+        eventTitle: event.title,
+        eventPrice: event.price,
+        eventDate: event.date,
+        eventLocation: event.location,
+        eventDescription: event.description,
+        organizerName: event.organizerName,
+        seatSelectionMode: seatMode,
+        venue: event.venue
+      },
+    });
   };
 
   const handleSocialClick = (url: string, e: React.MouseEvent) => {

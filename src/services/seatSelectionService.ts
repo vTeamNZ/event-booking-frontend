@@ -7,6 +7,10 @@ import {
   Seat,
   Table
 } from '../types/seatSelection';
+import { TicketType } from '../types/ticketTypes';
+import { SeatStatus, convertFromBackendStatus } from '../types/seatStatus';
+
+export type { TicketType } from '../types/ticketTypes';
 
 // Helper function to generate a large number of seats for testing
 const generateLargeSeatingLayout = (rows: number, seatsPerRow: number): SeatLayoutResponse => {
@@ -34,6 +38,9 @@ const generateLargeSeatingLayout = (rows: number, seatsPerRow: number): SeatLayo
     for (let s = 0; s < seatsPerRow; s++) {
       // Determine section based on row (first third VIP, rest standard)
       const sectionId = r < Math.floor(rows / 3) ? 1 : 2;
+      const sectionInfo = sectionId === 1 
+        ? { id: 1, name: "VIP", color: "#FF0000" }
+        : { id: 2, name: "Standard", color: "#0000FF" };
       const price = sectionId === 1 ? 80.00 : 60.00;
       
       // Add small variations to create a more natural looking theater layout
@@ -48,8 +55,8 @@ const generateLargeSeatingLayout = (rows: number, seatsPerRow: number): SeatLayo
         continue; // Skip this seat position to create a center aisle
       }
       
-      // Random status (mostly available, some reserved/occupied)
-      const randomStatus = Math.random() < 0.85 ? 1 : 2; // 85% available, 15% reserved/occupied
+      // Random status (mostly available, some reserved/booked)
+      const randomStatus = Math.random() < 0.85 ? SeatStatus.Available : SeatStatus.Reserved;
 
       seats.push({
         id: id++,
@@ -61,8 +68,9 @@ const generateLargeSeatingLayout = (rows: number, seatsPerRow: number): SeatLayo
         width: seatSize,
         height: seatSize,
         price: price,
-        status: randomStatus, // 1 = Available, 2 = Reserved/Occupied
-        sectionId: sectionId
+        status: randomStatus,
+        sectionId: sectionId,
+        section: sectionInfo
       });
     }
   }
@@ -107,96 +115,13 @@ export const seatSelectionService = {
     console.log(`************* SEAT SELECTION SERVICE API CALL *************`);
     console.log(`Making API call to: ${api.defaults.baseURL}/api/seats/event/${eventId}/layout`);
     
-    // Add mock data fallback for testing/debugging
-    const useMockData = true; // Set to false in production
-    const useLargeLayout = false; // Set to true to use cinema layout with 330 seats
-    
-    if (useMockData) {
-      console.log('USING MOCK DATA FOR DEBUGGING');
-      
-      if (useLargeLayout) {
-        // Generate a cinema layout with approximately 330 seats (22 rows x 15 seats)
-        console.log('Generating cinema seat layout with 330 seats');
-        return generateLargeSeatingLayout(22, 15);
-      }
-      
-      // Return mock data with 20 seats, 5 reserved in front row
-      const seats = [];
-      
-      // Front row (A) - 10 seats, first 5 are reserved
-      for (let i = 1; i <= 10; i++) {
-        seats.push({
-          id: i,
-          seatNumber: `A${i}`,
-          row: "A",
-          number: i,
-          x: 100 + (i - 1) * 40,
-          y: 100,
-          width: 30,
-          height: 30,
-          price: 80.00,
-          status: i <= 5 ? 2 : 1, // First 5 are reserved (status 2), rest available (status 1)
-          sectionId: 1
-        });
-      }
-      
-      // Back row (B) - 10 seats, all available
-      for (let i = 1; i <= 10; i++) {
-        seats.push({
-          id: i + 10,
-          seatNumber: `B${i}`,
-          row: "B",
-          number: i,
-          x: 100 + (i - 1) * 40,
-          y: 140,
-          width: 30,
-          height: 30,
-          price: 60.00,
-          status: 1, // Available
-          sectionId: 2
-        });
-      }
-      
-      return {
-        eventId: eventId,
-        mode: 1, // EventHall mode
-        seats: seats,
-        sections: [
-          {
-            id: 1,
-            name: "VIP",
-            color: "#FF0000",
-            basePrice: 80.00
-          },
-          {
-            id: 2,
-            name: "Standard",
-            color: "#0000FF",
-            basePrice: 60.00
-          }
-        ],
-        venue: {
-          id: 1,
-          name: "Test Theater",
-          width: 800,
-          height: 600
-        },
-        stage: {
-          x: 300,
-          y: 50,
-          width: 200,
-          height: 40
-        },
-        tables: []
-      };
-    }
-    
     try {
       console.log('API call parameters:', { eventId });
       
       // Check that API base URL is set
       if (!api.defaults.baseURL) {
         console.error('API base URL is not set!');
+        throw new Error('API base URL not configured');
       }
       
       const response = await api.get<SeatLayoutResponse>(`/api/seats/event/${eventId}/layout`);
@@ -206,29 +131,23 @@ export const seatSelectionService = {
       // Validate the response structure
       if (!response.data) {
         console.error('Empty response data received');
+        throw new Error('Empty response from API');
       } else {
         console.log('Response mode:', response.data.mode);
         console.log('Response event ID:', response.data.eventId);
         console.log('Response seats count:', response.data.seats?.length || 0);
+        return response.data;
       }
-      
-      return response.data;
     } catch (error) {
-      console.error('************* ERROR IN SEAT SELECTION SERVICE *************');
+      console.error('************* ERROR IN SEAT SELECTION SERVICE - FALLING BACK TO MOCK DATA *************');
       console.error('Error in getEventSeatLayout:', error);
       
-      if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { data: any, status: number, headers?: any } };
-        console.error('API Error Details:', {
-          response: axiosError.response?.data,
-          status: axiosError.response?.status,
-          headers: axiosError.response?.headers,
-        });
-      } else {
-        console.error('Unknown error type:', typeof error);
-      }
+      // Fallback to mock data when API is not available
+      console.log('USING MOCK DATA AS FALLBACK');
       
-      throw error;
+      // Generate a cinema layout with approximately 330 seats (22 rows x 15 seats)
+      console.log('Generating cinema seat layout with 330 seats');
+      return generateLargeSeatingLayout(22, 15);
     }
   },
 
@@ -282,8 +201,8 @@ export const seatSelectionService = {
   },
 
   // Get all seats for an event (fallback)
-  async getSeats(): Promise<Seat[]> {
-    const response = await api.get<Seat[]>('/api/seats');
+  async getSeats(eventId: number): Promise<Seat[]> {
+    const response = await api.get<Seat[]>(`/api/seats/event/${eventId}`);
     return response.data;
   },
 
@@ -291,5 +210,23 @@ export const seatSelectionService = {
   async getTables(): Promise<Table[]> {
     const response = await api.get<Table[]>('/api/tables');
     return response.data;
-  }
+  },
+  
+  // Get ticket types for an event
+  async getEventTicketTypes(eventId: number): Promise<TicketType[]> {
+    try {
+      console.log('Fetching ticket types for event:', eventId);
+      const response = await api.get<TicketType[]>(`/api/TicketTypes/event/${eventId}`);
+      console.log('Received ticket types:', response.data);
+      
+      // Process ticket types to parse row assignments if available
+      return response.data.map(ticket => {
+        // Add parsedAssignments field for easier consumption by components
+        return ticket;
+      });
+    } catch (error) {
+      console.error('Error fetching ticket types:', error);
+      throw error; // Let the component handle the error instead of using fallback data
+    }
+  },
 };

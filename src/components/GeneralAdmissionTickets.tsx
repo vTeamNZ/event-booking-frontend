@@ -3,9 +3,9 @@ import { motion } from 'framer-motion';
 import { Plus, Minus, Ticket, Users } from 'lucide-react';
 import { 
   GeneralTicketSelection, 
-  TicketType,
   PricingResponse 
 } from '../types/seatSelection';
+import { TicketType } from '../types/ticketTypes';
 import { seatSelectionService } from '../services/seatSelectionService';
 import { formatPrice } from '../utils/seatSelection';
 import { cn } from '../utils/seatSelection';
@@ -134,7 +134,7 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
             >
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900">{ticketType.name}</h4>
+                  <h4 className="font-semibold text-gray-900">{ticketType.type}</h4>
                   {ticketType.description && (
                     <p className="text-sm text-gray-600 mt-1">{ticketType.description}</p>
                   )}

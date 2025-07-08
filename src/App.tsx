@@ -23,6 +23,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminOrganizers from './pages/AdminOrganizers';
 import AdminEvents from './pages/AdminEvents';
 import AdminUsers from './pages/AdminUsers';
+import { VenueManagement } from './pages/VenueManagement';
 
 const App: React.FC = () => {
   return (
@@ -86,6 +87,12 @@ const App: React.FC = () => {
               <AdminUsers />
             </PrivateRoute>
           } />
+          <Route path="/admin/venues" element={
+            <PrivateRoute>
+              <VenueManagement />
+            </PrivateRoute>
+          } />
+          
         </Routes>
       </main>
     </div>

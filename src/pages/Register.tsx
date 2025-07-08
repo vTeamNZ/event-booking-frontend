@@ -39,7 +39,7 @@ const RegisterSchema = Yup.object().shape({
       then: (schema) => schema.required('Organization name is required for organizers')
     }),
   phoneNumber: Yup.string()
-    .matches(/^[+]?[\d\s\-\(\)]+$/, 'Invalid phone number format'),
+    .matches(/^[+]?[\d\s\-()]+$/, 'Invalid phone number format'),
   website: Yup.string()
     .url('Invalid website URL')
 });

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Clock, CreditCard, X } from 'lucide-react';
+import { ShoppingCart, Clock, CreditCard } from 'lucide-react';
 import { 
   SeatSelectionState, 
   SeatSelectionMode 
@@ -18,13 +18,11 @@ const SeatSelectionSummary: React.FC<SeatSelectionSummaryProps> = ({
 }) => {
   const hasSelections = 
     selectionState.selectedSeats.length > 0 ||
-    selectionState.selectedTables.length > 0 ||
     selectionState.generalTickets.length > 0;
 
   const getTotalItems = () => {
     return (
       selectionState.selectedSeats.length +
-      selectionState.selectedTables.reduce((sum, table) => sum + table.selectedSeats.length, 0) +
       selectionState.generalTickets.reduce((sum, ticket) => sum + ticket.quantity, 0)
     );
   };
@@ -47,40 +45,6 @@ const SeatSelectionSummary: React.FC<SeatSelectionSummaryProps> = ({
     );
   };
 
-  const renderTableSelections = () => {
-    if (selectionState.selectedTables.length === 0) return null;
-
-    return (
-      <div className="mb-4">
-        <h4 className="font-medium text-gray-900 mb-2">Selected Tables</h4>
-        <div className="space-y-3">
-          {selectionState.selectedTables.map(({ table, selectedSeats, isFullTable }) => (
-            <div key={table.id} className="border-l-4 border-blue-500 pl-3">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="font-medium">Table {table.tableNumber}</div>
-                  <div className="text-xs text-gray-600">
-                    {isFullTable ? 'Full table' : `${selectedSeats.length} seats`}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-medium">
-                    {formatPrice(selectedSeats.reduce((sum, seat) => sum + seat.price, 0))}
-                  </div>
-                </div>
-              </div>
-              {!isFullTable && (
-                <div className="mt-1 text-xs text-gray-500">
-                  Seats: {selectedSeats.map(seat => seat.seatNumber).join(', ')}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   const renderGeneralTickets = () => {
     if (selectionState.generalTickets.length === 0) return null;
 
@@ -91,7 +55,7 @@ const SeatSelectionSummary: React.FC<SeatSelectionSummaryProps> = ({
           {selectionState.generalTickets.map(({ ticketType, quantity }) => (
             <div key={ticketType.id} className="flex justify-between items-center text-sm">
               <div>
-                <div>{ticketType.name}</div>
+                <div>{ticketType.type}</div>
                 <div className="text-xs text-gray-600">Qty: {quantity}</div>
               </div>
               <span className="font-medium">
@@ -127,7 +91,6 @@ const SeatSelectionSummary: React.FC<SeatSelectionSummaryProps> = ({
           {/* Selection Details */}
           <div className="border-b border-gray-200 pb-4 mb-4">
             {renderSeatSelections()}
-            {renderTableSelections()}
             {renderGeneralTickets()}
           </div>
 
@@ -148,7 +111,7 @@ const SeatSelectionSummary: React.FC<SeatSelectionSummaryProps> = ({
           </div>
 
           {/* Reservation Timer */}
-          {(selectionState.selectedSeats.length > 0 || selectionState.selectedTables.length > 0) && (
+          {(selectionState.selectedSeats.length > 0) && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
               <div className="flex items-center gap-2 text-yellow-800">
                 <Clock size={16} />

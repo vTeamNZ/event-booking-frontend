@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { reservationService, ReservationStatus } from '../services/reservationService';
+import AisleRenderer from './venue/AisleRenderer';
 import toast from 'react-hot-toast';
 
 interface SeatLayoutProps {
@@ -40,6 +41,12 @@ interface EventHallLayout {
     width: number;
     height: number;
   };
+  // Aisle configuration
+  hasHorizontalAisles?: boolean;
+  horizontalAisleRows?: string;
+  hasVerticalAisles?: boolean;
+  verticalAisleSeats?: string;
+  aisleWidth?: number;
 }
 
 export const EventHallSeatLayout: React.FC<SeatLayoutProps> = ({
@@ -198,17 +205,26 @@ export const EventHallSeatLayout: React.FC<SeatLayoutProps> = ({
 
       {/* Seat Map */}
       <div 
-        className="relative border border-gray-300 rounded-lg bg-gray-50 mx-auto"
+        className="relative border border-gray-300 rounded-lg bg-gray-50 mx-auto overflow-hidden"
         style={{ 
           width: Math.max(600, maxX + 50), 
           height: Math.max(400, maxY + 50),
           minHeight: '400px'
         }}
       >
+        {/* Aisles Overlay */}
+        <AisleRenderer
+          layoutData={layout}
+          containerWidth={Math.max(600, maxX + 50)}
+          containerHeight={Math.max(400, maxY + 50)}
+          rowSpacing={40}
+          seatSpacing={30}
+        />
+        
         {/* Stage */}
         {layout.stagePosition && (
           <div
-            className="absolute bg-gray-800 text-white flex items-center justify-center font-bold rounded"
+            className="absolute bg-gray-800 text-white flex items-center justify-center font-bold rounded z-20"
             style={{
               left: layout.stagePosition.x,
               top: layout.stagePosition.y,
@@ -229,7 +245,8 @@ export const EventHallSeatLayout: React.FC<SeatLayoutProps> = ({
               left: seat.x,
               top: seat.y,
               width: seat.width,
-              height: seat.height
+              height: seat.height,
+              zIndex: 30
             }}
             onClick={() => handleSeatClick(seat)}
             title={`${seat.seatNumber} - ${seat.section?.name || 'General'} - $${seat.price}`}

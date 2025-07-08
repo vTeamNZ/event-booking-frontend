@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:5000/api';
+import { api } from './api';
 
 export interface SeatHoldRequest {
   eventId: number;
@@ -15,35 +13,41 @@ export interface ReservationStatus {
   expiresAt?: string;
 }
 
-class ReservationService {
-  private getAuthHeader() {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }
+export interface TicketReservationRequest {
+  eventId: number;
+  userId: string;
+  ticketDetails: Array<{
+    type: string;
+    quantity: number;
+    price: number;
+  }>;
+  customerDetails: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    mobile?: string;
+  };
+  selectedFoods?: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+  }>;
+  totalAmount: number;
+}
 
+class ReservationService {
   async holdSeats(seats: SeatHoldRequest[]): Promise<{ message: string; expiresAt: string }> {
-    const response = await axios.post(
-      `${API_BASE_URL}/reservations/hold`,
-      seats,
-      { headers: this.getAuthHeader() }
-    );
+    const response = await api.post('/api/reservations/hold', seats);
     return response.data as { message: string; expiresAt: string };
   }
 
   async releaseSeats(seats: SeatHoldRequest[]): Promise<{ message: string }> {
-    const response = await axios.post(
-      `${API_BASE_URL}/reservations/release`,
-      seats,
-      { headers: this.getAuthHeader() }
-    );
+    const response = await api.post('/api/reservations/release', seats);
     return response.data as { message: string };
   }
 
   async getReservationStatus(eventId: number): Promise<ReservationStatus[]> {
-    const response = await axios.get(
-      `${API_BASE_URL}/reservations/event/${eventId}/status`,
-      { headers: this.getAuthHeader() }
-    );
+    const response = await api.get(`/api/reservations/event/${eventId}/status`);
     return response.data as ReservationStatus[];
   }
 
@@ -53,12 +57,13 @@ class ReservationService {
     number: number;
     includeFood?: boolean;
   }): Promise<any> {
-    const response = await axios.post(
-      `${API_BASE_URL}/reservations`,
-      reservation,
-      { headers: this.getAuthHeader() }
-    );
+    const response = await api.post('/api/reservations', reservation);
     return response.data;
+  }
+
+  async reserveTickets(reservationData: TicketReservationRequest): Promise<{ success: boolean; reservationId: string }> {
+    const response = await api.post('/api/reservations/reserve-tickets', reservationData);
+    return response.data as { success: boolean; reservationId: string };
   }
 }
 

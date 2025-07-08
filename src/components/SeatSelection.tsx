@@ -6,15 +6,13 @@ import {
   SeatSelectionMode,
   SeatSelectionState,
   SelectedSeat,
-  SelectedTable,
-  GeneralTicketSelection,
-  SeatStatus
+  GeneralTicketSelection
 } from '../types/seatSelection';
+import { SeatStatus } from '../types/seatStatus';
 import { seatSelectionService } from '../services/seatSelectionService';
 import { generateSessionId, formatPrice } from '../utils/seatSelection';
 import { cn } from '../utils/seatSelection';
 import EventHallLayout from './EventHallLayout';
-import TableSeatingLayout from './TableSeatingLayout';
 import GeneralAdmissionTickets from './GeneralAdmissionTickets';
 import SeatSelectionSummary from './SeatSelectionSummary';
 import ReservationTimer from './ReservationTimer';
@@ -38,7 +36,7 @@ const SeatSelection: React.FC<SeatSelectionProps> = ({
   const [selectionState, setSelectionState] = useState<SeatSelectionState>({
     mode: SeatSelectionMode.GeneralAdmission,
     selectedSeats: [],
-    selectedTables: [],
+    selectedTables: [],  // Add this empty array for the selectedTables property
     generalTickets: [],
     totalPrice: 0,
     sessionId
@@ -71,7 +69,6 @@ const SeatSelection: React.FC<SeatSelectionProps> = ({
         
         console.log(`Layout mode: ${layoutData.mode}`);
         console.log(`Seats count: ${layoutData.seats?.length || 0}`);
-        console.log(`Tables count: ${layoutData.tables?.length || 0}`);
         console.log(`Sections count: ${layoutData.sections?.length || 0}`);
         
         setLayout(layoutData);
@@ -108,19 +105,16 @@ const SeatSelection: React.FC<SeatSelectionProps> = ({
     const seatPrice = selectionState.selectedSeats.reduce((sum, selected) => 
       sum + selected.seat.price, 0);
     
-    const tablePrice = selectionState.selectedTables.reduce((sum, selected) => 
-      sum + selected.selectedSeats.reduce((seatSum, seat) => seatSum + seat.price, 0), 0);
-    
     const generalPrice = selectionState.generalTickets.reduce((sum, ticket) => 
       sum + (ticket.ticketType.price * ticket.quantity), 0);
 
-    const totalPrice = seatPrice + tablePrice + generalPrice;
+    const totalPrice = seatPrice + generalPrice;
 
     setSelectionState(prev => ({
       ...prev,
       totalPrice
     }));
-  }, [selectionState.selectedSeats, selectionState.selectedTables, selectionState.generalTickets]);
+  }, [selectionState.selectedSeats, selectionState.generalTickets]);
 
   // Handle seat selection for event hall mode
   const handleSeatSelect = useCallback(async (seatId: number) => {
@@ -175,46 +169,6 @@ const SeatSelection: React.FC<SeatSelectionProps> = ({
       }
     }
   }, [layout, selectionState.selectedSeats, sessionId]);
-
-  // Handle table selection
-  const handleTableSelect = useCallback(async (tableId: number, seatIds: number[], fullTable: boolean = false) => {
-    if (!layout) return;
-
-    const table = layout.tables.find(t => t.id === tableId);
-    if (!table) return;
-
-    try {
-      const reservation = await seatSelectionService.reserveTable({
-        tableId,
-        sessionId,
-        fullTable,
-        seatIds
-      });
-
-      const selectedSeats = table.seats.filter(seat => seatIds.includes(seat.id));
-      
-      const selectedTable: SelectedTable = {
-        table,
-        selectedSeats,
-        isFullTable: fullTable,
-        reservedUntil: new Date(reservation.reservedUntil)
-      };
-
-      setSelectionState(prev => ({
-        ...prev,
-        selectedTables: [...prev.selectedTables, selectedTable]
-      }));
-
-      const message = fullTable 
-        ? `Table ${table.tableNumber} fully reserved`
-        : `${selectedSeats.length} seats reserved at Table ${table.tableNumber}`;
-      
-      toast.success(message);
-    } catch (err) {
-      console.error('Failed to reserve table:', err);
-      toast.error('Failed to reserve table');
-    }
-  }, [layout, sessionId]);
 
   // Handle general admission ticket selection
   const handleGeneralTicketChange = useCallback((ticketSelections: GeneralTicketSelection[]) => {
@@ -296,22 +250,6 @@ const SeatSelection: React.FC<SeatSelectionProps> = ({
                   layout={layout}
                   selectedSeats={selectionState.selectedSeats}
                   onSeatSelect={handleSeatSelect}
-                />
-              </motion.div>
-            )}
-
-            {layout.mode === SeatSelectionMode.TableSeating && (
-              <motion.div
-                key="table-seating"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <TableSeatingLayout
-                  layout={layout}
-                  selectedTables={selectionState.selectedTables}
-                  onTableSelect={handleTableSelect}
                 />
               </motion.div>
             )}

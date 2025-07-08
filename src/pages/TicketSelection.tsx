@@ -1,15 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../services/api';
-import { TicketType, getTicketTypesForEvent } from '../services/ticketTypeService';
+import { TicketType, TicketTypeDisplay, getTicketTypesForEvent } from '../services/ticketTypeService';
 import SEO from '../components/SEO';
 import EventStructuredData from '../components/SEO/EventStructuredData';
+import { toast } from 'react-hot-toast';
 
 interface Event {
   id: number;
   date: string;
   isActive?: boolean;
   seatSelectionMode?: number;
+  venueId?: number | null;
+  venue?: {
+    id: number;
+    name: string;
+    description: string;
+    address: string;
+    city: string;
+    layoutType: string;
+    capacity: number;
+  } | null;
 }
 
 interface TicketDetail {
@@ -33,7 +44,7 @@ const TicketSelection: React.FC = () => {
   const [isActive, setIsActive] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
+  const [ticketTypes, setTicketTypes] = useState<TicketTypeDisplay[]>([]);
   const [quantities, setQuantities] = useState<Record<number, number>>({});
   const [eventSeatSelectionMode, setEventSeatSelectionMode] = useState<number>(SEAT_SELECTION_MODE.GENERAL_ADMISSION);
 
@@ -128,7 +139,7 @@ const TicketSelection: React.FC = () => {
 
   const selectedTickets = ticketTypes
     .map(ticket => ({
-      type: ticket.type,
+      type: ticket.name,
       quantity: quantities[ticket.id] || 0,
       unitPrice: ticket.price,
       price: (quantities[ticket.id] || 0) * ticket.price,
@@ -136,58 +147,29 @@ const TicketSelection: React.FC = () => {
     .filter(ticket => ticket.quantity > 0);
 
   const proceed = () => {
-    console.log("************* PROCEED BUTTON CLICKED *************");
-    
-    if (!eventTitle) {
-      console.error("No eventTitle available, cannot proceed");
+    if (!eventTitle || total === 0) {
+      toast.error('Please select at least one ticket');
       return;
     }
     
-    console.log(`Proceeding with eventSeatSelectionMode: ${eventSeatSelectionMode}`);
-    console.log(`SEAT_SELECTION_MODE.EVENT_HALL = ${SEAT_SELECTION_MODE.EVENT_HALL}`);
-    console.log(`SEAT_SELECTION_MODE.TABLE_SEATING = ${SEAT_SELECTION_MODE.TABLE_SEATING}`);
-    console.log(`Current state:`, state);
-    console.log(`Selected tickets:`, selectedTickets);
-    console.log(`Total price: ${total}`);
+    // Common navigation state for both paths
+    const navigationState = {
+      eventId: state?.eventId,
+      eventTitle: state?.eventTitle,
+      ticketPrice: total,
+      ticketDetails: selectedTickets,
+      eventDate: state?.eventDate,
+      eventLocation: state?.eventLocation,
+      venue: state?.venue,
+      seatSelectionMode: eventSeatSelectionMode
+    };
     
-    // Check seat selection mode and navigate accordingly
-    if (
-      eventSeatSelectionMode === SEAT_SELECTION_MODE.EVENT_HALL || 
-      eventSeatSelectionMode === SEAT_SELECTION_MODE.TABLE_SEATING
-    ) {
-      // For events with seating layouts, navigate to seat selection
-      console.log("************* NAVIGATING TO SEAT SELECTION *************");
-      console.log(`Navigation path: /event/${eventTitle}/seats`);
-      
-      const navigationState = {
-        eventId: state?.eventId,
-        eventTitle: state?.eventTitle,
-        ticketPrice: total,
-        ticketDetails: selectedTickets,
-        eventDate: state?.eventDate,
-        eventLocation: state?.eventLocation,
-      };
-      
-      console.log("Navigation state:", navigationState);
-      
-      navigate(`/event/${eventTitle}/seats`, {
-        state: navigationState
-      });
-      
-      console.log("Navigation function called");
+    // For events with allocated seating (Event Hall), go to seat selection
+    if (eventSeatSelectionMode === SEAT_SELECTION_MODE.EVENT_HALL) {
+      navigate(`/event/${eventTitle}/seats`, { state: navigationState });
     } else {
-      // For general admission events, skip seat selection and go to food
-      console.log("************* SKIPPING SEAT SELECTION, NAVIGATING TO FOOD *************");
-      console.log(`Navigation path: /event/${eventTitle}/food`);
-      
-      navigate(`/event/${eventTitle}/food`, {
-        state: {
-          eventId: state?.eventId,
-          eventTitle: state.eventTitle,
-          ticketPrice: total,
-          ticketDetails: selectedTickets,
-        },
-      });
+      // For general admission, go directly to food selection
+      navigate(`/event/${eventTitle}/food`, { state: navigationState });
     }
   };
   return (
@@ -216,6 +198,20 @@ const TicketSelection: React.FC = () => {
         <div className="space-y-1 text-sm text-gray-600">
           <p>📍 {state?.eventLocation}</p>
           <p>🕒 {state?.eventDate ? new Date(state.eventDate).toLocaleString() : 'Date not specified'}</p>
+          {state?.venue && (
+            <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <h3 className="font-medium text-blue-900 mb-2">📍 Venue Information</h3>
+              <div className="space-y-1 text-sm text-blue-800">
+                <p><span className="font-medium">Name:</span> {state.venue.name}</p>
+                <p><span className="font-medium">Address:</span> {state.venue.address}, {state.venue.city}</p>
+                <p><span className="font-medium">Layout:</span> {state.venue.layoutType}</p>
+                <p><span className="font-medium">Capacity:</span> {state.venue.capacity} people</p>
+                {state.venue.description && (
+                  <p><span className="font-medium">About:</span> {state.venue.description}</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -236,7 +232,7 @@ const TicketSelection: React.FC = () => {
             >
               <div className="flex-1">
                 <div className="flex items-baseline">
-                  <span className="text-lg font-semibold text-gray-800 capitalize">{ticket.type}</span>
+                  <span className="text-lg font-semibold text-gray-800 capitalize">{ticket.name}</span>
                   <span className="ml-2 text-sm text-gray-500">ticket</span>
                 </div>
                 <div className="text-gray-600 font-medium">

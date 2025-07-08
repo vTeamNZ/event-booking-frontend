@@ -1,21 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import toast from 'react-hot-toast';
 import { api } from '../services/api';
+import { useVenues } from '../hooks/useVenues';
+import { seatSelectionService } from '../services/seatSelectionService';
+import { Venue, Section } from '../types/seatSelection';
+import VenueLayoutPreview from '../components/VenueLayoutPreview';
+import TicketTypeManager from '../components/TicketTypeManager';
+import HelpTooltip from '../components/HelpTooltip';
+
+interface SeatRowAssignment {
+  rowStart: string;
+  rowEnd: string;
+  maxTickets: number;
+}
+
+interface TicketTypeData {
+  id?: number;
+  type: string;
+  price: number;
+  description: string;
+  sectionIds: number[];
+  maxTickets: number;
+  seatRows: SeatRowAssignment[];
+}
 
 interface EventFormValues {
   title: string;
   description: string;
   date: string;
-  location: string;
+  venueId: number;
   capacity: number;
   price: number;
-  seatSelectionMode: string;
   image?: File;
-  stagePosition?: string;
+  seatSelectionMode: string;
 }
 
 const EventCreateSchema = Yup.object().shape({
@@ -28,346 +49,751 @@ const EventCreateSchema = Yup.object().shape({
   date: Yup.date()
     .min(new Date(), 'Event date must be in the future')
     .required('Event date is required'),
-  location: Yup.string()
-    .min(3, 'Location must be at least 3 characters')
-    .required('Event location is required'),
+  venueId: Yup.number()
+    .min(1, 'Please select a venue')
+    .required('Venue is required'),
   capacity: Yup.number()
     .min(1, 'Capacity must be at least 1')
     .max(10000, 'Capacity cannot exceed 10,000')
     .required('Event capacity is required'),
   price: Yup.number()
-    .min(0, 'Price cannot be negative')
-    .required('Event price is required'),
+    .min(0, 'Price cannot be negative'),
   seatSelectionMode: Yup.string()
-    .oneOf(['1', '2', '3'], 'Invalid seat selection mode')
+    .oneOf(['1', '3'], 'Invalid seat selection mode')
     .required('Seat selection mode is required'),
-  image: Yup.mixed()
-    .test('fileSize', 'File size too large (max 5MB)', (value) => {
-      if (!value) return true;
-      const file = value as File;
-      return file.size <= 5 * 1024 * 1024;
-    })
-    .test('fileType', 'Invalid file type (JPG, PNG, GIF, WEBP only)', (value) => {
-      if (!value) return true;
-      const file = value as File;
-      return ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'].includes(file.type);
-    })
-    .nullable(),
 });
 
 const CreateEvent: React.FC = () => {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { venues, loading: loadingVenues } = useVenues();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedVenue, setSelectedVenue] = useState<any>(null);
+  const [venueLayout, setVenueLayout] = useState<any>(null);
+  const [venueSections, setVenueSections] = useState<Section[]>([]);
+  const [isVenueWithSeats, setIsVenueWithSeats] = useState<boolean>(true);
+  const [ticketTypes, setTicketTypes] = useState<TicketTypeData[]>([
+    {
+      type: 'Standard',
+      price: 50,
+      description: 'Standard admission',
+      sectionIds: [],
+      maxTickets: 100,
+      seatRows: []
+    }
+  ]);
+
+  // Generate available rows based on venue configuration
+  const availableRows = useMemo(() => {
+    if (!selectedVenue) return [];
+    
+    const rows: string[] = [];
+    const rowCount = selectedVenue.numberOfRows || 10;
+    
+    for (let i = 0; i < rowCount; i++) {
+      rows.push(String.fromCharCode(65 + i));
+    }
+    
+    return rows;
+  }, [selectedVenue]);
+  const [loadingVenueLayout, setLoadingVenueLayout] = useState(false);
+
+  // Load venue layout when venue is selected
+  const loadVenueLayout = async (venueId: number) => {
+    if (venueId === 0) {
+      setVenueLayout(null);
+      setVenueSections([]);
+      setSelectedVenue(null);
+      setIsVenueWithSeats(true);
+      return;
+    }
+
+    setLoadingVenueLayout(true);
+    try {
+      // Get venue details
+      const venueResponse = await api.get(`/api/venues/${venueId}`);
+      const venue = venueResponse.data as any;
+      setSelectedVenue(venue);
+
+      // Determine if venue has seat allocation based on layout type
+      const venueHasSeats = venue.layoutType === 'Allocated Seating';
+      setIsVenueWithSeats(venueHasSeats);
+
+      // Only load layout for venues with seats
+      if (venueHasSeats) {
+        // Set seat selection mode to Event Hall for venues with allocated seating
+        formik.setFieldValue('seatSelectionMode', '1');
+        
+        // Try to get existing layout or create a basic one
+        const layoutData = venue.layoutData ? 
+          JSON.parse(venue.layoutData) : 
+          generateBasicLayout(venue);
+        
+        setVenueLayout(layoutData);
+        
+        // Set basic sections if not available
+        const sections = layoutData.sections || [
+          { id: 1, name: 'VIP', color: '#DC2626', basePrice: 100 },
+          { id: 2, name: 'Premium', color: '#2563EB', basePrice: 75 },
+          { id: 3, name: 'Standard', color: '#4B5563', basePrice: 50 }
+        ];
+        setVenueSections(sections);
+      } else {
+        // For venues without seats, clear layout data
+        setVenueLayout(null);
+        setVenueSections([]);
+        
+        // Set seat selection mode to General Admission for venues without seats
+        formik.setFieldValue('seatSelectionMode', '3');
+        
+        // Reset ticket types to be more appropriate for general admission
+        setTicketTypes([
+          {
+            type: 'General Admission',
+            price: 25,
+            description: 'General admission access to the event',
+            sectionIds: [],
+            maxTickets: Math.floor(venue.capacity * 0.8), // 80% of venue capacity as default
+            seatRows: []
+          }
+        ]);
+      }
+
+    } catch (error) {
+      console.error('Error loading venue layout:', error);
+      toast.error('Failed to load venue layout');
+    } finally {
+      setLoadingVenueLayout(false);
+    }
+  };
+
+  // Generate basic layout for venues without saved layout
+  const generateBasicLayout = (venue: any) => {
+    const rows = venue.numberOfRows || 10;
+    const seatsPerRow = venue.seatsPerRow || 12;
+    
+    return {
+      venue: {
+        width: venue.width || 800,
+        height: venue.height || 600
+      },
+      rows: rows,
+      seatsPerRow: seatsPerRow,
+      seats: generateBasicSeats(rows, seatsPerRow),
+      sections: []
+    };
+  };
+
+  const generateBasicSeats = (rows: number, seatsPerRow: number) => {
+    const seats = [];
+    for (let row = 0; row < rows; row++) {
+      for (let seat = 0; seat < seatsPerRow; seat++) {
+        seats.push({
+          id: `${row}-${seat}`,
+          row: String.fromCharCode(65 + row),
+          number: seat + 1,
+          x: seat * 35 + 50,
+          y: row * 40 + 100
+        });
+      }
+    }
+    return seats;
+  };
+
+  // Ticket type management functions
+  const addTicketType = () => {
+    setTicketTypes([...ticketTypes, {
+      type: '',
+      price: 0,
+      description: '',
+      sectionIds: [],
+      maxTickets: 0,
+      seatRows: []
+    }]);
+  };
+
+  const updateTicketType = (index: number, field: keyof TicketTypeData, value: any) => {
+    const updated = ticketTypes.map((ticket, i) => 
+      i === index ? { ...ticket, [field]: value } : ticket
+    );
+    setTicketTypes(updated);
+  };
+
+  const removeTicketType = (index: number) => {
+    setTicketTypes(ticketTypes.filter((_, i) => i !== index));
+  };
+
+  const toggleSection = (ticketIndex: number, sectionId: number) => {
+    const updated = ticketTypes.map((ticket, i) => {
+      if (i === ticketIndex) {
+        const sectionIds = ticket.sectionIds.includes(sectionId)
+          ? ticket.sectionIds.filter(id => id !== sectionId)
+          : [...ticket.sectionIds, sectionId];
+        return { ...ticket, sectionIds };
+      }
+      return ticket;
+    });
+    setTicketTypes(updated);
+  };
+
+  const addSeatRow = (ticketIndex: number) => {
+    console.log('addSeatRow called for ticket index:', ticketIndex);
+    const updated = ticketTypes.map((ticket, i) => {
+      if (i === ticketIndex) {
+        return {
+          ...ticket,
+          seatRows: [
+            ...ticket.seatRows,
+            { rowStart: '', rowEnd: '', maxTickets: 0 }
+          ]
+        };
+      }
+      return ticket;
+    });
+    console.log('Updated ticket types after addSeatRow:', updated);
+    setTicketTypes(updated);
+  };
+
+  const updateSeatRow = (
+    ticketIndex: number,
+    rowIndex: number,
+    field: keyof SeatRowAssignment,
+    value: any
+  ) => {
+    console.log('updateSeatRow called:', { ticketIndex, rowIndex, field, value });
+    const updated = ticketTypes.map((ticket, i) => {
+      if (i === ticketIndex) {
+        const seatRows = ticket.seatRows.map((row, j) => {
+          if (j === rowIndex) {
+            // If updating rowStart, reset rowEnd if it's now less than rowStart
+            if (field === 'rowStart' && row.rowEnd && value > row.rowEnd) {
+              return { ...row, [field]: value, rowEnd: value };
+            }
+            return { ...row, [field]: value };
+          }
+          return row;
+        });
+        const updatedTicket = { ...ticket, seatRows };
+        
+        // Calculate and update maxTickets based on row assignments
+        if (isVenueWithSeats) {
+          const calculatedCapacity = calculateTicketsFromRowAssignments(seatRows);
+          updatedTicket.maxTickets = calculatedCapacity;
+        }
+        
+        return updatedTicket;
+      }
+      return ticket;
+    });
+    console.log('Updated ticket types after updateSeatRow:', updated);
+    setTicketTypes(updated);
+  };
+
+  const removeSeatRow = (ticketIndex: number, rowIndex: number) => {
+    const updated = ticketTypes.map((ticket, i) => {
+      if (i === ticketIndex) {
+        const seatRows = ticket.seatRows.filter((_, j) => j !== rowIndex);
+        const updatedTicket = { ...ticket, seatRows };
+        
+        // Recalculate maxTickets after removing a row assignment
+        if (isVenueWithSeats) {
+          const calculatedCapacity = calculateTicketsFromRowAssignments(seatRows);
+          updatedTicket.maxTickets = calculatedCapacity;
+        }
+        
+        return updatedTicket;
+      }
+      return ticket;
+    });
+    setTicketTypes(updated);
+  };
+
+  // Validation for ticket types
+  const validateTicketTypes = () => {
+    if (formik.values.venueId === 0) return true; // No venue selected, skip ticket type validation
+
+    if (ticketTypes.length === 0) {
+      toast.error('Please add at least one ticket type');
+      return false;
+    }
+
+    const invalidTicketTypes = ticketTypes.filter(
+      tt => !tt.type.trim() || tt.price <= 0 || !tt.description.trim()
+    );
+    
+    if (invalidTicketTypes.length > 0) {
+      toast.error('Please fill in all ticket type details (name, price, and description)');
+      return false;
+    }
+
+    // Check if at least one ticket type has row assignments for allocated seating venues
+    if (isVenueWithSeats) {
+      const hasRowAssignments = ticketTypes.some(tt => 
+        tt.seatRows.some(sr => sr.rowStart && sr.rowEnd)
+      );
+      if (!hasRowAssignments) {
+        toast.error('Please assign rows to at least one ticket type for allocated seating venues');
+        return false;
+      }
+    }
+    
+    // Check that total ticket allocations don't exceed venue capacity
+    const totalTicketAllocation = getTotalTicketCapacity();
+    if (totalTicketAllocation > formik.values.capacity) {
+      toast.error(`Total ticket allocations (${totalTicketAllocation}) exceed venue capacity (${formik.values.capacity})`);
+      return false;
+    }
+
+    return true;
+  };
+
+  // Calculate total capacity from ticket types
+  const getTotalTicketCapacity = () => {
+    // For venues without seats (general admission), use maxTickets directly
+    if (!isVenueWithSeats) {
+      return ticketTypes.reduce((total, tt) => total + tt.maxTickets, 0);
+    }
+
+    // For venues with seats, calculate based on row assignments
+    return ticketTypes.reduce((total, tt) => {
+      // Calculate tickets from row assignments
+      const ticketsFromRows = calculateTicketsFromRowAssignments(tt.seatRows);
+      return total + ticketsFromRows;
+    }, 0);
+  };
+
+  // Calculate the number of tickets based on row assignments
+  const calculateTicketsFromRowAssignments = (seatRows: SeatRowAssignment[]) => {
+    if (!selectedVenue || !seatRows.length) return 0;
+    
+    const seatsPerRow = selectedVenue.seatsPerRow || 12;
+    let totalTickets = 0;
+
+    seatRows.forEach(rowAssignment => {
+      if (rowAssignment.rowStart && rowAssignment.rowEnd) {
+        const startIndex = rowAssignment.rowStart.charCodeAt(0) - 65; // A=0, B=1, etc.
+        const endIndex = rowAssignment.rowEnd.charCodeAt(0) - 65;
+        const numberOfRows = endIndex - startIndex + 1;
+        totalTickets += numberOfRows * seatsPerRow;
+      }
+    });
+
+    return totalTickets;
+  };
+
+  // Update ticket type capacity based on row assignments
+  const updateTicketTypeCapacity = (ticketIndex: number) => {
+    if (!isVenueWithSeats) return;
+    
+    const ticketType = ticketTypes[ticketIndex];
+    const calculatedCapacity = calculateTicketsFromRowAssignments(ticketType.seatRows);
+    
+    if (calculatedCapacity !== ticketType.maxTickets) {
+      updateTicketType(ticketIndex, 'maxTickets', calculatedCapacity);
+    }
+  };
 
   const formik = useFormik<EventFormValues>({
     initialValues: {
       title: '',
       description: '',
       date: '',
-      location: '',
+      venueId: 0,
       capacity: 100,
-      price: 0,
-      seatSelectionMode: '3', // General Admission by default
+      price: 0, // Keeping in form values for API compatibility
       image: undefined,
-      stagePosition: '',
+      seatSelectionMode: '3', // Default to General Admission
     },
     validationSchema: EventCreateSchema,
-    onSubmit: async (values, { setStatus }) => {
-      setIsSubmitting(true);
+    onSubmit: async (values, { setSubmitting }) => {
+      console.log('Form submitted with values:', values);
+      console.log('Ticket types:', ticketTypes);
+      
       try {
-        const formData = new FormData();
-        formData.append('title', values.title);
-        formData.append('description', values.description);
-        formData.append('date', new Date(values.date).toISOString());
-        formData.append('location', values.location);
-        formData.append('capacity', values.capacity.toString());
-        formData.append('price', values.price.toString());
-        formData.append('seatSelectionMode', values.seatSelectionMode);
-        formData.append('isActive', 'true');
-        
-        if (values.stagePosition) {
-          formData.append('stagePosition', values.stagePosition);
+        // Validate venue selection
+        if (values.venueId === 0) {
+          toast.error('Please select a venue for your event');
+          setSubmitting(false);
+          return;
         }
         
-        if (values.image) {
-          formData.append('image', values.image);
+        // Validate ticket types
+        if (!validateTicketTypes()) {
+          setSubmitting(false);
+          return;
         }
 
-        const response = await api.post('/api/events', formData, {
+        // Create event first
+        const formData = new FormData();
+        Object.keys(values).forEach(key => {
+          const value = values[key as keyof EventFormValues];
+          if (value !== undefined) {
+            if (value instanceof File) {
+              formData.append(key, value);
+            } else {
+              formData.append(key, value.toString());
+              console.log(`Form data: ${key} = ${value.toString()}`); // Debug log
+            }
+          }
+        });
+        
+        // Make sure seatSelectionMode is converted to a numeric value
+        console.log(`Selected seat mode before: ${formData.get('seatSelectionMode')}`);
+        // Ensure seatSelectionMode is numeric
+        const modeValue = parseInt(formData.get('seatSelectionMode') as string);
+        formData.delete('seatSelectionMode');
+        formData.append('seatSelectionMode', modeValue.toString());
+        console.log(`Selected seat mode after: ${formData.get('seatSelectionMode')}`);
+
+        const eventResponse = await api.post('/api/Events', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
-        
-        toast.success('Event created successfully! It will be visible after admin approval.');
-        navigate(`/organizer/events/${(response.data as any).id}`);
-      } catch (error: any) {
-        const errorMessage = error.response?.data?.message || 
-                           error.response?.data || 
-                           'Failed to create event. Please try again.';
-        setStatus(errorMessage);
-        toast.error(errorMessage);
+
+        const eventId = (eventResponse.data as any).id;
+
+        // Create ticket types
+        for (const ticketType of ticketTypes) {
+          await api.post('/api/TicketTypes', {
+            eventId: eventId,
+            type: ticketType.type,
+            price: ticketType.price,
+            description: ticketType.description,
+            seatRows: ticketType.seatRows.map(row => ({
+              rowStart: row.rowStart,
+              rowEnd: row.rowEnd,
+              maxTickets: row.maxTickets
+            }))
+          });
+        }
+
+        toast.success('Event created successfully!');
+        navigate('/organizer/events');
+      } catch (error) {
+        toast.error('Failed to create event');
+        console.error('Error creating event:', error);
       } finally {
-        setIsSubmitting(false);
+        setSubmitting(false);
       }
     },
   });
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const file = event.currentTarget.files?.[0];
     if (file) {
       formik.setFieldValue('image', file);
-      
-      // Create preview
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-    } else {
-      formik.setFieldValue('image', undefined);
-      setImagePreview(null);
     }
   };
 
-  const seatSelectionModes = [
-    { value: '1', label: 'Event Hall Seating', description: 'Individual seat selection with visual layout' },
-    { value: '2', label: 'Table Seating', description: 'Table-based seating with group booking options' },
-    { value: '3', label: 'General Admission', description: 'No seat selection, ticket types only' },
-  ];
+  const handleVenueChange = (venueId: number) => {
+    const selectedVenue = venues.find(v => v.id === venueId);
+    formik.setFieldValue('venueId', venueId);
+    if (selectedVenue) {
+      formik.setFieldValue('capacity', selectedVenue.capacity);
+    }
+    
+    // Load venue layout
+    loadVenueLayout(venueId);
+  };
 
   return (
     <>
-      <SEO 
-        title="Create Event" 
-        description="Create a new event and set up seating arrangements, pricing, and booking options." 
-        keywords={["Create Event", "Event Management", "Event Organization"]}
-      />
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-lg shadow">
-            {/* Header */}
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h1 className="text-2xl font-bold text-gray-900">Create New Event</h1>
-              <p className="text-gray-600">Fill in the details below to create your event</p>
+      <SEO title="Create Event" />
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">Create New Event</h1>
+
+        <div className="bg-white shadow-lg rounded-lg p-8">
+          <form onSubmit={formik.handleSubmit} className="space-y-6">
+            {/* Event Title */}
+            <div>
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                Event Title *
+              </label>
+              <input
+                type="text"
+                id="title"
+                {...formik.getFieldProps('title')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter event title"
+              />
+              {formik.touched.title && formik.errors.title && (
+                <p className="mt-1 text-sm text-red-600">{formik.errors.title}</p>
+              )}
             </div>
 
-            {/* Form */}
-            <form onSubmit={formik.handleSubmit} className="p-6 space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Event Title */}
-                <div className="lg:col-span-2">
-                  <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                    Event Title *
-                  </label>
-                  <input
-                    id="title"
-                    name="title"
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                    placeholder="Enter event title"
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.title}
+            {/* Event Description */}
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                Event Description *
+              </label>
+              <textarea
+                id="description"
+                {...formik.getFieldProps('description')}
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Describe your event..."
+              />
+              {formik.touched.description && formik.errors.description && (
+                <p className="mt-1 text-sm text-red-600">{formik.errors.description}</p>
+              )}
+            </div>
+
+            {/* Date and Time */}
+            <div>
+              <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
+                Event Date & Time *
+              </label>
+              <input
+                id="date"
+                type="datetime-local"
+                {...formik.getFieldProps('date')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {formik.touched.date && formik.errors.date && (
+                <p className="mt-1 text-sm text-red-600">{formik.errors.date}</p>
+              )}
+            </div>
+
+            {/* Venue Selection */}
+            <div>
+              <label htmlFor="venueId" className="block text-sm font-medium text-gray-700 mb-2">
+                Venue *
+              </label>
+              <select
+                id="venueId"
+                value={formik.values.venueId}
+                onChange={(e) => handleVenueChange(Number(e.target.value))}
+                onBlur={formik.handleBlur}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value={0}>Select a venue...</option>
+                {venues.map((venue) => (
+                  <option key={venue.id} value={venue.id}>
+                    {venue.name} (Capacity: {venue.capacity})
+                  </option>
+                ))}
+              </select>
+              {formik.touched.venueId && formik.errors.venueId && (
+                <p className="mt-1 text-sm text-red-600">{formik.errors.venueId}</p>
+              )}
+              {loadingVenues && (
+                <p className="mt-1 text-sm text-gray-500">Loading venues...</p>
+              )}
+            </div>
+
+            {/* Capacity */}
+            <div>
+              <label htmlFor="capacity" className="block text-sm font-medium text-gray-700 mb-2">
+                Event Capacity
+              </label>
+              {formik.values.venueId > 0 ? (
+                <div className="px-3 py-2 border border-gray-300 bg-gray-50 rounded-md text-gray-700">
+                  {formik.values.capacity} (determined by venue)
+                </div>
+              ) : (
+                <input
+                  id="capacity"
+                  type="number"
+                  min="1"
+                  max="10000"
+                  {...formik.getFieldProps('capacity')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Maximum attendees"
+                />
+              )}
+              {formik.touched.capacity && formik.errors.capacity && (
+                <p className="mt-1 text-sm text-red-600">{formik.errors.capacity}</p>
+              )}
+            </div>
+
+            {/* Event Image Upload */}
+            <div>
+              <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-2">
+                Event Image (Optional)
+              </label>
+              <input
+                id="image"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Supported formats: JPG, PNG, GIF, WEBP. Maximum size: 5MB
+              </p>
+              
+              {/* Image Preview */}
+              {imagePreview && (
+                <div className="mt-3">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-32 h-32 object-cover rounded-md border border-gray-300"
                   />
-                  {formik.touched.title && formik.errors.title && (
-                    <div className="text-red-500 text-sm mt-1">{formik.errors.title}</div>
-                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Venue Layout Preview - Only for venues with seats */}
+            {formik.values.venueId > 0 && isVenueWithSeats && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-gray-900">Venue Layout</h3>
+                  <HelpTooltip content="This shows how your venue is arranged. Seats will be colored according to their assigned ticket type." />
+                </div>
+                
+                {loadingVenueLayout ? (
+                  <div className="flex items-center justify-center h-48 border border-gray-300 rounded-lg">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                      <p className="mt-2 text-sm text-gray-500">Loading venue layout...</p>
+                    </div>
+                  </div>
+                ) : (
+                  <VenueLayoutPreview
+                    layout={venueLayout}
+                    sections={venueSections}
+                    selectedVenue={selectedVenue}
+                    ticketTypes={ticketTypes}
+                  />
+                )
+                }
+              </div>
+            )}
+
+            {/* General Admission Info - For venues without seats */}
+            {formik.values.venueId > 0 && !isVenueWithSeats && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-green-900 mb-2">General Admission Venue</h3>
+                <p className="text-sm text-green-800">
+                  This venue uses general admission without specific seat assignments. 
+                  Attendees will have open access to the venue space within their ticket type restrictions.
+                </p>
+                <div className="mt-3 text-sm text-green-700">
+                  <p><span className="font-medium">Venue:</span> {selectedVenue?.name}</p>
+                  <p><span className="font-medium">Capacity:</span> {selectedVenue?.capacity} people</p>
+                  <p><span className="font-medium">Layout:</span> {selectedVenue?.layoutType || 'General Admission'}</p>
+                </div>
+              </div>
+            )}
+
+            {/* General Admission help text - For venues without seats */}
+            {!isVenueWithSeats && formik.values.venueId > 0 && (
+              <div className="mt-4 p-4 bg-green-50 text-green-800 rounded-lg">
+                <h4 className="font-medium mb-2">General Admission</h4>
+                <p className="text-sm">
+                  This venue uses general admission ticketing. Configure your ticket types below with different 
+                  price points and maximum quantities. No seat assignments are required.
+                </p>
+              </div>
+            )}
+
+            {/* Ticket Types Note */}
+            {formik.values.venueId > 0 && (
+              <div className="mt-4 p-4 bg-yellow-50 text-yellow-800 rounded-lg">
+                <h4 className="font-medium mb-2">Ticket Types Configuration</h4>
+                <p className="text-sm">
+                  {isVenueWithSeats 
+                    ? `Configure your ticket types below. Each ticket type can have its own price, description, and seat assignments.
+                       Make sure the total ticket allocations don't exceed your venue capacity of ${formik.values.capacity}.`
+                    : `Configure your ticket types below. Each ticket type can have its own price, description, and maximum quantity.
+                       Make sure the total ticket allocations don't exceed your venue capacity of ${formik.values.capacity}.`
+                  }
+                </p>
+              </div>
+            )}
+
+            {/* Ticket Types Management */}
+            {formik.values.venueId > 0 && (
+              <TicketTypeManager
+                ticketTypes={ticketTypes}
+                sections={venueSections}
+                availableRows={availableRows}
+                isVenueWithSeats={isVenueWithSeats}
+                onAddTicketType={addTicketType}
+                onUpdateTicketType={updateTicketType}
+                onRemoveTicketType={removeTicketType}
+                onToggleSection={toggleSection}
+                onAddSeatRow={addSeatRow}
+                onUpdateSeatRow={updateSeatRow}
+                onRemoveSeatRow={removeSeatRow}
+              />
+            )}
+
+            {/* Event Summary */}
+            {formik.values.venueId > 0 && ticketTypes.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-blue-900 mb-3">Event Summary</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p><span className="font-medium">Event:</span> {formik.values.title || 'Untitled Event'}</p>
+                    <p><span className="font-medium">Venue:</span> {selectedVenue?.name}</p>
+                    <p><span className="font-medium">Date:</span> {formik.values.date ? new Date(formik.values.date).toLocaleString() : 'Not set'}</p>
+                    <p><span className="font-medium">Layout:</span> {isVenueWithSeats ? 'Allocated Seating' : 'General Admission'}</p>
+                  </div>
+                  
+                  <div>
+                    <p><span className="font-medium">Venue Capacity:</span> {selectedVenue?.capacity} seats</p>
+                    <p><span className="font-medium">Ticket Types:</span> {ticketTypes.length}</p>
+                    <p><span className="font-medium">Price Range:</span> ${Math.min(...ticketTypes.map(tt => tt.price))} - ${Math.max(...ticketTypes.map(tt => tt.price))}</p>
+                    
+                    {/* Ticket allocation warning */}
+                    {getTotalTicketCapacity() > formik.values.capacity && (
+                      <p className="text-red-600 font-medium mt-1">
+                        Warning: Total ticket allocations ({getTotalTicketCapacity()}) exceed venue capacity ({formik.values.capacity})
+                      </p>
+                    )}
+                  </div>
                 </div>
 
-                {/* Event Description */}
-                <div className="lg:col-span-2">
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                    Event Description *
-                  </label>
-                  <textarea
-                    id="description"
-                    name="description"
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                    placeholder="Describe your event..."
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.description}
-                  />
-                  {formik.touched.description && formik.errors.description && (
-                    <div className="text-red-500 text-sm mt-1">{formik.errors.description}</div>
-                  )}
-                </div>
-
-                {/* Date and Time */}
-                <div>
-                  <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
-                    Event Date & Time *
-                  </label>
-                  <input
-                    id="date"
-                    name="date"
-                    type="datetime-local"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.date}
-                  />
-                  {formik.touched.date && formik.errors.date && (
-                    <div className="text-red-500 text-sm mt-1">{formik.errors.date}</div>
-                  )}
-                </div>
-
-                {/* Location */}
-                <div>
-                  <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-                    Location *
-                  </label>
-                  <input
-                    id="location"
-                    name="location"
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                    placeholder="Event venue or address"
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.location}
-                  />
-                  {formik.touched.location && formik.errors.location && (
-                    <div className="text-red-500 text-sm mt-1">{formik.errors.location}</div>
-                  )}
-                </div>
-
-                {/* Capacity */}
-                <div>
-                  <label htmlFor="capacity" className="block text-sm font-medium text-gray-700 mb-1">
-                    Event Capacity *
-                  </label>
-                  <input
-                    id="capacity"
-                    name="capacity"
-                    type="number"
-                    min="1"
-                    max="10000"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                    placeholder="Maximum attendees"
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.capacity}
-                  />
-                  {formik.touched.capacity && formik.errors.capacity && (
-                    <div className="text-red-500 text-sm mt-1">{formik.errors.capacity}</div>
-                  )}
-                </div>
-
-                {/* Base Price */}
-                <div>
-                  <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
-                    Base Price (NZD) *
-                  </label>
-                  <input
-                    id="price"
-                    name="price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                    placeholder="0.00"
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.price}
-                  />
-                  {formik.touched.price && formik.errors.price && (
-                    <div className="text-red-500 text-sm mt-1">{formik.errors.price}</div>
-                  )}
-                </div>
-
-                {/* Seat Selection Mode */}
-                <div className="lg:col-span-2">
-                  <label htmlFor="seatSelectionMode" className="block text-sm font-medium text-gray-700 mb-1">
-                    Seating Configuration *
-                  </label>
-                  <div className="space-y-3">
-                    {seatSelectionModes.map((mode) => (
-                      <div key={mode.value} className="flex items-start">
-                        <input
-                          id={`seatSelectionMode-${mode.value}`}
-                          name="seatSelectionMode"
-                          type="radio"
-                          value={mode.value}
-                          checked={formik.values.seatSelectionMode === mode.value}
-                          onChange={formik.handleChange}
-                          className="mt-1 mr-3"
-                        />
-                        <div>
-                          <label htmlFor={`seatSelectionMode-${mode.value}`} className="block text-sm font-medium text-gray-900">
-                            {mode.label}
-                          </label>
-                          <p className="text-sm text-gray-600">{mode.description}</p>
-                        </div>
+                <div className="mt-4">
+                  <h4 className="font-medium text-blue-900 mb-2">Ticket Types:</h4>
+                  <div className="space-y-1">
+                    {ticketTypes.map((tt, index) => (
+                      <div key={index} className="flex justify-between items-center text-sm">
+                        <span>{tt.type} - ${tt.price}</span>
+                        <span className="text-blue-600">
+                          {isVenueWithSeats 
+                            ? (tt.seatRows.some(sr => sr.rowStart && sr.rowEnd)
+                                ? `${tt.seatRows.filter(sr => sr.rowStart && sr.rowEnd).length} row range(s) assigned`
+                                : 'No rows assigned'
+                              )
+                            : `Max ${tt.maxTickets} tickets`
+                          }
+                        </span>
                       </div>
                     ))}
                   </div>
-                  {formik.touched.seatSelectionMode && formik.errors.seatSelectionMode && (
-                    <div className="text-red-500 text-sm mt-1">{formik.errors.seatSelectionMode}</div>
-                  )}
-                </div>
-
-                {/* Event Image Upload */}
-                <div className="lg:col-span-2">
-                  <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
-                    Event Image (Optional)
-                  </label>
-                  <input
-                    id="image"
-                    name="image"
-                    type="file"
-                    accept="image/*"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
-                    onChange={handleImageChange}
-                  />
-                  <p className="text-sm text-gray-500 mt-1">
-                    Supported formats: JPG, PNG, GIF, WEBP. Maximum size: 5MB
-                  </p>
-                  
-                  {/* Image Preview */}
-                  {imagePreview && (
-                    <div className="mt-3">
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="w-32 h-32 object-cover rounded-md border border-gray-300"
-                      />
-                    </div>
-                  )}
-                  
-                  {formik.touched.image && formik.errors.image && (
-                    <div className="text-red-500 text-sm mt-1">{formik.errors.image}</div>
-                  )}
                 </div>
               </div>
+            )}
 
-              {/* Form Status */}
-              {formik.status && (
-                <div className="text-red-500 text-sm">{formik.status}</div>
-              )}
-
-              {/* Submit Buttons */}
-              <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+            {/* Submit Button */}
+            <div className="pt-6">
+              <div className="flex justify-end space-x-3">
                 <button
                   type="button"
-                  onClick={() => navigate('/organizer/dashboard')}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  onClick={() => navigate('/organizer/events')}
+                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={formik.isSubmitting}
+                  className="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                 >
-                  {isSubmitting ? 'Creating Event...' : 'Create Event'}
+                  {formik.isSubmitting ? 'Creating Event...' : 'Create Event'}
                 </button>
               </div>
-            </form>
-          </div>
+            </div>
+          </form>
         </div>
       </div>
     </>

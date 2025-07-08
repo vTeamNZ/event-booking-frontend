@@ -158,7 +158,7 @@ const AdminDashboard: React.FC = () => {
           )}
 
           {/* Navigation Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <button
               onClick={() => navigate('/admin/organizers')}
               className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow text-left"
@@ -181,6 +181,14 @@ const AdminDashboard: React.FC = () => {
             >
               <h3 className="text-lg font-medium text-gray-900 mb-2">Manage Users</h3>
               <p className="text-gray-600">View and manage all system users</p>
+            </button>
+
+            <button
+              onClick={() => navigate('/admin/venues')}
+              className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow text-left"
+            >
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Manage Venues</h3>
+              <p className="text-gray-600">Create and configure venue layouts</p>
             </button>
           </div>
 
