@@ -1,40 +1,11 @@
 import { SeatLayoutResponse, SeatSelectionMode } from '../types/seatSelection';
 import { SeatStatus } from '../types/seatStatus';
 
-// Sample predefined layouts that can be used for different venues
-// These would be replaced with actual venue layouts in production
+// This file previously contained predefined mock layouts
+// Now we're using real data from the API instead
 
-/**
- * Default small cinema layout
- * - 10 rows (A-J)
- * - 12 seats per row
- * - 2 sections (Standard and Premium)
- */
-export const smallCinemaLayout: SeatLayoutResponse = {
-  mode: SeatSelectionMode.EventHall,
-  eventId: 0, // This will be replaced with actual event ID
-  sections: [
-    {
-      id: 1,
-      name: "Standard",
-      basePrice: 15.00,
-      color: "#888888"
-    },
-    {
-      id: 2,
-      name: "Premium",
-      basePrice: 25.00,
-      color: "#d4af37"
-    }
-  ],
-  tables: [], // No tables for cinema layout
-  seats: generateCinemaSeats(10, 12, [
-    // Rows A-D are premium
-    { rowStart: 0, rowEnd: 3, sectionId: 2, basePrice: 25.00 },
-    // Rows E-J are standard
-    { rowStart: 4, rowEnd: 9, sectionId: 1, basePrice: 15.00 }
-  ])
-};
+// Export an empty object to avoid breaking any imports
+export const predefinedLayouts = {};
 
 /**
  * Default medium cinema layout
@@ -114,16 +85,6 @@ export const largeCinemaLayout: SeatLayoutResponse = {
     // Rows M-T are standard
     { rowStart: 12, rowEnd: 19, sectionId: 1, basePrice: 15.00 }
   ])
-};
-
-/**
- * Map of predefined layouts by venue ID
- * In a real application, this would be loaded from a config file or API
- */
-export const predefinedLayouts: Record<string, SeatLayoutResponse> = {
-  'cinema-small': smallCinemaLayout,
-  'cinema-medium': mediumCinemaLayout,
-  'cinema-large': largeCinemaLayout
 };
 
 /**
