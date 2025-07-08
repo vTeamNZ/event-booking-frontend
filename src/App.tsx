@@ -24,6 +24,7 @@ import AdminOrganizers from './pages/AdminOrganizers';
 import AdminEvents from './pages/AdminEvents';
 import AdminUsers from './pages/AdminUsers';
 import { VenueManagement } from './pages/VenueManagement';
+import SeatingDemo from './components/SeatingDemo';
 
 const App: React.FC = () => {
   return (
@@ -38,7 +39,8 @@ const App: React.FC = () => {
       <div className="bg-red-900 h-1 w-full" />
       {/* Page Content */}
       <AnimatedHeader />
-      <HeroCarousel />      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <HeroCarousel />      
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <Routes>
           <Route path="/" element={<EventsList />} />
           <Route path="/event/:eventTitle/tickets" element={<TicketSelection />} />
@@ -92,7 +94,7 @@ const App: React.FC = () => {
               <VenueManagement />
             </PrivateRoute>
           } />
-          
+          <Route path="/seating-demo" element={<SeatingDemo />} />
         </Routes>
       </main>
     </div>

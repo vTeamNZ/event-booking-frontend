@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { SeatSelectionState } from '../types/seatSelection';
-import CinemaSeatLayout from '../components/CinemaSeatLayout';
+import { SeatingLayoutV2, SeatingSelectionState } from '../components/seating-v2';
 import TicketTypeDisplay from '../components/TicketTypeDisplay';
 import SEO from '../components/SEO';
 
@@ -61,11 +61,69 @@ const SeatSelectionPage: React.FC = () => {
     fetchEvent();
   }, [state?.eventId, navigate, eventTitle]);
 
-  const handleSelectionComplete = (selectionState: SeatSelectionState) => {
+  const handleSelectionComplete = (selectionState: SeatingSelectionState) => {
+    // Convert the new seating selection state to the old format for navigation
+    const oldFormatState: SeatSelectionState = {
+      mode: selectionState.mode,
+      selectedSeats: selectionState.selectedSeats.map(selectedSeat => ({
+        seat: {
+          id: selectedSeat.seat.id,
+          seatNumber: selectedSeat.seat.seatNumber,
+          row: selectedSeat.seat.row,
+          number: selectedSeat.seat.number,
+          x: selectedSeat.seat.x,
+          y: selectedSeat.seat.y,
+          width: selectedSeat.seat.width,
+          height: selectedSeat.seat.height,
+          price: selectedSeat.seat.price,
+          status: selectedSeat.seat.status,
+          sectionId: selectedSeat.seat.sectionId,
+          section: selectedSeat.seat.section,
+          tableId: selectedSeat.seat.tableId,
+          reservedUntil: selectedSeat.seat.reservedUntil
+        },
+        reservedUntil: selectedSeat.reservedUntil
+      })),
+      selectedTables: selectionState.selectedTables.map(selectedTable => ({
+        table: {
+          id: selectedTable.table.id,
+          tableNumber: selectedTable.table.tableNumber,
+          capacity: selectedTable.table.capacity,
+          x: selectedTable.table.x,
+          y: selectedTable.table.y,
+          width: selectedTable.table.width,
+          height: selectedTable.table.height,
+          shape: selectedTable.table.shape,
+          pricePerSeat: selectedTable.table.pricePerSeat,
+          tablePrice: selectedTable.table.tablePrice,
+          sectionId: selectedTable.table.sectionId,
+          availableSeats: selectedTable.table.availableSeats,
+          seats: selectedTable.table.seats
+        },
+        selectedSeats: selectedTable.selectedSeats,
+        isFullTable: selectedTable.isFullTable,
+        reservedUntil: selectedTable.reservedUntil
+      })),
+      generalTickets: selectionState.generalTickets.map(ticket => ({
+        ticketType: {
+          id: ticket.ticketType.id,
+          type: ticket.ticketType.name,
+          price: ticket.ticketType.price,
+          color: ticket.ticketType.color,
+          description: ticket.ticketType.description,
+          eventId: selectionState.eventId,
+          seatRowAssignments: ticket.ticketType.seatRowAssignments
+        },
+        quantity: ticket.quantity
+      })),
+      totalPrice: selectionState.totalPrice,
+      sessionId: selectionState.sessionId
+    };
+
     // Combine ticket information with seat selection data
     const navigationState = {
       ...state,
-      seatSelection: selectionState,
+      seatSelection: oldFormatState,
       fromSeatSelection: true
     };
 
@@ -164,10 +222,13 @@ const SeatSelectionPage: React.FC = () => {
                   <TicketTypeDisplay eventId={state.eventId} />
                 </div>
                 
-                {/* Cinema Style Seat Selection */}
-                <CinemaSeatLayout 
+                {/* New Seating Layout System V2 */}
+                <SeatingLayoutV2 
                   eventId={state.eventId}
                   onSelectionComplete={handleSelectionComplete}
+                  maxSeats={8}
+                  showLegend={true}
+                  className="seating-layout-container"
                 />
               </div>
             </div>

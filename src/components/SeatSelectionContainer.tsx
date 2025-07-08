@@ -199,6 +199,47 @@ export const SeatSelectionContainer: React.FC = () => {
             <div className="mt-4">
               <SeatLegend showHeld={event.seatSelectionMode === 1} />
             </div>
+
+            {/* Selected Seats Summary */}
+            {event.seatSelectionMode === 1 && selectedSeats.length > 0 && (
+              <div className="mt-6 bg-blue-50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold mb-3">Selected Seats Summary</h3>
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-700">
+                    <span className="font-medium">Number of seats selected:</span> {selectedSeats.length}
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    <span className="font-medium">Seat IDs:</span> {selectedSeats.join(', ')}
+                  </p>
+                  <div className="mt-3 pt-3 border-t border-blue-200">
+                    <p className="text-lg font-semibold">
+                      Total: {selectedSeats.length} seat{selectedSeats.length !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Selected Tickets Summary */}
+            {event.seatSelectionMode === 3 && Object.keys(selectedTickets).length > 0 && (
+              <div className="mt-6 bg-blue-50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold mb-3">Selected Tickets Summary</h3>
+                <div className="space-y-2">
+                  {Object.entries(selectedTickets).map(([ticketTypeId, quantity]) => (
+                    quantity > 0 && (
+                      <p key={ticketTypeId} className="text-sm text-gray-700">
+                        <span className="font-medium">Ticket Type {ticketTypeId}:</span> {quantity} ticket{quantity !== 1 ? 's' : ''}
+                      </p>
+                    )
+                  ))}
+                  <div className="mt-3 pt-3 border-t border-blue-200">
+                    <p className="text-lg font-semibold">
+                      Total: {Object.values(selectedTickets).reduce((sum, qty) => sum + qty, 0)} ticket{Object.values(selectedTickets).reduce((sum, qty) => sum + qty, 0) !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}

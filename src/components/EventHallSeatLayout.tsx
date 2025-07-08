@@ -32,9 +32,19 @@ interface Seat {
   section?: Section;
 }
 
+interface TicketType {
+  id: number;
+  name: string;
+  price: number;
+  description: string;
+  color: string;
+  seatRowAssignments?: string;
+}
+
 interface EventHallLayout {
   seats: Seat[];
   sections: Section[];
+  ticketTypes: TicketType[];
   stagePosition?: {
     x: number;
     y: number;
@@ -58,20 +68,51 @@ export const EventHallSeatLayout: React.FC<SeatLayoutProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reservationStatus, setReservationStatus] = useState<ReservationStatus[]>([]);
-
+  const [ticketTypeRowMap, setTicketTypeRowMap] = useState<Record<string, { color: string, name: string, price: number }>>({});
+  
   useEffect(() => {
     const loadLayout = async () => {
+      console.log('=== EVENT HALL SEAT LAYOUT - LOADING DATA ===');
+      console.log('Loading layout for event:', eventId);
+      
       try {
         setLoading(true);
-        const [layoutResponse, statusResponse] = await Promise.all([
-          api.get(`/api/seats/event/${eventId}/layout`),
-          reservationService.getReservationStatus(eventId)
-        ]);
-        setLayout(layoutResponse.data as EventHallLayout);
-        setReservationStatus(statusResponse);
+        console.log('Making API requests...');
+        
+        // Get layout data first - this is essential
+        const layoutResponse = await api.get<EventHallLayout>(`/api/seats/event/${eventId}/layout`);
+        console.log('Layout response:', layoutResponse.data);
+        
+        const layoutData = layoutResponse.data;
+        
+        if (!layoutData || !Array.isArray(layoutData.seats)) {
+          console.error('Invalid layout data structure:', layoutData);
+          throw new Error('Invalid layout data received');
+        }
+        
+        console.log('Processed layout data:', {
+          seatsCount: layoutData.seats.length,
+          sectionsCount: layoutData.sections?.length || 0,
+          ticketTypesCount: layoutData.ticketTypes?.length || 0,
+          sampleSeat: layoutData.seats[0]
+        });
+        
+        setLayout(layoutData);
+        
+        // Try to get reservation status, but don't fail if it's not available
+        try {
+          console.log('Attempting to fetch reservation status...');
+          const statusResponse = await reservationService.getReservationStatus(eventId);
+          console.log('Status response:', statusResponse);
+          setReservationStatus(statusResponse);
+        } catch (statusError: any) {
+          console.warn('Failed to load reservation status, continuing without it:', statusError.message);
+          setReservationStatus([]); // Set empty array as fallback
+        }
       } catch (err: any) {
-        setError('Failed to load seat layout');
-        toast.error('Failed to load seat layout');
+        console.error('Error loading seat layout:', err);
+        setError(err.message || 'Failed to load seat layout');
+        toast.error(err.message || 'Failed to load seat layout');
       } finally {
         setLoading(false);
       }
@@ -80,6 +121,80 @@ export const EventHallSeatLayout: React.FC<SeatLayoutProps> = ({
     loadLayout();
   }, [eventId]);
 
+  // Prepare ticket type mapping when layout data is loaded
+  useEffect(() => {
+    if (layout?.ticketTypes) {
+      const rowToTicketType: Record<string, { color: string, name: string, price: number }> = {};
+      
+      console.log('Processing ticket types for coloring:', layout.ticketTypes);
+      
+      layout.ticketTypes.forEach(ticketType => {
+        // Make sure the ticketType has required properties
+        if (!ticketType.name || !ticketType.color) {
+          console.warn('Ticket type missing required properties:', ticketType);
+          return; // Skip this ticket type
+        }
+
+        // Set default color if not provided
+        const ticketColor = ticketType.color || '#' + Math.floor(Math.random()*16777215).toString(16);
+        
+        if (ticketType.seatRowAssignments && typeof ticketType.seatRowAssignments === 'string') {
+          try {
+            // First try to parse as JSON
+            let assignments: Array<{ rowStart: string, rowEnd: string }> = [];
+            
+            try {
+              assignments = JSON.parse(ticketType.seatRowAssignments);
+              console.log('Successfully parsed JSON assignments:', assignments);
+            } catch (jsonError) {
+              // If JSON parse fails, try to parse as a simple range string like "A-D"
+              console.log('JSON parse failed, trying as range string:', ticketType.seatRowAssignments);
+              const rangeMatch = ticketType.seatRowAssignments.match(/^([A-Z])-([A-Z])$/);
+              if (rangeMatch) {
+                const [, rowStart, rowEnd] = rangeMatch;
+                assignments = [{ rowStart, rowEnd }];
+                console.log('Parsed as range:', assignments);
+              } else {
+                throw new Error(`Invalid format: ${ticketType.seatRowAssignments}`);
+              }
+            }
+            
+            // Process each assignment
+            assignments.forEach((assignment: { rowStart: string, rowEnd: string }) => {
+              if (!assignment.rowStart || !assignment.rowEnd || 
+                  typeof assignment.rowStart !== 'string' || 
+                  typeof assignment.rowEnd !== 'string') {
+                console.warn('Invalid assignment format:', assignment);
+                return; // Skip this assignment
+              }
+              
+              const startChar = assignment.rowStart.toUpperCase().charCodeAt(0);
+              const endChar = assignment.rowEnd.toUpperCase().charCodeAt(0);
+              
+              console.log(`Processing row range ${assignment.rowStart}-${assignment.rowEnd} (${startChar}-${endChar})`);
+              
+              for (let i = startChar; i <= endChar; i++) {
+                const row = String.fromCharCode(i);
+                rowToTicketType[row] = { 
+                  color: ticketColor, 
+                  name: ticketType.name,
+                  price: ticketType.price || 0
+                };
+                console.log(`Assigned row ${row} to ticket type ${ticketType.name} (${ticketColor})`);
+              }
+            });
+          } catch (err) {
+            console.error(`Error parsing seat row assignments for ticket type ${ticketType.name}:`, err);
+          }
+        } else {
+          console.log(`Ticket type ${ticketType.name} has no seat row assignments`);
+        }
+      });
+      
+      setTicketTypeRowMap(rowToTicketType);
+    }
+  }, [layout]);
+  
   const getSeatStatus = (seat: Seat): 'Available' | 'Reserved' | 'Booked' | 'Held' | 'Unavailable' => {
     const seatKey = `${seat.row}-${seat.number}`;
     const reservation = reservationStatus.find(r => r.seat === seatKey);
@@ -133,6 +248,30 @@ export const EventHallSeatLayout: React.FC<SeatLayoutProps> = ({
     
     const status = getSeatStatus(seat);
     
+    // For available seats, check if we have a ticket type color for this row
+    if (status === 'Available') {
+      // Use the ticket type color if available
+      const ticketTypeInfo = ticketTypeRowMap[seat.row];
+      if (ticketTypeInfo) {
+        // Log that we're applying ticket type colors
+        console.log(`Applying ticket type color for seat ${seat.row}-${seat.number}:`, ticketTypeInfo);
+        
+        // Use inline styles instead of Tailwind classes for custom colors
+        const customColor = ticketTypeInfo.color;
+        
+        // Add ticket type info to the seat's data-* attributes for debugging
+        const dataAttrs = `data-ticket-type="${ticketTypeInfo.name}" data-price="${ticketTypeInfo.price || 0}"`;
+        
+        if (isSelected) {
+          return `${baseClasses} bg-green-500 border-green-700 text-white ${dataAttrs}`;
+        } else {
+          // Use style attribute for custom colors
+          return `${baseClasses} border-2 text-gray-800 hover:opacity-80 ${dataAttrs} style="border-color: ${customColor}; background-color: ${customColor}80;"`;
+        }
+      }
+    }
+    
+    // Default coloring based on status
     switch (status) {
       case 'Available':
         return `${baseClasses} ${isSelected 
@@ -180,26 +319,51 @@ export const EventHallSeatLayout: React.FC<SeatLayoutProps> = ({
   return (
     <div className="seat-layout">
       {/* Legend */}
-      <div className="mb-6 flex flex-wrap gap-4 text-sm">
-        <div className="flex items-center">
-          <div className="w-4 h-4 bg-blue-100 border-2 border-blue-300 rounded mr-2"></div>
-          <span>Available</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-4 h-4 bg-green-500 border-2 border-green-700 rounded mr-2"></div>
-          <span>Selected</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-4 h-4 bg-yellow-200 border-2 border-yellow-400 rounded mr-2"></div>
-          <span>Reserved</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-4 h-4 bg-red-200 border-2 border-red-400 rounded mr-2"></div>
-          <span>Booked</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-4 h-4 bg-gray-200 border-2 border-gray-400 rounded mr-2"></div>
-          <span>Unavailable</span>
+      <div className="mb-6 space-y-4">
+        {/* Ticket Types */}
+        {layout.ticketTypes.length > 0 && (
+          <div>
+            <h4 className="text-sm font-semibold mb-2">Ticket Types</h4>
+            <div className="flex flex-wrap gap-4">
+              {layout.ticketTypes.map(ticketType => (
+                <div key={ticketType.id} className="flex items-center">
+                  <div 
+                    className="w-4 h-4 rounded mr-2" 
+                    style={{ 
+                      backgroundColor: ticketType.color + '33',
+                      borderColor: ticketType.color,
+                      borderWidth: '2px',
+                      borderStyle: 'solid'
+                    }}
+                  ></div>
+                  <span>{ticketType.name} - ${ticketType.price}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Seat Status */}
+        <div>
+          <h4 className="text-sm font-semibold mb-2">Seat Status</h4>
+          <div className="flex flex-wrap gap-4 text-sm">
+            <div className="flex items-center">
+              <div className="w-4 h-4 bg-green-500 border-2 border-green-700 rounded mr-2"></div>
+              <span>Selected</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-4 h-4 bg-yellow-200 border-2 border-yellow-400 rounded mr-2"></div>
+              <span>Reserved</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-4 h-4 bg-red-200 border-2 border-red-400 rounded mr-2"></div>
+              <span>Booked</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-4 h-4 bg-gray-200 border-2 border-gray-400 rounded mr-2"></div>
+              <span>Unavailable</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -237,23 +401,38 @@ export const EventHallSeatLayout: React.FC<SeatLayoutProps> = ({
         )}
 
         {/* Seats */}
-        {layout.seats.map((seat) => (
-          <div
-            key={seat.id}
-            className={getSeatClassName(seat)}
-            style={{
-              left: seat.x,
-              top: seat.y,
-              width: seat.width,
-              height: seat.height,
-              zIndex: 30
-            }}
-            onClick={() => handleSeatClick(seat)}
-            title={`${seat.seatNumber} - ${seat.section?.name || 'General'} - $${seat.price}`}
-          >
-            {seat.seatNumber}
-          </div>
-        ))}
+        {layout.seats.map((seat) => {
+          const isSelected = selectedSeats.includes(seat.id);
+          const status = getSeatStatus(seat);
+          const ticketTypeInfo = status === 'Available' ? ticketTypeRowMap[seat.row] : null;
+          
+          // Define style with position and potentially ticket type colors
+          const seatStyle: React.CSSProperties = {
+            left: seat.x,
+            top: seat.y,
+            width: seat.width,
+            height: seat.height,
+            zIndex: 30
+          };
+          
+          // Add ticket type colors directly to the style if available
+          if (status === 'Available' && ticketTypeInfo && !isSelected) {
+            seatStyle.backgroundColor = ticketTypeInfo.color + '33'; // Very light (20% opacity)
+            seatStyle.borderColor = ticketTypeInfo.color;
+          }
+          
+          return (
+            <div
+              key={seat.id}
+              className={getSeatClassName(seat)}
+              style={seatStyle}
+              onClick={() => handleSeatClick(seat)}
+              title={`${seat.seatNumber} - ${ticketTypeInfo?.name || seat.section?.name || 'General'} - $${seat.price}`}
+            >
+              {seat.seatNumber}
+            </div>
+          );
+        })}
       </div>
 
       {/* Sections Info */}

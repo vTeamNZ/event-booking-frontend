@@ -26,6 +26,7 @@ interface TicketTypeData {
   sectionIds: number[];
   maxTickets: number;
   seatRows: SeatRowAssignment[];
+  color?: string; // Add color field for UI representation
 }
 
 interface EventFormValues {
@@ -199,15 +200,33 @@ const CreateEvent: React.FC = () => {
     return seats;
   };
 
+  // Helper function to generate a stable color from a string (ticket type name or index)
+  const getStableColor = (str: string) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    let color = '#';
+    for (let i = 0; i < 3; i++) {
+      const value = (hash >> (i * 8)) & 0xFF;
+      color += ('00' + value.toString(16)).substr(-2);
+    }
+    return color;
+  };
+
   // Ticket type management functions
   const addTicketType = () => {
+    // Generate a unique color based on the current number of ticket types
+    const color = getStableColor(`ticket-${ticketTypes.length + 1}`);
+    
     setTicketTypes([...ticketTypes, {
       type: '',
       price: 0,
       description: '',
       sectionIds: [],
       maxTickets: 0,
-      seatRows: []
+      seatRows: [],
+      color
     }]);
   };
 
@@ -454,17 +473,22 @@ const CreateEvent: React.FC = () => {
 
         // Create ticket types
         for (const ticketType of ticketTypes) {
+          // If ticket type doesn't have a color, generate one based on its type name
+          const color = ticketType.color || getStableColor(ticketType.type || `ticket-${Math.random().toString(36).substr(2, 9)}`);
+          
           await api.post('/api/TicketTypes', {
             eventId: eventId,
             type: ticketType.type,
             price: ticketType.price,
             description: ticketType.description,
+            color: color, // Include the color in the API request
             seatRows: ticketType.seatRows.map(row => ({
               rowStart: row.rowStart,
               rowEnd: row.rowEnd,
               maxTickets: row.maxTickets
             }))
           });
+          console.log(`Created ticket type "${ticketType.type}" with color: ${color}`);
         }
 
         toast.success('Event created successfully!');

@@ -14,6 +14,7 @@ interface TicketTypeData {
   sectionIds: number[];
   maxTickets: number;
   seatRows: SeatRowAssignment[];
+  color?: string; // Add color field
 }
 
 interface Section {

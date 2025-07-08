@@ -14,6 +14,7 @@ interface TicketTypeData {
   sectionIds: number[];
   maxTickets: number;
   seatRows: SeatRowAssignment[];
+  color?: string; // Add color field
 }
 
 interface VenueLayoutPreviewProps {
@@ -194,10 +195,10 @@ const VenueLayoutPreview: React.FC<VenueLayoutPreviewProps> = ({
                 })
               );
               
-              // If assigned to a ticket type, use a stable color based on ticket type name, otherwise use default color
+              // If assigned to a ticket type, use its color, otherwise use the section color
               const section = seat.sectionId ? sections.find(s => s.id === seat.sectionId) : null;
               const seatColor = assignedTicketType 
-                ? getStableColor(assignedTicketType.type) // Generate stable color based on ticket type
+                ? (assignedTicketType.color || getStableColor(assignedTicketType.type)) // Use color from ticket type if available
                 : (section?.color || '#6B7280');
                 
               const seatTitle = assignedTicketType
@@ -258,8 +259,8 @@ const VenueLayoutPreview: React.FC<VenueLayoutPreviewProps> = ({
                 
                 if (!hasRowAssignments) return null;
                 
-                // Get stable color based on ticket type name
-                const color = getStableColor(ticketType.type);
+                // Use ticket type color or generate one if not available
+                const color = ticketType.color || getStableColor(ticketType.type);
                 
                 return (
                   <div key={index} className="flex items-center">

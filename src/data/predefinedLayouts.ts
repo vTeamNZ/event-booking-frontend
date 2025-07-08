@@ -16,6 +16,41 @@ export const predefinedLayouts = {};
 export const mediumCinemaLayout: SeatLayoutResponse = {
   mode: SeatSelectionMode.EventHall,
   eventId: 0, // This will be replaced with actual event ID
+  ticketTypes: [
+    {
+      id: 1,
+      type: "Standard",
+      price: 15.00,
+      color: "#888888",
+      description: "Standard seating",
+      eventId: 0,
+      seatRowAssignments: JSON.stringify([
+        { rowStart: 'I', rowEnd: 'O' }
+      ])
+    },
+    {
+      id: 2,
+      type: "Premium",
+      price: 25.00,
+      color: "#d4af37",
+      description: "Better view and more comfortable seats",
+      eventId: 0,
+      seatRowAssignments: JSON.stringify([
+        { rowStart: 'D', rowEnd: 'H' }
+      ])
+    },
+    {
+      id: 3,
+      type: "VIP",
+      price: 35.00,
+      color: "#b76e79",
+      description: "Best seats with extra legroom",
+      eventId: 0,
+      seatRowAssignments: JSON.stringify([
+        { rowStart: 'A', rowEnd: 'C' }
+      ])
+    }
+  ],
   sections: [
     {
       id: 1,
@@ -56,6 +91,41 @@ export const mediumCinemaLayout: SeatLayoutResponse = {
 export const largeCinemaLayout: SeatLayoutResponse = {
   mode: SeatSelectionMode.EventHall,
   eventId: 0, // This will be replaced with actual event ID
+  ticketTypes: [
+    {
+      id: 1,
+      type: "Standard",
+      price: 15.00,
+      color: "#888888",
+      description: "Standard seating",
+      eventId: 0,
+      seatRowAssignments: JSON.stringify([
+        { rowStart: 'M', rowEnd: 'T' }
+      ])
+    },
+    {
+      id: 2,
+      type: "Premium",
+      price: 25.00,
+      color: "#d4af37",
+      description: "Better view and more comfortable seats",
+      eventId: 0,
+      seatRowAssignments: JSON.stringify([
+        { rowStart: 'E', rowEnd: 'L' }
+      ])
+    },
+    {
+      id: 3,
+      type: "VIP",
+      price: 35.00,
+      color: "#b76e79",
+      description: "Best seats with extra legroom",
+      eventId: 0,
+      seatRowAssignments: JSON.stringify([
+        { rowStart: 'A', rowEnd: 'D' }
+      ])
+    }
+  ],
   sections: [
     {
       id: 1,

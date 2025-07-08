@@ -6,6 +6,7 @@ export interface TicketType {
     description?: string;
     eventId: number;
     seatRowAssignments?: string; // JSON string storing seat row assignments
+    color: string;     // Color for UI representation
 }
 
 // Interface used in components that display ticket types
@@ -15,6 +16,7 @@ export interface TicketTypeDisplay {
     price: number;
     description?: string;
     eventId: number;
+    color: string;     // Color for UI representation
 }
 
 // Helper function to convert TicketType to TicketTypeDisplay
@@ -23,5 +25,6 @@ export const toTicketTypeDisplay = (ticket: TicketType): TicketTypeDisplay => ({
     name: ticket.type,
     price: ticket.price,
     description: ticket.description,
-    eventId: ticket.eventId
+    eventId: ticket.eventId,
+    color: ticket.color
 });

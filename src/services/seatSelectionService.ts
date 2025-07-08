@@ -33,6 +33,41 @@ export const seatSelectionService = {
       console.log('Seat layout API response status:', response.status);
       console.log('Seat layout API response data:', response.data);
       
+      // Detailed logging for seat data from API
+      console.log('===== DETAILED SEAT DATA FROM API =====');
+      if (response.data && response.data.seats && response.data.seats.length > 0) {
+        // Log the first few seats
+        console.log('First 3 seats with full details:');
+        response.data.seats.slice(0, 3).forEach((seat: any, index: number) => {
+          console.log(`Seat ${index + 1}:`, {
+            id: seat.id,
+            row: seat.row,
+            number: seat.number,
+            price: seat.price,
+            status: seat.status,
+            sectionId: seat.sectionId
+          });
+        });
+        
+        // Check how many seats have prices
+        const seatsWithPrices = response.data.seats.filter((seat: any) => 
+          typeof seat.price === 'number' && seat.price > 0
+        );
+        console.log(`Seats with prices > 0: ${seatsWithPrices.length} out of ${response.data.seats.length}`);
+        
+        // Log some of these seats with prices if they exist
+        if (seatsWithPrices.length > 0) {
+          console.log('Sample seats with prices:');
+          seatsWithPrices.slice(0, 3).forEach((seat: any) => {
+            console.log(`${seat.row}-${seat.number}: $${seat.price}`);
+          });
+        } else {
+          console.log('WARNING: No seats with prices > 0 found!');
+        }
+      } else {
+        console.log('No seat data found in API response');
+      }
+      
       // Validate the response structure
       if (!response.data) {
         console.error('Empty response data received');
@@ -117,6 +152,11 @@ export const seatSelectionService = {
       console.log('Fetching ticket types for event:', eventId);
       const response = await api.get<TicketType[]>(`/api/TicketTypes/event/${eventId}`);
       console.log('Received ticket types:', response.data);
+      
+      // Log each ticket type with its color for debugging
+      response.data.forEach(ticket => {
+        console.log(`Ticket Type: ${ticket.type}, Color: ${ticket.color}, Price: $${ticket.price}`);
+      });
       
       // Process ticket types to parse row assignments if available
       return response.data.map(ticket => {

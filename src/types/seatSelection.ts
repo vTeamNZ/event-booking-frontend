@@ -1,11 +1,11 @@
 import { TicketType } from './ticketTypes';
 
+import { SeatStatus } from './seatStatus';
+
 export enum SeatSelectionMode {
   EventHall = 1,
   GeneralAdmission = 3
 }
-
-import { SeatStatus } from './seatStatus';
 
 export interface Venue {
   id: number;
@@ -73,6 +73,7 @@ export interface SeatLayoutResponse {
   seats: Seat[];
   tables: Table[];
   sections: Section[];
+  ticketTypes: TicketType[];  // Add ticket types for seat coloring
   
   // Aisle configuration
   hasHorizontalAisles?: boolean;

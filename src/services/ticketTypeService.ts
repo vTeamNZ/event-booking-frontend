@@ -15,7 +15,8 @@ export const getTicketTypesForEvent = async (eventId: number): Promise<TicketTyp
             name: ticket.type,    // Map the 'type' field to 'name' for display
             price: ticket.price,
             description: ticket.description,
-            eventId: ticket.eventId
+            eventId: ticket.eventId,
+            color: ticket.color || '#888888' // Use the color from API or default to gray
         }));
     } catch (error) {
         console.error('Error fetching ticket types:', error);
