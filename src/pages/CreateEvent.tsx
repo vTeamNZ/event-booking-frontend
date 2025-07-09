@@ -5,29 +5,15 @@ import { useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import toast from 'react-hot-toast';
 import { api } from '../services/api';
+import { createTicketType } from '../services/eventService';
 import { useVenues } from '../hooks/useVenues';
 import { seatSelectionService } from '../services/seatSelectionService';
-import { Venue, Section } from '../types/seatSelection';
+import { Venue } from '../types/seatSelection';
+import { TicketTypeData, SeatRowAssignment } from '../types/ticketTypes';
+import { getTicketTypeName, getTicketTypeColor } from '../utils/ticketTypeUtils';
 import VenueLayoutPreview from '../components/VenueLayoutPreview';
 import TicketTypeManager from '../components/TicketTypeManager';
 import HelpTooltip from '../components/HelpTooltip';
-
-interface SeatRowAssignment {
-  rowStart: string;
-  rowEnd: string;
-  maxTickets: number;
-}
-
-interface TicketTypeData {
-  id?: number;
-  type: string;
-  price: number;
-  description: string;
-  sectionIds: number[];
-  maxTickets: number;
-  seatRows: SeatRowAssignment[];
-  color?: string; // Add color field for UI representation
-}
 
 interface EventFormValues {
   title: string;
@@ -70,16 +56,16 @@ const CreateEvent: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedVenue, setSelectedVenue] = useState<any>(null);
   const [venueLayout, setVenueLayout] = useState<any>(null);
-  const [venueSections, setVenueSections] = useState<Section[]>([]);
   const [isVenueWithSeats, setIsVenueWithSeats] = useState<boolean>(true);
   const [ticketTypes, setTicketTypes] = useState<TicketTypeData[]>([
     {
       type: 'Standard',
+      name: 'Standard',
       price: 50,
       description: 'Standard admission',
-      sectionIds: [],
       maxTickets: 100,
-      seatRows: []
+      seatRows: [],
+      color: '#4B5563'
     }
   ]);
 
@@ -102,7 +88,6 @@ const CreateEvent: React.FC = () => {
   const loadVenueLayout = async (venueId: number) => {
     if (venueId === 0) {
       setVenueLayout(null);
-      setVenueSections([]);
       setSelectedVenue(null);
       setIsVenueWithSeats(true);
       return;
@@ -130,18 +115,41 @@ const CreateEvent: React.FC = () => {
           generateBasicLayout(venue);
         
         setVenueLayout(layoutData);
-        
-        // Set basic sections if not available
-        const sections = layoutData.sections || [
-          { id: 1, name: 'VIP', color: '#DC2626', basePrice: 100 },
-          { id: 2, name: 'Premium', color: '#2563EB', basePrice: 75 },
-          { id: 3, name: 'Standard', color: '#4B5563', basePrice: 50 }
-        ];
-        setVenueSections(sections);
+        // For venues with seats, initialize default ticket types if none exist
+        if (ticketTypes.length === 0) {
+          setTicketTypes([
+            {
+              type: 'VIP',
+              name: 'VIP', // Add name field synchronized with type
+              price: 100,
+              description: 'VIP seating with best view',
+              maxTickets: 0,
+              seatRows: [],
+              color: '#DC2626'
+            },
+            {
+              type: 'Premium',
+              name: 'Premium', // Add name field synchronized with type
+              price: 75,
+              description: 'Premium seating with great view',
+              maxTickets: 0,
+              seatRows: [],
+              color: '#2563EB'
+            },
+            {
+              type: 'Standard',
+              name: 'Standard', // Add name field synchronized with type
+              price: 50,
+              description: 'Standard seating',
+              maxTickets: 0,
+              seatRows: [],
+              color: '#4B5563'
+            }
+          ]);
+        }
       } else {
         // For venues without seats, clear layout data
         setVenueLayout(null);
-        setVenueSections([]);
         
         // Set seat selection mode to General Admission for venues without seats
         formik.setFieldValue('seatSelectionMode', '3');
@@ -150,11 +158,12 @@ const CreateEvent: React.FC = () => {
         setTicketTypes([
           {
             type: 'General Admission',
-            price: 25,
-            description: 'General admission access to the event',
-            sectionIds: [],
-            maxTickets: Math.floor(venue.capacity * 0.8), // 80% of venue capacity as default
-            seatRows: []
+            name: 'General Admission', // Add name field synchronized with type
+            price: 50,
+            description: 'Standard admission ticket',
+            maxTickets: selectedVenue?.capacity || 100,
+            seatRows: [],
+            color: '#4B5563'
           }
         ]);
       }
@@ -221,9 +230,9 @@ const CreateEvent: React.FC = () => {
     
     setTicketTypes([...ticketTypes, {
       type: '',
+      name: '',  // Add name field synchronized with type
       price: 0,
       description: '',
-      sectionIds: [],
       maxTickets: 0,
       seatRows: [],
       color
@@ -231,27 +240,26 @@ const CreateEvent: React.FC = () => {
   };
 
   const updateTicketType = (index: number, field: keyof TicketTypeData, value: any) => {
-    const updated = ticketTypes.map((ticket, i) => 
-      i === index ? { ...ticket, [field]: value } : ticket
-    );
+    const updated = ticketTypes.map((ticket, i) => {
+      if (i === index) {
+        const updatedTicket = { ...ticket, [field]: value };
+        
+        // Synchronize type and name fields when either is updated
+        if (field === 'type') {
+          updatedTicket.name = value;
+        } else if (field === 'name') {
+          updatedTicket.type = value;
+        }
+        
+        return updatedTicket;
+      }
+      return ticket;
+    });
     setTicketTypes(updated);
   };
 
   const removeTicketType = (index: number) => {
     setTicketTypes(ticketTypes.filter((_, i) => i !== index));
-  };
-
-  const toggleSection = (ticketIndex: number, sectionId: number) => {
-    const updated = ticketTypes.map((ticket, i) => {
-      if (i === ticketIndex) {
-        const sectionIds = ticket.sectionIds.includes(sectionId)
-          ? ticket.sectionIds.filter(id => id !== sectionId)
-          : [...ticket.sectionIds, sectionId];
-        return { ...ticket, sectionIds };
-      }
-      return ticket;
-    });
-    setTicketTypes(updated);
   };
 
   const addSeatRow = (ticketIndex: number) => {
@@ -476,12 +484,14 @@ const CreateEvent: React.FC = () => {
           // If ticket type doesn't have a color, generate one based on its type name
           const color = ticketType.color || getStableColor(ticketType.type || `ticket-${Math.random().toString(36).substr(2, 9)}`);
           
-          await api.post('/api/TicketTypes', {
+          // Use the service to create ticket types with synchronized fields
+          await createTicketType({
             eventId: eventId,
             type: ticketType.type,
+            name: ticketType.name,
             price: ticketType.price,
             description: ticketType.description,
-            color: color, // Include the color in the API request
+            color: color,
             seatRows: ticketType.seatRows.map(row => ({
               rowStart: row.rowStart,
               rowEnd: row.rowEnd,
@@ -681,7 +691,6 @@ const CreateEvent: React.FC = () => {
                 ) : (
                   <VenueLayoutPreview
                     layout={venueLayout}
-                    sections={venueSections}
                     selectedVenue={selectedVenue}
                     ticketTypes={ticketTypes}
                   />
@@ -736,13 +745,11 @@ const CreateEvent: React.FC = () => {
             {formik.values.venueId > 0 && (
               <TicketTypeManager
                 ticketTypes={ticketTypes}
-                sections={venueSections}
                 availableRows={availableRows}
                 isVenueWithSeats={isVenueWithSeats}
                 onAddTicketType={addTicketType}
                 onUpdateTicketType={updateTicketType}
                 onRemoveTicketType={removeTicketType}
-                onToggleSection={toggleSection}
                 onAddSeatRow={addSeatRow}
                 onUpdateSeatRow={updateSeatRow}
                 onRemoveSeatRow={removeSeatRow}

@@ -12,7 +12,8 @@ export const getTicketTypesForEvent = async (eventId: number): Promise<TicketTyp
         // Transform TicketType to TicketTypeDisplay
         return response.data.map(ticket => ({
             id: ticket.id,
-            name: ticket.type,    // Map the 'type' field to 'name' for display
+            type: ticket.type || ticket.name || 'General Admission',
+            name: ticket.name || ticket.type || 'General Admission', // Ensure name is set
             price: ticket.price,
             description: ticket.description,
             eventId: ticket.eventId,

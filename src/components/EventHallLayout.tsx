@@ -34,14 +34,14 @@ const EventHallLayout: React.FC<EventHallLayoutProps> = ({
     return isSelected || seat.status === SeatStatus.Available;
   };
 
-  const getSectionColor = (sectionId?: number) => {
-    if (!sectionId) return '#3B82F6';
-    const section = layout.sections.find(s => s.id === sectionId);
-    return section?.color || '#3B82F6';
+  const getTicketTypeColor = (ticketTypeId?: number) => {
+    if (!ticketTypeId) return '#3B82F6';
+    const ticketType = layout.ticketTypes.find(t => t.id === ticketTypeId);
+    return ticketType?.color || '#3B82F6';
   };    // Debug log for layout data
   console.log("EventHallLayout rendering with:", {
     venueInfo: layout.venue,
-    sectionsCount: layout.sections?.length || 0,
+    ticketTypesCount: layout.ticketTypes?.length || 0,
     seatsCount: layout.seats?.length || 0,
     stageInfo: layout.stage,
     selectedSeatsCount: selectedSeats?.length || 0,
@@ -68,7 +68,7 @@ const EventHallLayout: React.FC<EventHallLayoutProps> = ({
                 layoutMode: layout.mode,
                 eventId: layout.eventId,
                 venueName: layout?.venue?.name,
-                sections: layout?.sections?.length || 0,
+                ticketTypes: layout?.ticketTypes?.length || 0,
                 mockDataDetected: layout.seats && layout.seats.length > 0 && layout.seats[0].seatNumber === "A1",
                 apiURL: "/api/seats/event/" + layout.eventId + "/layout"
               }, null, 2)}
@@ -122,24 +122,24 @@ const EventHallLayout: React.FC<EventHallLayoutProps> = ({
         </div>
       )}
 
-      {/* Sections Legend */}
-      {layout.sections.length > 0 && (
+      {/* Ticket Types Legend */}
+      {layout.ticketTypes.length > 0 && (
         <div className="mb-6">
-          <h4 className="text-lg font-medium text-gray-900 mb-3">Sections</h4>
+          <h4 className="text-lg font-medium text-gray-900 mb-3">Ticket Types</h4>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {layout.sections.map(section => (
+            {layout.ticketTypes.map(ticketType => (
               <div 
-                key={section.id}
+                key={ticketType.id}
                 className="flex items-center gap-2 p-2 rounded-lg border"
-                style={{ borderColor: section.color }}
+                style={{ borderColor: ticketType.color }}
               >
                 <div 
                   className="w-4 h-4 rounded"
-                  style={{ backgroundColor: section.color }}
+                  style={{ backgroundColor: ticketType.color }}
                 ></div>
                 <div className="flex-1">
-                  <div className="font-medium text-sm">{section.name}</div>
-                  <div className="text-xs text-gray-600">{formatPrice(section.basePrice)}</div>
+                  <div className="font-medium text-sm">{ticketType.name}</div>
+                  <div className="text-xs text-gray-600">{formatPrice(ticketType.price)}</div>
                 </div>
               </div>
             ))}
@@ -168,7 +168,7 @@ const EventHallLayout: React.FC<EventHallLayoutProps> = ({
                 top: `${seat.y}px`,
                 width: `${seat.width}px`,
                 height: `${seat.height}px`,
-                borderColor: getSectionColor(seat.sectionId)
+                borderColor: getTicketTypeColor(seat.ticketTypeId)
               }}
               onClick={() => isClickable(seat) && onSeatSelect(seat.id)}
               disabled={!isClickable(seat)}

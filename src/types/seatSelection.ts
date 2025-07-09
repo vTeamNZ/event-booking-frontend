@@ -1,5 +1,4 @@
-import { TicketType } from './ticketTypes';
-
+import { TicketTypeDisplay } from './ticketTypes';
 import { SeatStatus } from './seatStatus';
 
 export enum SeatSelectionMode {
@@ -21,13 +20,6 @@ export interface Stage {
   height: number;
 }
 
-export interface Section {
-  id: number;
-  name: string;
-  color: string;
-  basePrice: number;
-}
-
 export interface Seat {
   id: number;
   seatNumber: string;
@@ -39,30 +31,9 @@ export interface Seat {
   height: number;
   price: number;
   status: SeatStatus;
-  sectionId: number;
-  section: {
-    id: number;
-    name: string;
-    color: string;
-  };
-  tableId?: number;
+  ticketTypeId?: number;
+  ticketType?: TicketTypeDisplay;
   reservedUntil?: string;
-}
-
-export interface Table {
-  id: number;
-  tableNumber: string;
-  capacity: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  shape: string;
-  pricePerSeat: number;
-  tablePrice?: number;
-  sectionId?: number;
-  availableSeats: number;
-  seats: Seat[];
 }
 
 export interface SeatLayoutResponse {
@@ -71,9 +42,7 @@ export interface SeatLayoutResponse {
   venue?: Venue;
   stage?: Stage;
   seats: Seat[];
-  tables: Table[];
-  sections: Section[];
-  ticketTypes: TicketType[];  // Add ticket types for seat coloring
+  ticketTypes: TicketTypeDisplay[];  // TicketTypes for seat coloring and pricing
   
   // Aisle configuration
   hasHorizontalAisles?: boolean;
@@ -86,8 +55,7 @@ export interface SeatLayoutResponse {
 export interface PricingResponse {
   eventId: number;
   mode: SeatSelectionMode;
-  sectionPricing: Record<string, number>;
-  ticketTypes: TicketType[];
+  ticketTypes: TicketTypeDisplay[];
 }
 
 export interface ReserveSeatRequest {
@@ -95,34 +63,20 @@ export interface ReserveSeatRequest {
   sessionId: string;
 }
 
-export interface ReserveTableRequest {
-  tableId: number;
-  sessionId: string;
-  fullTable: boolean;
-  seatIds: number[];
-}
-
 export interface SelectedSeat {
   seat: Seat;
   reservedUntil?: Date;
 }
 
-export interface SelectedTable {
-  table: Table;
-  selectedSeats: Seat[];
-  isFullTable: boolean;
-  reservedUntil?: Date;
-}
-
 export interface GeneralTicketSelection {
-  ticketType: TicketType;
+  ticketType: TicketTypeDisplay;
   quantity: number;
 }
 
 export interface SeatSelectionState {
   mode: SeatSelectionMode;
   selectedSeats: SelectedSeat[];
-  selectedTables: SelectedTable[];
+  selectedTables: never[]; // Empty array type for backward compatibility
   generalTickets: GeneralTicketSelection[];
   totalPrice: number;
   sessionId: string;

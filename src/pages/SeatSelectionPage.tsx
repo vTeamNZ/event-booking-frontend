@@ -64,57 +64,43 @@ const SeatSelectionPage: React.FC = () => {
   const handleSelectionComplete = (selectionState: SeatingSelectionState) => {
     // Convert the new seating selection state to the old format for navigation
     const oldFormatState: SeatSelectionState = {
-      mode: selectionState.mode,
+      mode: selectionState.mode as any, // Type conversion needed between enums
       selectedSeats: selectionState.selectedSeats.map(selectedSeat => ({
         seat: {
-          id: selectedSeat.seat.id,
-          seatNumber: selectedSeat.seat.seatNumber,
-          row: selectedSeat.seat.row,
-          number: selectedSeat.seat.number,
-          x: selectedSeat.seat.x,
-          y: selectedSeat.seat.y,
-          width: selectedSeat.seat.width,
-          height: selectedSeat.seat.height,
-          price: selectedSeat.seat.price,
-          status: selectedSeat.seat.status,
-          sectionId: selectedSeat.seat.sectionId,
-          section: selectedSeat.seat.section,
-          tableId: selectedSeat.seat.tableId,
-          reservedUntil: selectedSeat.seat.reservedUntil
-        },
-        reservedUntil: selectedSeat.reservedUntil
+          id: selectedSeat.id,
+          seatNumber: selectedSeat.seatNumber,
+          row: selectedSeat.row,
+          number: selectedSeat.number,
+          x: selectedSeat.x,
+          y: selectedSeat.y,
+          width: selectedSeat.width,
+          height: selectedSeat.height,
+          price: selectedSeat.price || 0,
+          status: selectedSeat.status,
+          ticketTypeId: selectedSeat.ticketType?.id,
+          ticketType: selectedSeat.ticketType && {
+            id: selectedSeat.ticketType.id,
+            type: selectedSeat.ticketType.type,
+            name: selectedSeat.ticketType.name,
+            price: selectedSeat.ticketType.price,
+            color: selectedSeat.ticketType.color,
+            description: selectedSeat.ticketType.description,
+            eventId: selectionState.eventId
+          }
+        }
       })),
-      selectedTables: selectionState.selectedTables.map(selectedTable => ({
-        table: {
-          id: selectedTable.table.id,
-          tableNumber: selectedTable.table.tableNumber,
-          capacity: selectedTable.table.capacity,
-          x: selectedTable.table.x,
-          y: selectedTable.table.y,
-          width: selectedTable.table.width,
-          height: selectedTable.table.height,
-          shape: selectedTable.table.shape,
-          pricePerSeat: selectedTable.table.pricePerSeat,
-          tablePrice: selectedTable.table.tablePrice,
-          sectionId: selectedTable.table.sectionId,
-          availableSeats: selectedTable.table.availableSeats,
-          seats: selectedTable.table.seats
-        },
-        selectedSeats: selectedTable.selectedSeats,
-        isFullTable: selectedTable.isFullTable,
-        reservedUntil: selectedTable.reservedUntil
-      })),
+      selectedTables: [], // Tables no longer used
       generalTickets: selectionState.generalTickets.map(ticket => ({
         ticketType: {
-          id: ticket.ticketType.id,
-          type: ticket.ticketType.name,
-          price: ticket.ticketType.price,
-          color: ticket.ticketType.color,
-          description: ticket.ticketType.description,
-          eventId: selectionState.eventId,
-          seatRowAssignments: ticket.ticketType.seatRowAssignments
+          id: ticket.id,
+          type: ticket.type,
+          name: ticket.name || ticket.type,  // Fallback to type if name is not available
+          price: ticket.price,
+          color: ticket.color,
+          description: ticket.description,
+          eventId: selectionState.eventId
         },
-        quantity: ticket.quantity
+        quantity: 1 // Default to 1 since we're handling individual seats
       })),
       totalPrice: selectionState.totalPrice,
       sessionId: selectionState.sessionId

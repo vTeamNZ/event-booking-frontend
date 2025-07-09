@@ -10,13 +10,6 @@ interface SeatLayoutProps {
   selectedSeats: number[];
 }
 
-interface Section {
-  id: number;
-  name: string;
-  color: string;
-  basePrice: number;
-}
-
 interface Seat {
   id: number;
   row: string;
@@ -28,8 +21,13 @@ interface Seat {
   height: number;
   price: number;
   status: 'Available' | 'Reserved' | 'Booked' | 'Unavailable';
-  sectionId?: number;
-  section?: Section;
+  ticketTypeId?: number;
+  ticketType?: {
+    id: number;
+    name: string;
+    color: string;
+    price: number;
+  };
 }
 
 interface TicketType {
@@ -43,7 +41,6 @@ interface TicketType {
 
 interface EventHallLayout {
   seats: Seat[];
-  sections: Section[];
   ticketTypes: TicketType[];
   stagePosition?: {
     x: number;
@@ -92,7 +89,6 @@ export const EventHallSeatLayout: React.FC<SeatLayoutProps> = ({
         
         console.log('Processed layout data:', {
           seatsCount: layoutData.seats.length,
-          sectionsCount: layoutData.sections?.length || 0,
           ticketTypesCount: layoutData.ticketTypes?.length || 0,
           sampleSeat: layoutData.seats[0]
         });
@@ -427,7 +423,7 @@ export const EventHallSeatLayout: React.FC<SeatLayoutProps> = ({
               className={getSeatClassName(seat)}
               style={seatStyle}
               onClick={() => handleSeatClick(seat)}
-              title={`${seat.seatNumber} - ${ticketTypeInfo?.name || seat.section?.name || 'General'} - $${seat.price}`}
+              title={`${seat.seatNumber} - ${ticketTypeInfo?.name || seat.ticketType?.name || 'General'} - $${seat.price}`}
             >
               {seat.seatNumber}
             </div>
@@ -435,21 +431,21 @@ export const EventHallSeatLayout: React.FC<SeatLayoutProps> = ({
         })}
       </div>
 
-      {/* Sections Info */}
-      {layout.sections.length > 0 && (
+      {/* Ticket Types Info */}
+      {layout.ticketTypes.length > 0 && (
         <div className="mt-6">
-          <h3 className="text-lg font-medium mb-3">Sections & Pricing</h3>
+          <h3 className="text-lg font-medium mb-3">Ticket Types & Pricing</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {layout.sections.map((section) => (
-              <div key={section.id} className="p-3 border rounded-lg">
+            {layout.ticketTypes.map((type) => (
+              <div key={type.id} className="p-3 border rounded-lg">
                 <div className="flex items-center mb-1">
                   <div 
                     className="w-4 h-4 rounded mr-2"
-                    style={{ backgroundColor: section.color }}
+                    style={{ backgroundColor: type.color }}
                   ></div>
-                  <span className="font-medium">{section.name}</span>
+                  <span className="font-medium">{type.name}</span>
                 </div>
-                <p className="text-sm text-gray-600">From ${section.basePrice}</p>
+                <p className="text-sm text-gray-600">${type.price}</p>
               </div>
             ))}
           </div>

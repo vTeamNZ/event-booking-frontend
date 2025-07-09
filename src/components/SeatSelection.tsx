@@ -69,7 +69,7 @@ const SeatSelection: React.FC<SeatSelectionProps> = ({
         
         console.log(`Layout mode: ${layoutData.mode}`);
         console.log(`Seats count: ${layoutData.seats?.length || 0}`);
-        console.log(`Sections count: ${layoutData.sections?.length || 0}`);
+        console.log(`Ticket types count: ${layoutData.ticketTypes?.length || 0}`);
         
         setLayout(layoutData);
         setSelectionState(prev => ({
@@ -103,7 +103,7 @@ const SeatSelection: React.FC<SeatSelectionProps> = ({
   // Calculate total price whenever selection changes
   useEffect(() => {
     const seatPrice = selectionState.selectedSeats.reduce((sum, selected) => 
-      sum + selected.seat.price, 0);
+      sum + (selected.seat.price || 0), 0);
     
     const generalPrice = selectionState.generalTickets.reduce((sum, ticket) => 
       sum + (ticket.ticketType.price * ticket.quantity), 0);

@@ -67,7 +67,7 @@ const SeatingDemo: React.FC = () => {
             <div className="text-gray-600 space-y-2">
               <p>Event Mode: {layoutData.mode}</p>
               <p>Total Seats: {layoutData.seats.length}</p>
-              <p>Sections: {layoutData.sections.length}</p>
+              <p>Ticket Types: {layoutData.ticketTypes.length}</p>
               <p>Ticket Types: {layoutData.ticketTypes.length}</p>
             </div>
           )}

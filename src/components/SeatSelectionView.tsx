@@ -2,6 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Check, X, AlertCircle, Users, Star, Eye, Accessibility } from 'lucide-react';
 import { message } from 'antd';
 import { seatSelectionService } from '../services/seatSelectionService';
+import { getTicketTypeName } from '../utils/ticketTypeUtils';
+import { TicketType } from '../types/ticketTypes';
+import { SeatStatus, SeatStatusInfo, getTicketTypeStyle, getSeatStatusClasses } from '../types/seatStatus';
 
 // Utility function to adjust hex color brightness
 const adjustColor = (color: string, amount: number): string => {
@@ -29,40 +32,21 @@ const adjustColor = (color: string, amount: number): string => {
 };
 
 // Types for seat selection
-export interface SeatStatus {
-  status: 'Available' | 'Reserved' | 'Booked';
-  section: {
-    id: number;
-    name: string;
-    color: string;
-  };
-  reservedUntil?: Date;
-}
-
 export interface SeatSelectionProps {
   layout: any; // VenueLayoutData from AdvancedVenueDesigner
   eventId: string;
   selectedSeats: string[];
   onSeatSelection: (seatIds: string[]) => void;
-  onSectionSelection?: (sectionId: string, tableId?: string) => void;
+  onTicketTypeSelection?: (ticketTypeId: string) => void;
   maxSelection?: number;
   allowGroupSelection?: boolean;
   realTimeUpdates?: boolean;
   priceCalculation?: (seatIds: string[]) => number;
 }
 
-export interface TableSelectionProps {
-  layout: any;
-  eventId: string;
-  selectedTables: string[];
-  onTableSelection: (tableIds: string[], guestCount?: number) => void;
-  maxTableSelection?: number;
-  priceCalculation?: (tableIds: string[], guestCount: number) => number;
-}
-
 // Real-time seat status management
 export const useSeatStatus = (eventId: string, realTimeUpdates: boolean = true) => {
-  const [seatStatuses, setSeatStatuses] = useState<Record<string, SeatStatus>>({});
+  const [seatStatuses, setSeatStatuses] = useState<Record<string, SeatStatusInfo>>({});
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -82,17 +66,39 @@ export const useSeatStatus = (eventId: string, realTimeUpdates: boolean = true) 
     try {
       const seats = await seatSelectionService.getSeats(Number(eventId));
       // Convert seats array to seat status record
-      const statusRecord: Record<string, SeatStatus> = {};
+      const statusRecord: Record<string, SeatStatusInfo> = {};
       seats.forEach(seat => {
-        // Ensure we only use our three allowed status types
-        let status: 'Available' | 'Reserved' | 'Booked' = 
-          seat.status === 'Booked' ? 'Booked' :
-          seat.status === 'Reserved' ? 'Reserved' : 
-          'Available';
-          
+        // Map backend status to frontend enum
+        let status: SeatStatus;
+        switch (seat.status) {
+          case 2: // 'Booked'
+            status = SeatStatus.Booked;
+            break;
+          case 1: // 'Reserved'
+            status = SeatStatus.Reserved;
+            break;
+          case 0: // 'Available'
+          default:
+            status = SeatStatus.Available;
+            break;
+        }
+
+        // Create a complete ticketType object from the seat data
+        const ticketType: TicketType = {
+          id: seat.ticketTypeId || 0,
+          type: seat.ticketType?.type || seat.ticketType?.name || 'General Admission',
+          name: seat.ticketType?.name || seat.ticketType?.type || 'General Admission',
+          color: seat.ticketType?.color || '#3B82F6',
+          price: seat.ticketType?.price || seat.price || 0,
+          eventId: Number(eventId),
+          description: seat.ticketType?.description || '',
+          seatRowAssignments: seat.ticketType?.seatRowAssignments || undefined
+        };
+
         statusRecord[seat.id.toString()] = {
-          status: status,
-          section: seat.section
+          status,
+          ticketType,
+          reservedUntil: seat.reservedUntil ? new Date(seat.reservedUntil) : undefined
         };
       });
       setSeatStatuses(statusRecord);
@@ -118,7 +124,7 @@ export const useSeatStatus = (eventId: string, realTimeUpdates: boolean = true) 
         seatIds.forEach(seatId => {
           updatedStatuses[seatId] = {
             ...updatedStatuses[seatId],
-            status: 'Reserved',
+            status: SeatStatus.Reserved,
             reservedUntil: new Date(Date.now() + duration * 60 * 1000),
           };
         });
@@ -142,7 +148,7 @@ export const useSeatStatus = (eventId: string, realTimeUpdates: boolean = true) 
         if (updatedStatuses[seatId]) {
           updatedStatuses[seatId] = {
             ...updatedStatuses[seatId],
-            status: 'Available',
+            status: SeatStatus.Available,
             reservedUntil: undefined,
           };
         }
@@ -196,7 +202,7 @@ export const SeatSelectionView: React.FC<SeatSelectionProps> = ({
     const seatStatus = seatStatuses[seatId];
     
     // Check if seat is available for selection
-    if (seatStatus && ['reserved', 'occupied', 'blocked'].includes(seatStatus.status)) {
+    if (seatStatus && [SeatStatus.Reserved, SeatStatus.Booked].includes(seatStatus.status)) {
       return;
     }
 
@@ -228,18 +234,18 @@ export const SeatSelectionView: React.FC<SeatSelectionProps> = ({
     setReservationTimer(timer);
   };
 
-  // Handle group selection (select row or section)
-  const handleGroupSelection = (type: 'row' | 'section', identifier: string) => {
+  // Handle group selection (select row or ticket type)
+  const handleGroupSelection = (type: 'row' | 'ticketType', identifier: string) => {
     if (!allowGroupSelection) return;
 
     const availableSeats = currentLevelSeats.filter((seat: any) => {
       const seatStatus = seatStatuses[seat.id];
-      const isAvailable = !seatStatus || seatStatus.status === 'Available';
+      const isAvailable = !seatStatus || seatStatus.status === SeatStatus.Available;
       
       if (type === 'row') {
-        return isAvailable && seat.properties.rowLetter === identifier;
+        return isAvailable && String(seat.properties?.rowLetter) === identifier;
       } else {
-        return isAvailable && seat.sectionId === identifier;
+        return isAvailable && String(seat.ticketTypeId) === identifier;
       }
     });
 
@@ -259,64 +265,61 @@ export const SeatSelectionView: React.FC<SeatSelectionProps> = ({
   const getSeatStyle = (seat: any): React.CSSProperties => {
     const seatStatus = seatStatuses[seat.id];
     const isSelected = selectedSeats.includes(seat.id);
-    const section = layout.sections?.find((s: any) => s.id === seat.sectionId);
     
-    let backgroundColor = section?.color || '#3B82F6'; // Use section color or default blue
-    let borderColor = section?.color ? adjustColor(section.color, -20) : '#2563EB';
-    let opacity = 1;
+    // Find the ticket type from layout
+    const ticketType = layout.ticketTypes?.find((tt: any) => String(tt.id) === String(seat.ticketTypeId));
+    const status = seatStatus?.status || SeatStatus.Available;
 
-    if (isSelected) {
-      backgroundColor = '#10B981'; // Green for selected
-      borderColor = '#059669';
-      opacity = 1;
-    } else if (seatStatus) {
-      switch (seatStatus.status) {
-        case 'Reserved':
-          backgroundColor = '#F59E0B'; // Orange for reserved
-          borderColor = '#D97706';
-          opacity = 0.7;
-          break;
-        case 'Booked':
-          backgroundColor = '#EF4444'; // Red for booked
-          borderColor = '#DC2626';
-          break;
-        case 'Available':
-          opacity = 0.8; // Slightly transparent for available seats
-          break;
-      }
-    }
-
-    // Special seat types
-    if (seat.properties?.isVip) {
-      if (!isSelected && (!seatStatus || seatStatus.status === 'Available')) {
-        borderColor = '#8B5CF6';
-        backgroundColor = '#A855F7';
-      }
-    }
-
-    return {
+    // Start with base style
+    let style: React.CSSProperties = {
       position: 'absolute',
       left: seat.x + 50,
       top: seat.y + 50,
       width: seat.width,
       height: seat.height,
-      backgroundColor,
-      borderColor,
-      borderWidth: '2px',
-      borderStyle: seat.properties?.isAccessible ? 'dashed' : 'solid',
-      borderRadius: '4px',
-      cursor: (seatStatus && ['reserved', 'occupied', 'blocked'].includes(seatStatus.status)) ? 'not-allowed' : 'pointer',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       fontSize: Math.max(8, 10 / zoom),
-      fontWeight: 'bold',
-      color: 'white',
-      opacity,
-      transition: 'all 0.2s ease',
       userSelect: 'none',
+      transition: 'all 0.2s ease',
       zIndex: isSelected ? 10 : 1,
+      cursor: status === SeatStatus.Available ? 'pointer' : 'not-allowed',
+      borderWidth: '2px',
+      borderStyle: seat.properties?.isAccessible ? 'dashed' : 'solid',
+      borderRadius: '4px',
     };
+
+    // Apply ticket type style
+    if (ticketType) {
+      const baseColor = ticketType.color || '#3B82F6';
+      style.backgroundColor = `${baseColor}20`;  // 20% opacity
+      style.borderColor = baseColor;
+    }
+
+    // Apply status styles
+    if (isSelected) {
+      style.backgroundColor = '#10B981';  // Green for selected
+      style.borderColor = '#059669';
+      style.opacity = 1;
+    } else if (status === SeatStatus.Reserved) {
+      style.backgroundColor = '#F59E0B';  // Orange for reserved
+      style.borderColor = '#D97706';
+      style.opacity = 0.7;
+    } else if (status === SeatStatus.Booked) {
+      style.backgroundColor = '#EF4444';  // Red for booked
+      style.borderColor = '#DC2626';
+      style.opacity = 0.5;
+    }
+
+    // Special seat types
+    if (seat.properties?.isVip && !isSelected && status === SeatStatus.Available) {
+      style.backgroundColor = '#A855F7';  // Purple for VIP
+      style.borderColor = '#8B5CF6';
+      style.opacity = 0.8;
+    }
+
+    return style;
   };
 
   // Get seat label
@@ -326,20 +329,19 @@ export const SeatSelectionView: React.FC<SeatSelectionProps> = ({
 
   // Get tooltip text for seat
   const getSeatTooltip = (seat: any): string => {
-    const section = layout.sections?.find((s: any) => s.id === seat.sectionId);
-    const price = section?.basePrice || 0;
+    // Find the ticket type from layout
     const seatStatus = seatStatuses[seat.id];
+    const ticketType = layout.ticketTypes?.find((tt: any) => String(tt.id) === String(seat.ticketTypeId));
+    const price = ticketType?.price || 0;
+    const ticketName = ticketType ? (ticketType.name || ticketType.type) : 'Unknown';
     
-    let statusText = 'Available';
-    if (selectedSeats.includes(seat.id)) {
-      statusText = 'Selected';
-    } else if (seatStatus) {
-      statusText = seatStatus.status.charAt(0).toUpperCase() + seatStatus.status.slice(1);
-    }
+    let statusText = selectedSeats.includes(seat.id) 
+      ? 'Selected' 
+      : (seatStatus?.status || SeatStatus.Available);
 
     let details = [
       `Seat: ${getSeatLabel(seat)}`,
-      `Section: ${section?.name || 'General'}`,
+      `Type: ${ticketName}`,
       `Price: $${price.toFixed(2)}`,
       `Status: ${statusText}`
     ];
@@ -350,58 +352,65 @@ export const SeatSelectionView: React.FC<SeatSelectionProps> = ({
     return details.join('\n');
   };
 
-  // Display sections with better styling and information
-  const renderSections = () => {
-    if (!layout.sections?.length) return null;
+  // Display ticket types with better styling and information
+  const renderTicketTypes = () => {
+    if (!layout.ticketTypes?.length) return null;
 
     return (
       <div className="p-4 border-b">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Section Information</h3>
+        <h3 className="text-sm font-semibold text-gray-900 mb-4">Ticket Type Information</h3>
         <div className="grid gap-3">
-          {layout.sections?.map((section: any) => {
-            const sectionSeats = currentLevelSeats.filter((s: any) => s.sectionId === section.id);
-            const availableCount = sectionSeats.filter((s: any) => {
+          {layout.ticketTypes?.map((ticketType: any) => {
+            // Filter seats by ticket type - ensure type matching
+            const typeSeats = currentLevelSeats.filter((s: any) => 
+              String(s.ticketTypeId) === String(ticketType.id)
+            );
+            const availableCount = typeSeats.filter((s: any) => {
               const status = seatStatuses[s.id];
-              return !status || status.status === 'Available';
+              return !status || status.status === SeatStatus.Available;
             }).length;
+            
+            // Use the ticket type color directly, not the style function
+            const color = ticketType.color || '#3B82F6';
+            const name = getTicketTypeName(ticketType);
             
             return (
               <div 
-                key={section.id} 
+                key={ticketType.id} 
                 className="p-4 rounded-lg border transition-all duration-200 hover:shadow-md"
                 style={{ 
-                  backgroundColor: `${section.color}10`,
-                  borderColor: section.color 
+                  backgroundColor: `${color}10`,
+                  borderColor: color 
                 }}
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <div className="font-medium text-gray-900">{section.name}</div>
+                    <div className="font-medium text-gray-900">{name}</div>
                     <div className="text-sm text-gray-600 mt-1">
                       {availableCount} seats available
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-lg font-bold text-green-600">
-                      ${section.basePrice.toFixed(2)}
+                      ${ticketType.price?.toFixed(2)}
                     </div>
                     <div className="text-xs text-gray-500">per seat</div>
                   </div>
                 </div>
                 
-                {section.description && (
+                {ticketType.description && (
                   <div className="mt-2 text-sm text-gray-600">
-                    {section.description}
+                    {ticketType.description}
                   </div>
                 )}
                 
                 {allowGroupSelection && availableCount > 0 && (
                   <button
-                    onClick={() => handleGroupSelection('section', section.id)}
+                    onClick={() => handleGroupSelection('ticketType', String(ticketType.id))}
                     className="mt-3 text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
                   >
                     <Users size={14} />
-                    <span>Book all available seats in this section</span>
+                    <span>Book all available seats of this type</span>
                   </button>
                 )}
               </div>
@@ -443,8 +452,8 @@ export const SeatSelectionView: React.FC<SeatSelectionProps> = ({
           </div>
         )}
 
-        {/* Sections Information */}
-        {renderSections()}
+        {/* Ticket Types Information */}
+        {renderTicketTypes()}
 
         {/* Selection Summary */}
         <div className="p-4 border-b">
@@ -498,15 +507,17 @@ export const SeatSelectionView: React.FC<SeatSelectionProps> = ({
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Select by Section:</label>
+                <label className="block text-xs text-gray-600 mb-1">Select by Ticket Type:</label>
                 <select
-                  onChange={(e) => e.target.value && handleGroupSelection('section', e.target.value)}
+                  onChange={(e) => e.target.value && handleGroupSelection('ticketType', e.target.value)}
                   className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
                   defaultValue=""
                 >
-                  <option value="">Choose section...</option>
-                  {layout.sections?.map((section: any) => (
-                    <option key={section.id} value={section.id}>{section.name}</option>
+                  <option value="">Choose ticket type...</option>
+                  {layout.ticketTypes?.map((ticketType: any) => (
+                    <option key={ticketType.id} value={String(ticketType.id)}>
+                      {ticketType.name || ticketType.type} (${ticketType.price.toFixed(2)})
+                    </option>
                   ))}
                 </select>
               </div>
@@ -527,9 +538,9 @@ export const SeatSelectionView: React.FC<SeatSelectionProps> = ({
           </div>
           
           {showLegend && (
-            <div className="space-y-2 text-xs">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {/* Row 1: Basic Statuses */}
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                {/* Basic Seat Statuses */}
                 <div className="flex items-center space-x-2">
                   <div className="w-4 h-4 bg-blue-500 rounded opacity-80"></div>
                   <span className="text-sm">Available</span>
@@ -544,14 +555,12 @@ export const SeatSelectionView: React.FC<SeatSelectionProps> = ({
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-4 h-4 bg-red-500 rounded"></div>
-                  <span className="text-sm">Occupied</span>
+                  <span className="text-sm">Booked</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-gray-500 rounded opacity-50"></div>
-                  <span className="text-sm">Blocked</span>
-                </div>
-
-                {/* Row 2: Special Seat Types */}
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200">
+                {/* Special Seat Types */}
                 <div className="flex items-center space-x-2">
                   <div className="w-4 h-4 bg-purple-500 rounded border-2 border-purple-700"></div>
                   <span className="text-sm">VIP</span>
@@ -560,19 +569,12 @@ export const SeatSelectionView: React.FC<SeatSelectionProps> = ({
                   <div className="w-4 h-4 bg-blue-500 rounded border-2 border-blue-700 border-dashed"></div>
                   <span className="text-sm">Accessible</span>
                 </div>
-                <div className="w-4 h-4 bg-blue-500 rounded border-2 border-blue-700 border-dashed"></div>
-                <span>Accessible</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-gray-500 rounded opacity-50"></div>
-                <span>Blocked</span>
               </div>
             </div>
           )}
         </div>
 
-        {/* Sections */}
-        {renderSections()}
+
       </div>
 
       {/* Main Seating Chart */}

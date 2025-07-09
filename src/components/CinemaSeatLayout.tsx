@@ -10,7 +10,6 @@ import SeatSummary from './SeatSummary';
 interface LayoutResponse {
   seats: BaseSeat[];
   ticketTypes: any[];
-  sections: any[];
 }
 
 interface Props {
@@ -24,7 +23,6 @@ const CinemaSeatLayout: React.FC<Props> = ({ eventId, onSelectionComplete }) => 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [ticketTypes, setTicketTypes] = useState<any[]>([]);
-  const [sections, setSections] = useState<any[]>([]);
 
   useEffect(() => {
     const loadSeats = async () => {
@@ -44,21 +42,17 @@ const CinemaSeatLayout: React.FC<Props> = ({ eventId, onSelectionComplete }) => 
             row: seat.row,
             number: seat.number,
             isReserved: seat.status !== 'Available',
-            tooltip: `${seat.row}${seat.number} - ${seat.section?.name || 'General'} - $${seat.price}`,
-            sectionColor: seat.section?.color,
-            ticketType: undefined,
-            ticketTypeColor: undefined,
-            color: seat.section?.color || '#E5E7EB',
+            tooltip: `${seat.row}${seat.number} - ${seat.ticketType?.type || 'General'} - $${seat.price}`,
+            color: seat.ticketType?.color || '#E5E7EB',
             price: seat.price,
             originalSeat: {
               id: seat.id,
               row: seat.row,
               number: seat.number,
               status: seat.status || 'Available',
-              section: seat.section,
+              ticketType: seat.ticketType,
               price: seat.price
-            },
-            section: seat.section
+            }
           };
           
           acc[seat.row].push(seatWithColor);
@@ -74,7 +68,6 @@ const CinemaSeatLayout: React.FC<Props> = ({ eventId, onSelectionComplete }) => 
 
         setRows(sortedRows);
         setTicketTypes(layout.ticketTypes || []);
-        setSections(layout.sections || []);
         setError(null);
       } catch (err: any) {
         console.error('Failed to load seats:', err);
@@ -157,11 +150,16 @@ const CinemaSeatLayout: React.FC<Props> = ({ eventId, onSelectionComplete }) => 
                 width: seat.originalSeat.width || 40,
                 height: seat.originalSeat.height || 40,
                 price: seat.originalSeat.price || 0,
-                status: 'Selected' as SeatStatus,
-                sectionId: seat.originalSeat.sectionId || 0,
-                section: seat.originalSeat.section || { id: 0, name: 'General', color: '#888888' }
-              },
-              resolvedPrice: seat.price || seat.resolvedPrice || 0
+                status: SeatStatus.Reserved,
+                ticketType: {
+                  id: seat.originalSeat.ticketType?.id || 0,
+                  type: seat.originalSeat.ticketType?.type || 'General',
+                  name: seat.originalSeat.ticketType?.name || 'General',
+                  color: seat.originalSeat.ticketType?.color || '#888888',
+                  price: seat.originalSeat.ticketType?.price || 0,
+                  eventId: eventId
+                }
+              }
             })),
             selectedTables: [],
             generalTickets: [],

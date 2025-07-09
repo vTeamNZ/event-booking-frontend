@@ -1,38 +1,14 @@
 import React from 'react';
-
-interface SeatRowAssignment {
-  rowStart: string;
-  rowEnd: string;
-  maxTickets: number;
-}
-
-interface TicketTypeData {
-  id?: number;
-  type: string;
-  price: number;
-  description: string;
-  sectionIds: number[];
-  maxTickets: number;
-  seatRows: SeatRowAssignment[];
-  color?: string; // Add color field
-}
-
-interface Section {
-  id: number;
-  name: string;
-  color: string;
-  basePrice: number;
-}
+import { TicketTypeData, SeatRowAssignment } from '../types/ticketTypes';
+import { getTicketTypeName, getTicketTypeColor } from '../utils/ticketTypeUtils';
 
 interface TicketTypeManagerProps {
   ticketTypes: TicketTypeData[];
-  sections: Section[];
   availableRows: string[];
   isVenueWithSeats?: boolean;
   onAddTicketType: () => void;
   onUpdateTicketType: (index: number, field: keyof TicketTypeData, value: any) => void;
   onRemoveTicketType: (index: number) => void;
-  onToggleSection: (ticketIndex: number, sectionId: number) => void;
   onAddSeatRow: (ticketIndex: number) => void;
   onUpdateSeatRow: (ticketIndex: number, rowIndex: number, field: keyof SeatRowAssignment, value: any) => void;
   onRemoveSeatRow: (ticketIndex: number, rowIndex: number) => void;
@@ -40,17 +16,27 @@ interface TicketTypeManagerProps {
 
 const TicketTypeManager: React.FC<TicketTypeManagerProps> = ({
   ticketTypes,
-  sections,
   availableRows,
   isVenueWithSeats = true,
   onAddTicketType,
   onUpdateTicketType,
   onRemoveTicketType,
-  onToggleSection,
   onAddSeatRow,
   onUpdateSeatRow,
   onRemoveSeatRow
 }) => {
+  // Handler to update both type and name fields synchronously
+  const handleTypeChange = (index: number, value: string) => {
+    // Update both type and name fields to keep them synchronized
+    onUpdateTicketType(index, 'type', value);
+    onUpdateTicketType(index, 'name', value);
+  };
+
+  // Handler to update color field with automatic color generation
+  const handleColorChange = (index: number, value: string) => {
+    onUpdateTicketType(index, 'color', value);
+  };
+
   // Debug log for seat row assignments
   console.log('TicketTypeManager - ticketTypes with seatRows:', ticketTypes.map(tt => ({
     type: tt.type,
@@ -85,15 +71,15 @@ const TicketTypeManager: React.FC<TicketTypeManagerProps> = ({
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Type Name *
                 </label>
                 <input
                   type="text"
-                  value={ticketType.type}
-                  onChange={(e) => onUpdateTicketType(index, 'type', e.target.value)}
+                  value={getTicketTypeName(ticketType)}
+                  onChange={(e) => handleTypeChange(index, e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                   placeholder="e.g., VIP, Standard, Student"
                 />
@@ -114,7 +100,28 @@ const TicketTypeManager: React.FC<TicketTypeManagerProps> = ({
                 />
               </div>
 
-              <div className="md:col-span-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Color
+                </label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="color"
+                    value={getTicketTypeColor(ticketType)}
+                    onChange={(e) => handleColorChange(index, e.target.value)}
+                    className="w-12 h-10 border border-gray-300 rounded cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={getTicketTypeColor(ticketType)}
+                    onChange={(e) => handleColorChange(index, e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm"
+                    placeholder="#3B82F6"
+                  />
+                </div>
+              </div>
+
+              <div className="md:col-span-3">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Description *
                 </label>
@@ -128,7 +135,7 @@ const TicketTypeManager: React.FC<TicketTypeManagerProps> = ({
               </div>
 
               {!isVenueWithSeats && (
-                <div>
+                <div className="md:col-span-3">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Maximum Tickets *
                   </label>
@@ -146,7 +153,7 @@ const TicketTypeManager: React.FC<TicketTypeManagerProps> = ({
                 </div>
               )}
               {isVenueWithSeats && (
-                <div>
+                <div className="md:col-span-3">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Available Tickets
                   </label>
@@ -156,32 +163,6 @@ const TicketTypeManager: React.FC<TicketTypeManagerProps> = ({
                   <p className="mt-1 text-xs text-gray-500">
                     Number of tickets is automatically calculated based on row assignments
                   </p>
-                </div>
-              )}
-
-              {/* Section Assignment - hidden as we now use row assignments */}
-              {false && sections.length > 0 && (
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Available Sections
-                  </label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {sections.map((section) => (
-                      <label key={section.id} className="flex items-center cursor-pointer hover:bg-white rounded p-1 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={ticketType.sectionIds.includes(section.id)}
-                          onChange={() => onToggleSection(index, section.id)}
-                          className="mr-2"
-                        />
-                        <div 
-                          className="w-3 h-3 rounded mr-1"
-                          style={{ backgroundColor: section.color }}
-                        ></div>
-                        <span className="text-sm">{section.name}</span>
-                      </label>
-                    ))}
-                  </div>
                 </div>
               )}
 

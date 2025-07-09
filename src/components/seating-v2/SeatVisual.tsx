@@ -1,42 +1,45 @@
 // Individual Seat Visual Component
 import React from 'react';
-import { SeatingLayoutSeat } from '../../types/seating-v2';
+import { SeatingLayoutSeat, SeatingSelectedSeat } from '../../types/seating-v2';
 import { getSeatColor, getSeatTooltip } from '../../utils/seating-v2/seatingUtils';
 
 interface SeatVisualProps {
   seat: SeatingLayoutSeat;
   isSelected: boolean;
-  isHovered: boolean;
+  selectedSeat?: SeatingSelectedSeat;
+  canSelect: boolean;
   onClick: () => void;
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
+  className?: string;
 }
 
 const SeatVisual: React.FC<SeatVisualProps> = ({
   seat,
   isSelected,
-  isHovered,
+  selectedSeat,
+  canSelect,
   onClick,
-  onMouseEnter,
-  onMouseLeave
+  className = ''
 }) => {
-  // Get seat color based on status and selection
-  const seatColor = getSeatColor(seat, isSelected, isHovered);
-  
-  // Get tooltip text
-  const tooltip = getSeatTooltip(seat, isSelected);
+  const seatColor = getSeatColor(seat, isSelected, canSelect);
+  const tooltip = getSeatTooltip(seat, selectedSeat);
 
   return (
-    <div
-      title={tooltip}
-      className="w-8 h-8 flex items-center justify-center rounded cursor-pointer transition-colors duration-200"
-      style={{ backgroundColor: seatColor }}
+    <button
+      type="button"
+      className={`
+        w-8 h-8 rounded 
+        ${seatColor}
+        ${canSelect ? 'cursor-pointer hover:opacity-80' : 'cursor-not-allowed'}
+        transition-colors duration-200
+        ${className}
+      `}
       onClick={onClick}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
+      disabled={!canSelect}
+      title={tooltip}
+      aria-label={tooltip}
     >
-      <span className="text-xs">{seat.number}</span>
-    </div>
+      {seat.number}
+    </button>
   );
 };
 

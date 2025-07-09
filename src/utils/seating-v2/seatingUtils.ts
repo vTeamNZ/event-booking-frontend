@@ -52,7 +52,53 @@ export const isReservationExpiring = (reservedUntil: Date): boolean => {
  * Calculate total price for selected seats
  */
 export const calculateTotalPrice = (selectionState: SeatingSelectionState): number => {
-  return selectionState.selectedSeats.reduce((total, seat) => total + seat.seat.price, 0);
+  return selectionState.selectedSeats.reduce((total, seat) => total + (seat.price || 0), 0);
+};
+
+/**
+ * Calculate detailed price breakdown by ticket type
+ */
+export const calculatePriceBreakdown = (
+  selectionState: SeatingSelectionState
+): Array<{ 
+  ticketTypeId: number; 
+  name: string; 
+  count: number; 
+  unitPrice: number; 
+  totalPrice: number;
+  color?: string; 
+}> => {
+  const breakdown: Record<number, { 
+    ticketTypeId: number; 
+    name: string; 
+    count: number; 
+    unitPrice: number; 
+    totalPrice: number;
+    color?: string;
+  }> = {};
+
+  // Group selected seats by ticket type
+  selectionState.selectedSeats.forEach(selected => {
+    const ticketType = selected.ticketType;
+    if (!ticketType) return;
+    
+    const typeId = ticketType.id;
+    if (!breakdown[typeId]) {
+      breakdown[typeId] = {
+        ticketTypeId: typeId,
+        name: ticketType.name || ticketType.type || 'General Admission',
+        count: 0,
+        unitPrice: ticketType.price,
+        totalPrice: 0,
+        color: ticketType.color
+      };
+    }
+    
+    breakdown[typeId].count += 1;
+    breakdown[typeId].totalPrice += ticketType.price;
+  });
+  
+  return Object.values(breakdown).sort((a, b) => b.unitPrice - a.unitPrice);
 };
 
 /**
@@ -62,13 +108,18 @@ export const canSelectSeat = (
   seat: SeatingLayoutSeat,
   selectedSeats: SeatingSelectedSeat[]
 ): boolean => {
-  // Can't select if already selected
-  if (selectedSeats.some(s => s.seat.id === seat.id)) {
-    return false;
+  // Can't select if already selected (allow deselection)
+  if (selectedSeats.some(s => s.id === seat.id)) {
+    return true; // Allow clicking on already selected seats to deselect
   }
 
-  // Can't select if not available
-  if (seat.status !== SeatStatus.Available) {
+  // Handle both string and numeric status formats
+  const seatStatus = typeof seat.status === 'number' 
+    ? seat.status // Use numeric value directly
+    : convertToBackendStatus(seat.status); // Convert string status to number
+
+  // Only Available (0) seats can be selected
+  if (seatStatus !== 0) { // SeatStatus.Available = 0 in backend
     return false;
   }
 
@@ -76,68 +127,103 @@ export const canSelectSeat = (
 };
 
 /**
- * Get seat color based on status and selection
+ * Convert backend numeric status to frontend enum
+ */
+export const convertFromBackendStatus = (status: number): SeatStatus => {
+  switch (status) {
+    case 0:
+      return SeatStatus.Available;
+    case 1:
+      return SeatStatus.Reserved;
+    case 2:
+      return SeatStatus.Booked;
+    default:
+      return SeatStatus.Available;
+  }
+};
+
+/**
+ * Convert frontend string status to backend numeric values
+ */
+export const convertToBackendStatus = (status: SeatStatus): number => {
+  switch (status) {
+    case SeatStatus.Available:
+      return 0;
+    case SeatStatus.Reserved:
+      return 1;
+    case SeatStatus.Booked:
+      return 2;
+    default:
+      return 3; // Unavailable
+  }
+};
+
+/**
+ * Get the CSS color class for a seat based on its status
  */
 export const getSeatColor = (
   seat: SeatingLayoutSeat,
   isSelected: boolean,
-  isHovered: boolean,
-  ticketType?: SeatingTicketType
+  canSelect: boolean
 ): string => {
   if (isSelected) {
-    return '#10b981'; // green-500
+    return 'bg-blue-500 text-white';
   }
-  
-  if (seat.status === SeatStatus.Reserved) {
-    return '#f59e0b'; // amber-500
+
+  switch (seat.status) {
+    case SeatStatus.Available:
+      return canSelect
+        ? 'bg-green-500 text-white hover:bg-green-600'
+        : 'bg-green-300 text-gray-700';
+    case SeatStatus.Reserved:
+      return 'bg-yellow-500 text-white';
+    case SeatStatus.Booked:
+      return 'bg-red-500 text-white';
+    case SeatStatus.Unavailable:
+      return 'bg-gray-500 text-white';
+    default:
+      return 'bg-gray-300 text-gray-700';
   }
-  
-  if (seat.status === SeatStatus.Booked) {
-    return '#ef4444'; // red-500
-  }
-  
-  if (isHovered) {
-    return '#3b82f6'; // blue-500
-  }
-  
-  if (ticketType?.color) {
-    return ticketType.color;
-  }
-  
-  if (seat.ticketType?.color) {
-    return seat.ticketType.color;
-  }
-  
-  return '#e5e7eb'; // gray-200
 };
 
 /**
- * Get seat tooltip text
+ * Get the tooltip text for a seat
  */
 export const getSeatTooltip = (
   seat: SeatingLayoutSeat,
-  isSelected: boolean,
-  ticketType?: SeatingTicketType
+  selectedSeat?: SeatingSelectedSeat
 ): string => {
-  const parts = [
-    `${seat.row}${seat.number}`,
-    seat.ticketType?.name || 'General',
-    formatPrice(seat.price)
-  ];
-
-  if (isSelected) {
-    parts.unshift('Selected:');
+  const base = `Seat ${seat.row}${seat.number}`;
+  
+  if (selectedSeat) {
+    return `${base} - Selected (${selectedSeat.ticketType?.name || 'Unknown ticket type'})`;
   }
 
-  if (ticketType) {
-    parts.splice(2, 0, ticketType.name);
+  switch (seat.status) {
+    case SeatStatus.Available:
+      return `${base} - Available${seat.ticketType ? ` (${seat.ticketType.name})` : ''}`;
+    case SeatStatus.Reserved:
+      return `${base} - Reserved`;
+    case SeatStatus.Booked:
+      return `${base} - Booked`;
+    case SeatStatus.Unavailable:
+      return `${base} - Unavailable`;
+    default:
+      return base;
   }
+};
 
-  if (seat.status !== SeatStatus.Available) {
-    parts.unshift(`${seat.status}:`);
+/**
+ * Convert numeric status to human-readable label
+ */
+export const getStatusLabel = (status: number): string => {
+  switch (status) {
+    case 0: return 'Available';
+    case 1: return 'Reserved';
+    case 2: return 'Booked';
+    case 3: return 'Unavailable';
+    default: return 'Unknown';
   }
-
-  return parts.join(' - ');
 };
 
 /**
@@ -207,4 +293,120 @@ export const validateSelectionState = (
     isValid: errors.length === 0,
     errors
   };
+};
+
+/**
+ * Get the ticket type for a specific row
+ */
+export const getTicketTypeForRow = (
+  row: string,
+  ticketTypes: TicketType[]
+): TicketType | undefined => {
+  // First try to find a direct match based on seat row assignments
+  for (const ticketType of ticketTypes) {
+    if (!ticketType.seatRowAssignments) continue;
+    
+    try {
+      const rowAssignments = JSON.parse(ticketType.seatRowAssignments);
+      
+      for (const assignment of rowAssignments) {
+        if (!assignment.rowStart || !assignment.rowEnd) continue;
+        
+        // Check if row is within the range
+        const startChar = assignment.rowStart.charCodeAt(0);
+        const endChar = assignment.rowEnd.charCodeAt(0);
+        const rowChar = row.charCodeAt(0);
+        
+        if (rowChar >= startChar && rowChar <= endChar) {
+          return ticketType;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse seat row assignments', e);
+    }
+  }
+  
+  // If no match found, return the first General Admission ticket type
+  return ticketTypes.find(t => 
+    t.type?.toLowerCase() === 'general' || 
+    t.name?.toLowerCase() === 'general admission'
+  );
+};
+
+/**
+ * Calculate seat price based on ticket type
+ */
+export const calculateSeatPrice = (
+  seat: SeatingLayoutSeat,
+  ticketTypes: TicketType[]
+): number => {
+  // If seat already has a price, use it
+  if (seat.price && seat.price > 0) {
+    return seat.price;
+  }
+  
+  // If seat has a ticket type with price, use it
+  if (seat.ticketType?.price) {
+    return seat.ticketType.price;
+  }
+  
+  // Find ticket type for this row
+  const ticketType = getTicketTypeForRow(seat.row, ticketTypes);
+  if (ticketType?.price) {
+    return ticketType.price;
+  }
+  
+  // Find the lowest priced ticket type as a fallback
+  const lowestPriceTicket = ticketTypes
+    .filter(tt => tt.price > 0)
+    .sort((a, b) => a.price - b.price)[0];
+    
+  if (lowestPriceTicket?.price) {
+    return lowestPriceTicket.price;
+  }
+  
+  // Default price if nothing else is available
+  console.warn(`No valid price found for seat ${seat.row}${seat.number}`);
+  return 0;
+};
+
+/**
+ * Toggle seat selection state
+ */
+export const toggleSeatSelection = (
+  seat: SeatingLayoutSeat,
+  state: SeatingSelectionState
+): SeatingSelectionState => {
+  // Check if seat is already selected
+  const existingIndex = state.selectedSeats.findIndex(
+    s => s.row === seat.row && s.number === seat.number
+  );
+
+  const newSelectedSeats = [...state.selectedSeats];
+
+  // If seat is already selected, remove it
+  if (existingIndex >= 0) {
+    newSelectedSeats.splice(existingIndex, 1);
+  }
+  // If seat is not selected and we haven't reached max seats, add it
+  else if (state.selectedSeats.length < (state.maxSeats || Infinity)) {
+    const selectedSeat: SeatingSelectedSeat = {
+      ...seat,
+      selectedAt: new Date(),
+      reservedUntil: new Date(Date.now() + 15 * 60 * 1000) // 15 minutes reservation
+    };
+    newSelectedSeats.push(selectedSeat);
+  }
+
+  // Calculate new state
+  const newState = {
+    ...state,
+    selectedSeats: newSelectedSeats,
+    totalPrice: newSelectedSeats.reduce(
+      (sum, seat) => sum + calculateSeatPrice(seat, state.ticketTypes || []),
+      0
+    )
+  };
+
+  return newState;
 };

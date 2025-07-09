@@ -24,8 +24,6 @@ export class SeatingAPIService {
         eventId: response.data.eventId,
         mode: response.data.mode,
         seatsCount: response.data.seats.length,
-        tablesCount: response.data.tables.length,
-        sectionsCount: response.data.sections.length,
         ticketTypesCount: response.data.ticketTypes.length
       });
       

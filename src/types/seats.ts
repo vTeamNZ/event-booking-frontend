@@ -1,3 +1,5 @@
+import { TicketTypeDisplay } from './ticketTypes';
+
 export interface BaseSeat {
   id: number;
   row: string;
@@ -9,23 +11,18 @@ export interface BaseSeat {
   height?: number;
   price?: number;
   status?: 'Available' | 'Reserved' | 'Booked' | 'Unavailable';
-  sectionId?: number;
-  section?: {
-    id: number;
-    name: string;
-    color: string;
-    basePrice: number;
-  };
+  ticketTypeId?: number;
+  ticketType?: TicketTypeDisplay;
 }
 
 export interface DisplaySeat extends BaseSeat {
   isReserved: boolean;
   tooltip: string;
-  sectionColor?: string;
-  ticketType?: any;
-  ticketTypeColor?: string;
   color?: string;
   originalSeat: BaseSeat;
+  // For backward compatibility
+  ticketTypeColor?: string;  // Color based on ticket type
+  sectionColor?: string;     // Legacy color from section
 }
 
 export interface SelectedSeat extends DisplaySeat {

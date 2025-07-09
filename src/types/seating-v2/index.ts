@@ -1,5 +1,6 @@
 // New types for Seating System V2
 import { SeatStatus } from '../seatStatus';
+import { TicketType } from '../ticketTypes';
 
 export enum SeatSelectionMode {
   EventHall = 1,
@@ -20,15 +21,7 @@ export interface SeatingStage {
   height: number;
 }
 
-export interface SeatingTicketType {
-  id: number;
-  name: string;
-  type: string;
-  price: number;
-  color: string;
-  description: string;
-  seatRowAssignments: string; // JSON string of row assignments
-}
+export interface SeatingTicketType extends TicketType {}
 
 export interface SeatingLayoutSeat {
   id: number;
@@ -39,33 +32,16 @@ export interface SeatingLayoutSeat {
   y: number;
   width: number;
   height: number;
-  price: number;
+  price?: number;
   status: SeatStatus;
-  ticketTypeId?: number;
-  ticketType?: {
-    id: number;
-    name: string;
-    color: string;
-    price: number;
+  ticketType?: SeatingTicketType;
+  reservedUntil?: string | Date;
+  properties?: {
+    rowLetter?: string;
+    seatNumber?: string;
+    isVip?: boolean;
+    isAccessible?: boolean;
   };
-  tableId?: number;
-  reservedUntil?: string;
-}
-
-export interface SeatingLayoutTable {
-  id: number;
-  tableNumber: string;
-  capacity: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  shape: string;
-  pricePerSeat: number;
-  tablePrice?: number;
-  sectionId?: number;
-  availableSeats: number;
-  seats: SeatingLayoutSeat[];
 }
 
 export interface SeatingLayoutResponse {
@@ -74,44 +50,18 @@ export interface SeatingLayoutResponse {
   venue?: SeatingVenue;
   stage?: SeatingStage;
   seats: SeatingLayoutSeat[];
-  tables: SeatingLayoutTable[];
   ticketTypes: SeatingTicketType[];
-  
-  // Aisle configuration
   hasHorizontalAisles?: boolean;
   horizontalAisleRows?: string;
   hasVerticalAisles?: boolean;
   verticalAisleSeats?: string;
   aisleWidth?: number;
-}
-
-export interface SeatingSelectedSeat {
-  seat: SeatingLayoutSeat;
-  reservedUntil?: Date;
-  ticketType?: SeatingTicketType;
-}
-
-export interface SeatingSelectedTable {
-  table: SeatingLayoutTable;
-  selectedSeats: SeatingLayoutSeat[];
-  isFullTable: boolean;
-  reservedUntil?: Date;
-}
-
-export interface SeatingGeneralTicket {
-  ticketType: SeatingTicketType;
-  quantity: number;
-}
-
-export interface SeatingSelectionState {
-  mode: SeatSelectionMode;
-  eventId: number;
-  selectedSeats: SeatingSelectedSeat[];
-  selectedTables: SeatingSelectedTable[];
-  generalTickets: SeatingGeneralTicket[];
-  totalPrice: number;
-  sessionId: string;
-  maxSeats?: number;
+  levels?: Array<{
+    id: string;
+    level: number;
+    name: string;
+    elements: Array<any>;
+  }>;
 }
 
 export interface SeatingReservationRequest {
@@ -134,14 +84,13 @@ export interface SeatingReleaseRequest {
 export interface SeatingPricingResponse {
   eventId: number;
   mode: SeatSelectionMode;
-  sectionPricing: Record<string, number>;
   ticketTypes: SeatingTicketType[];
 }
 
 // UI Component Props
 export interface SeatingLayoutProps {
   eventId: number;
-  onSelectionComplete: (selectionState: SeatingSelectionState) => void;
+  onSelectionComplete: (state: SeatingSelectionState) => void;
   maxSeats?: number;
   showLegend?: boolean;
   className?: string;
@@ -150,7 +99,6 @@ export interface SeatingLayoutProps {
 export interface SeatVisualProps {
   seat: SeatingLayoutSeat;
   isSelected: boolean;
-  isReserved: boolean;
   isHovered: boolean;
   onClick: () => void;
   onMouseEnter: () => void;
@@ -159,9 +107,9 @@ export interface SeatVisualProps {
 }
 
 export interface SeatingGridProps {
-  seats: SeatingLayoutSeat[];
-  selectedSeats: number[];
-  onSeatClick: (seat: SeatingLayoutSeat) => void;
+  layout: SeatingLayoutResponse;
+  selectedSeats: SeatingSelectedSeat[];
+  onSeatSelect: (seat: SeatingLayoutSeat) => void;
   className?: string;
 }
 
@@ -176,12 +124,20 @@ export interface SeatingSummaryProps {
   onClear: () => void;
 }
 
-export interface SeatingReservationTimerProps {
-  sessionId: string;
-  onExpiry: () => void;
+export interface SeatingSelectedSeat extends SeatingLayoutSeat {
+  reservedUntil: Date;
+  ticketType?: SeatingTicketType;
+  selectedAt: Date;
 }
 
-export interface SeatingErrorMessageProps {
-  error: string;
-  onRetry: () => void;
+export interface SeatingSelectionState {
+  mode: SeatSelectionMode;
+  eventId: number;
+  selectedSeats: SeatingSelectedSeat[];
+  selectedTables: number[];
+  generalTickets: SeatingTicketType[];
+  totalPrice: number;
+  sessionId: string;
+  maxSeats: number;
+  ticketTypes: TicketType[];
 }

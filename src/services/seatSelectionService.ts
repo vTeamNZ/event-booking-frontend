@@ -3,16 +3,12 @@ import {
   SeatLayoutResponse,
   PricingResponse,
   ReserveSeatRequest,
-  ReserveTableRequest,
-  Seat,
-  Table
+  Seat
 } from '../types/seatSelection';
 import { TicketType } from '../types/ticketTypes';
 import { SeatStatus, convertFromBackendStatus } from '../types/seatStatus';
 
 export type { TicketType } from '../types/ticketTypes';
-
-// Removed mock data generator function
 
 export const seatSelectionService = {
   // Get seat layout for an event
@@ -21,74 +17,43 @@ export const seatSelectionService = {
     console.log(`Making API call to: ${api.defaults.baseURL}/api/seats/event/${eventId}/layout`);
     
     try {
-      console.log('API call parameters:', { eventId });
-      
-      // Check that API base URL is set
-      if (!api.defaults.baseURL) {
-        console.error('API base URL is not set!');
-        throw new Error('API base URL not configured');
-      }
-      
       const response = await api.get<SeatLayoutResponse>(`/api/seats/event/${eventId}/layout`);
-      console.log('Seat layout API response status:', response.status);
-      console.log('Seat layout API response data:', response.data);
       
-      // Detailed logging for seat data from API
-      console.log('===== DETAILED SEAT DATA FROM API =====');
-      if (response.data && response.data.seats && response.data.seats.length > 0) {
-        // Log the first few seats
-        console.log('First 3 seats with full details:');
-        response.data.seats.slice(0, 3).forEach((seat: any, index: number) => {
-          console.log(`Seat ${index + 1}:`, {
-            id: seat.id,
-            row: seat.row,
-            number: seat.number,
-            price: seat.price,
-            status: seat.status,
-            sectionId: seat.sectionId
-          });
-        });
-        
-        // Check how many seats have prices
-        const seatsWithPrices = response.data.seats.filter((seat: any) => 
-          typeof seat.price === 'number' && seat.price > 0
-        );
-        console.log(`Seats with prices > 0: ${seatsWithPrices.length} out of ${response.data.seats.length}`);
-        
-        // Log some of these seats with prices if they exist
-        if (seatsWithPrices.length > 0) {
-          console.log('Sample seats with prices:');
-          seatsWithPrices.slice(0, 3).forEach((seat: any) => {
-            console.log(`${seat.row}-${seat.number}: $${seat.price}`);
-          });
-        } else {
-          console.log('WARNING: No seats with prices > 0 found!');
-        }
-      } else {
-        console.log('No seat data found in API response');
-      }
-      
-      // Validate the response structure
-      if (!response.data) {
-        console.error('Empty response data received');
-        throw new Error('Empty response from API');
-      } else {
-        console.log('Response mode:', response.data.mode);
-        console.log('Response event ID:', response.data.eventId);
-        console.log('Response seats count:', response.data.seats?.length || 0);
-        return response.data;
-      }
+      // Convert backend numeric status to enum values
+      response.data.seats = response.data.seats.map(seat => ({
+        ...seat,
+        status: typeof seat.status === 'number' ? convertFromBackendStatus(seat.status) : seat.status,
+        // Ensure each seat has complete ticket type info
+        ticketType: seat.ticketType ? {
+          ...seat.ticketType,
+          type: seat.ticketType.type || seat.ticketType.name || 'General Admission',
+          name: seat.ticketType.name || seat.ticketType.type || 'General Admission',
+          eventId: eventId
+        } : undefined
+      }));
+
+      console.log('Seat layout response:', {
+        mode: response.data.mode,
+        seatCount: response.data.seats?.length,
+        ticketTypeCount: response.data.ticketTypes?.length
+      });
+
+      return response.data;
     } catch (error) {
-      console.error('************* ERROR IN SEAT SELECTION SERVICE *************');
-      console.error('Error in getEventSeatLayout:', error);
-      throw error; // Re-throw the error instead of using mock data
+      console.error('Error fetching seat layout:', error);
+      throw error;
     }
   },
 
   // Get pricing information for an event
   async getEventPricing(eventId: number): Promise<PricingResponse> {
-    const response = await api.get<PricingResponse>(`/api/seats/pricing/${eventId}`);
-    return response.data;
+    try {
+      const response = await api.get<PricingResponse>(`/api/events/${eventId}/pricing`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching pricing:', error);
+      throw error;
+    }
   },
 
   // Reserve a single seat
@@ -98,30 +63,17 @@ export const seatSelectionService = {
     seatNumber: string;
     price: number;
   }> {
-    const response = await api.post<{
-      message: string;
-      reservedUntil: string;
-      seatNumber: string;
-      price: number;
-    }>('/api/seats/reserve', request);
-    return response.data;
+    try {
+      const response = await api.post('/api/seats/reserve', request);
+      const data = response.data as { message: string; reservedUntil: string; seatNumber: string; price: number; };
+      return data;
+    } catch (error) {
+      console.error('Error reserving seat:', error);
+      throw error;
+    }
   },
 
-  // Reserve table or specific seats at a table
-  async reserveTable(request: ReserveTableRequest): Promise<{
-    message: string;
-    reservedSeats: number;
-    totalPrice: number;
-    reservedUntil: string;
-  }> {
-    const response = await api.post<{
-      message: string;
-      reservedSeats: number;
-      totalPrice: number;
-      reservedUntil: string;
-    }>('/api/seats/reserve-table', request);
-    return response.data;
-  },
+  // Table reservation removed
 
   // Release a reserved seat
   async releaseSeat(seatId: number, sessionId: string): Promise<{
@@ -140,32 +92,25 @@ export const seatSelectionService = {
     return response.data;
   },
 
-  // Get all tables for an event (if needed)
-  async getTables(): Promise<Table[]> {
-    const response = await api.get<Table[]>('/api/tables');
-    return response.data;
-  },
+  // Tables functionality removed
   
   // Get ticket types for an event
   async getEventTicketTypes(eventId: number): Promise<TicketType[]> {
     try {
-      console.log('Fetching ticket types for event:', eventId);
       const response = await api.get<TicketType[]>(`/api/TicketTypes/event/${eventId}`);
       console.log('Received ticket types:', response.data);
       
-      // Log each ticket type with its color for debugging
-      response.data.forEach(ticket => {
-        console.log(`Ticket Type: ${ticket.type}, Color: ${ticket.color}, Price: $${ticket.price}`);
-      });
-      
-      // Process ticket types to parse row assignments if available
-      return response.data.map(ticket => {
-        // Add parsedAssignments field for easier consumption by components
-        return ticket;
-      });
+      // Ensure all required fields are present
+      return response.data.map(ticket => ({
+        ...ticket,
+        type: ticket.type || ticket.name || 'General Admission',
+        name: ticket.name || ticket.type || 'General Admission',
+        color: ticket.color || '#3B82F6',
+        eventId: eventId
+      }));
     } catch (error) {
       console.error('Error fetching ticket types:', error);
-      throw error; // Let the component handle the error instead of using fallback data
+      throw error;
     }
-  },
+  }
 };

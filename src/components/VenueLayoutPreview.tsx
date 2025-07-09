@@ -1,25 +1,9 @@
 import React from 'react';
 
-interface SeatRowAssignment {
-  rowStart: string;
-  rowEnd: string;
-  maxTickets: number;
-}
-
-interface TicketTypeData {
-  id?: number;
-  type: string;
-  price: number;
-  description: string;
-  sectionIds: number[];
-  maxTickets: number;
-  seatRows: SeatRowAssignment[];
-  color?: string; // Add color field
-}
+import { TicketTypeData } from '../types/ticketTypes';
 
 interface VenueLayoutPreviewProps {
   layout: any;
-  sections: any[];
   selectedVenue: any;
   className?: string;
   ticketTypes?: TicketTypeData[];
@@ -41,15 +25,15 @@ const getStableColor = (str: string) => {
 
 const VenueLayoutPreview: React.FC<VenueLayoutPreviewProps> = ({
   layout,
-  sections,
   selectedVenue,
   className = "",
   ticketTypes = []
 }) => {
   // Debug log to verify props
-  console.log('VenueLayoutPreview props:', { ticketTypes, layout, sections });
+  console.log('VenueLayoutPreview props:', { ticketTypes, layout });
   console.log('VenueLayoutPreview - ticketTypes detailed:', ticketTypes.map(tt => ({
     type: tt.type,
+    price: tt.price,
     seatRows: tt.seatRows,
     hasSeatRows: tt.seatRows && tt.seatRows.length > 0,
     seatRowsWithValues: tt.seatRows?.filter(sr => sr.rowStart && sr.rowEnd)
@@ -195,15 +179,14 @@ const VenueLayoutPreview: React.FC<VenueLayoutPreviewProps> = ({
                 })
               );
               
-              // If assigned to a ticket type, use its color, otherwise use the section color
-              const section = seat.sectionId ? sections.find(s => s.id === seat.sectionId) : null;
-              const seatColor = assignedTicketType 
-                ? (assignedTicketType.color || getStableColor(assignedTicketType.type)) // Use color from ticket type if available
-                : (section?.color || '#6B7280');
+              const ticketType = assignedTicketType || seat.ticketType;
+              const seatColor = ticketType
+                ? (ticketType.color || getStableColor(ticketType.name))
+                : '#6B7280';
                 
-              const seatTitle = assignedTicketType
-                ? `${seat.row}${seat.number} - ${assignedTicketType.type} ($${assignedTicketType.price})`
-                : `${seat.row}${seat.number}${section ? ` - ${section.name}` : ''}`;
+              const seatTitle = ticketType
+                ? `${seat.row}${seat.number} - ${ticketType.name} ($${ticketType.price})`
+                : `${seat.row}${seat.number} - General`;
 
               return (
                 <div
@@ -224,61 +207,29 @@ const VenueLayoutPreview: React.FC<VenueLayoutPreviewProps> = ({
         </div>
       </div>
 
-      {/* Section and Ticket Type Legend */}
+      {/* Ticket Type Legend */}
       <div className="mt-4 space-y-4">
-        {/* Sections Legend - only show if there are sections */}
-        {sections && sections.length > 0 && (
-          <div>
-            <h5 className="text-sm font-medium text-gray-700 mb-2">Venue Sections:</h5>
-            <div className="flex flex-wrap gap-3">
-              {sections.map((section) => (
-                <div key={section.id} className="flex items-center">
-                  <div 
-                    className="w-4 h-4 rounded mr-2"
-                    style={{ backgroundColor: section.color }}
-                  ></div>
-                  <span className="text-sm text-gray-600">
-                    {section.name} (${section.basePrice})
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Ticket Types Legend */}
-        {ticketTypes.length > 0 && (
+        {ticketTypes && ticketTypes.length > 0 && (
           <div>
             <h5 className="text-sm font-medium text-gray-700 mb-2">Ticket Types:</h5>
             <div className="flex flex-wrap gap-3">
-              {ticketTypes.map((ticketType, index) => {
-                // Only show ticket types that have at least one row assigned
-                const hasRowAssignments = ticketType.seatRows && ticketType.seatRows.some(
-                  sr => sr.rowStart && sr.rowEnd
-                );
-                
-                if (!hasRowAssignments) return null;
-                
-                // Use ticket type color or generate one if not available
-                const color = ticketType.color || getStableColor(ticketType.type);
-                
-                return (
-                  <div key={index} className="flex items-center">
-                    <div 
-                      className="w-4 h-4 rounded mr-2"
-                      style={{ backgroundColor: color }}
-                    ></div>
-                    <span className="text-sm text-gray-600">
-                      {ticketType.type} (${ticketType.price}) - Rows: {
-                        ticketType.seatRows
-                          .filter(sr => sr.rowStart && sr.rowEnd)
-                          .map(sr => sr.rowStart === sr.rowEnd ? sr.rowStart : `${sr.rowStart}-${sr.rowEnd}`)
-                          .join(', ')
-                      }
-                    </span>
-                  </div>
-                );
-              })}
+              {ticketTypes.map((type) => (
+                <div key={type.id} className="flex items-center">
+                  <div 
+                    className="w-4 h-4 rounded mr-2"
+                    style={{ backgroundColor: type.color || getStableColor(type.type) }}
+                  ></div>
+                  <span className="text-sm text-gray-600">
+                    {type.type} (${type.price})
+                    {type.seatRows?.length > 0 && ` - Rows: ${
+                      type.seatRows
+                        .filter(sr => sr.rowStart && sr.rowEnd)
+                        .map(sr => sr.rowStart === sr.rowEnd ? sr.rowStart : `${sr.rowStart}-${sr.rowEnd}`)
+                        .join(', ')
+                    }`}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         )}
