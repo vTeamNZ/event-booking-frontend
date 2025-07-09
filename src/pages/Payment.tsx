@@ -5,8 +5,9 @@ import { message, Button, Space } from 'antd';
 import SEO from '../components/SEO';
 import { useAuth } from '../hooks/useAuth';
 import { reservationService, TicketReservationRequest } from '../services/reservationService';
+import { BookingData } from '../types/booking';
 
-interface PaymentLocationState {
+interface LegacyPaymentLocationState {
   amount: number;
   eventTitle: string;
   eventId: number;
@@ -36,23 +37,159 @@ const Payment: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { user, isAuthenticated, isOrganizer } = useAuth();
 
-  // Check if we have the required payment state
-  useEffect(() => {
-    if (!location.state || !('amount' in location.state)) {
-      navigate('/');
+  // Extract state - handle both new BookingData and legacy format
+  const state = location.state as (BookingData | LegacyPaymentLocationState) | null;
+  
+  // Check if it's the new format (BookingData)
+  const isNewFormat = state && ('bookingType' in state);
+  
+  let amount: number, eventTitle: string, eventId: number | undefined, ticketDetails: any[], selectedFoods: any[];
+  
+  if (isNewFormat) {
+    const bookingData = state as BookingData;
+    amount = bookingData.totalAmount ?? 0;
+    eventTitle = bookingData.eventTitle ?? '';
+    eventId = bookingData.eventId;
+    
+    // For ticket-type bookings
+    if (bookingData.bookingType === 'tickets' && bookingData.selectedTickets) {
+      // Convert new format to legacy format for display
+      ticketDetails = bookingData.selectedTickets.map(ticket => ({
+        type: ticket.name || ticket.type,
+        quantity: ticket.quantity,
+        price: ticket.price,
+      }));
     }
-  }, [location.state, navigate]);
-
-  if (!location.state) {
-    return null;
+    // For seat-based bookings
+    else if (bookingData.bookingType === 'seats' && bookingData.selectedSeats) {
+      // Group seats by ticket type for better display
+      const seatsByTicketType = bookingData.selectedSeats.reduce((acc, seat) => {
+        const typeKey = seat.ticketTypeId.toString();
+        if (!acc[typeKey]) {
+          acc[typeKey] = {
+            ticketTypeId: seat.ticketTypeId,
+            count: 0,
+            totalPrice: 0,
+            seatNumbers: []
+          };
+        }
+        acc[typeKey].count++;
+        acc[typeKey].totalPrice += seat.price;
+        acc[typeKey].seatNumbers.push(`${seat.row}${seat.number}`);
+        return acc;
+      }, {} as Record<string, { ticketTypeId: number, count: number, totalPrice: number, seatNumbers: string[] }>);
+      
+      // Convert grouped seats to ticket details
+      ticketDetails = Object.values(seatsByTicketType).map(group => ({
+        type: `Seat${group.count > 1 ? 's' : ''} (${group.seatNumbers.join(', ')})`,
+        quantity: group.count,
+        price: group.totalPrice,
+      }));
+    } else {
+      ticketDetails = [];
+    }
+    
+    selectedFoods = bookingData.selectedFoodItems?.map(food => ({
+      name: food.name,
+      quantity: food.quantity,
+      price: food.price, // This is unit price, not the total price for this food item
+    })) ?? [];
+  } else {
+    // Legacy format
+    const legacyState = state as LegacyPaymentLocationState | null;
+    amount = legacyState?.amount ?? 0;
+    eventTitle = legacyState?.eventTitle ?? '';
+    eventId = legacyState?.eventId;
+    ticketDetails = legacyState?.ticketDetails ?? [];
+    selectedFoods = legacyState?.selectedFoods ?? [];
   }
 
-  const { amount, eventTitle, eventId, ticketDetails, selectedFoods } = location.state as PaymentLocationState;
+  // Check if we have the required payment state
+  useEffect(() => {
+    console.log('Payment page received state:', state);
+    
+    // More detailed validation
+    if (!state) {
+      console.error('Missing state completely');
+      navigate('/');
+      return;
+    }
+
+    if (!eventId) {
+      console.error('Missing eventId in state:', state);
+      navigate('/');
+      return;
+    }
+
+    if (!eventTitle) {
+      console.error('Missing eventTitle in state:', state);
+      navigate('/');
+      return;
+    }
+
+    // Check if it's BookingData format
+    if (isNewFormat) {
+      const bookingData = state as BookingData;
+      console.log('BookingData format detected with type:', bookingData.bookingType);
+      
+      if (bookingData.bookingType === 'tickets' && 
+          (!bookingData.selectedTickets || bookingData.selectedTickets.length === 0)) {
+        console.error('BookingData format missing selectedTickets:', state);
+        navigate('/');
+        return;
+      }
+      
+      if (bookingData.bookingType === 'seats' && 
+          (!bookingData.selectedSeats || bookingData.selectedSeats.length === 0)) {
+        console.error('BookingData format missing selectedSeats:', state);
+        navigate('/');
+        return;
+      }
+    } else {
+      // Legacy format validation
+      if (!ticketDetails || ticketDetails.length === 0) {
+        console.error('Legacy format missing ticketDetails:', state);
+        navigate('/');
+        return;
+      }
+    }
+
+    console.log('Payment state validation successful');
+  }, [state, eventId, eventTitle, ticketDetails, isNewFormat, navigate]);
+
+  // Don't render anything if we don't have valid state
+  // We already have a useEffect that redirects if data is invalid
+  // This serves as a fallback if the redirect hasn't happened yet
+  if (!state || !eventId || !eventTitle) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow-md">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Invalid Payment State</h2>
+          <p className="text-gray-600 mb-6">
+            We couldn't process your payment because some required information is missing.
+            Please try again from the event booking page.
+          </p>
+          <button
+            onClick={() => navigate('/')}
+            className="w-full bg-primary text-white py-2 px-4 rounded hover:bg-primary-dark transition-colors"
+          >
+            Return to Events
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    if (!eventId) {
+      setError('Missing event information');
+      setLoading(false);
+      return;
+    }
 
     try {
       const form = e.target as HTMLFormElement;
@@ -84,7 +221,7 @@ const Payment: React.FC = () => {
       const foodLineItems = selectedFoods?.map(food => ({
         name: food.name,
         quantity: food.quantity,
-        unitPrice: food.price / food.quantity, // Convert total price back to unit price
+        unitPrice: food.price, // food.price is already the unit price
       })) || [];
 
       // Create checkout session
@@ -115,6 +252,11 @@ const Payment: React.FC = () => {
   const handleReserveTickets = async (customerDetails: CustomerDetails) => {
     if (!isAuthenticated || !isOrganizer()) {
       message.error('Only organizers can reserve tickets without payment');
+      return;
+    }
+
+    if (!eventId) {
+      setError('Missing event information');
       return;
     }
     
@@ -176,33 +318,38 @@ const Payment: React.FC = () => {
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Order Summary</h3>
                 
                 {/* Tickets Summary */}
-                <div className="mb-6">
-                  <h4 className="font-medium text-gray-700 mb-2">Tickets</h4>
-                  {ticketDetails.map((ticket, idx) => (
-                    <div key={idx} className="flex justify-between text-sm text-gray-600 mb-1">
-                      <span>{ticket.quantity}x {ticket.type} Ticket</span>
-                      <span>${ticket.price.toFixed(2)}</span>
-                    </div>
-                  ))}
-                  <div className="flex justify-between font-medium text-gray-800 border-t pt-2">
-                    <span>Tickets Total:</span>
-                    <span>${ticketDetails.reduce((total, item) => total + item.price, 0).toFixed(2)}</span>
-                  </div>
-                </div>
-
-                {/* Food Summary */}
-                {selectedFoods && selectedFoods.length > 0 && (
+                {ticketDetails.length > 0 && (
                   <div className="mb-6">
-                    <h4 className="font-medium text-gray-700 mb-2">Food Items</h4>
-                    {selectedFoods.map((item, idx) => (
+                    <h4 className="font-medium text-gray-700 mb-2">Tickets</h4>
+                    {ticketDetails.map((ticket, idx) => (
                       <div key={idx} className="flex justify-between text-sm text-gray-600 mb-1">
-                        <span>{item.quantity}x {item.name}</span>
-                        <span>${item.price.toFixed(2)}</span>
+                        <span>{ticket.quantity}x {ticket.type} Ticket</span>
+                        <span>${ticket.price.toFixed(2)}</span>
                       </div>
                     ))}
                     <div className="flex justify-between font-medium text-gray-800 border-t pt-2">
+                      <span>Tickets Total:</span>
+                      <span>${ticketDetails.reduce((total, item) => total + item.price, 0).toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Food Summary */}
+                {selectedFoods.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="font-medium text-gray-700 mb-2">Food Items</h4>
+                    {selectedFoods.map((item, idx) => {
+                      const itemTotal = item.quantity * item.price;
+                      return (
+                        <div key={idx} className="flex justify-between text-sm text-gray-600 mb-1">
+                          <span>{item.quantity}x {item.name}</span>
+                          <span>${itemTotal.toFixed(2)}</span>
+                        </div>
+                      );
+                    })}
+                    <div className="flex justify-between font-medium text-gray-800 border-t pt-2">
                       <span>Food Total:</span>
-                      <span>${selectedFoods.reduce((total, item) => total + item.price, 0).toFixed(2)}</span>
+                      <span>${selectedFoods.reduce((total, item) => total + (item.quantity * item.price), 0).toFixed(2)}</span>
                     </div>
                   </div>
                 )}

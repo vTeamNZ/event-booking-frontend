@@ -4,6 +4,10 @@ import { api } from '../services/api';
 import { SeatSelectionState } from '../types/seatSelection';
 import { SeatingLayoutV2, SeatingSelectionState } from '../components/seating-v2';
 import TicketTypeDisplay from '../components/TicketTypeDisplay';
+import { useBooking } from '../contexts/BookingContext';
+import { BookingData } from '../types/booking';
+import { BookingFlowHelper } from '../utils/bookingFlowHelpers';
+import { BookingNavigator } from '../utils/BookingNavigator';
 import SEO from '../components/SEO';
 
 interface Event {
@@ -25,6 +29,9 @@ const SeatSelectionPage: React.FC = () => {
   const [isActive, setIsActive] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Get booking context if available - use optional chaining to handle when context is not available
+  const { dispatch: bookingDispatch } = useBooking() ?? {};
 
   useEffect(() => {
     if (!state?.eventId) {
@@ -62,7 +69,7 @@ const SeatSelectionPage: React.FC = () => {
   }, [state?.eventId, navigate, eventTitle]);
 
   const handleSelectionComplete = (selectionState: SeatingSelectionState) => {
-    // Convert the new seating selection state to the old format for navigation
+    // For backward compatibility - convert to old format
     const oldFormatState: SeatSelectionState = {
       mode: selectionState.mode as any, // Type conversion needed between enums
       selectedSeats: selectionState.selectedSeats.map(selectedSeat => ({
@@ -106,15 +113,78 @@ const SeatSelectionPage: React.FC = () => {
       sessionId: selectionState.sessionId
     };
 
-    // Combine ticket information with seat selection data
-    const navigationState = {
-      ...state,
+    // Create the unified booking data format
+    const bookingData: BookingData = {
+      eventId: event?.id || state?.eventId,
+      eventTitle: event?.title || eventTitle || '',
+      bookingType: 'seats' as const,
+      totalAmount: selectionState.totalPrice,
+      selectedSeats: selectionState.selectedSeats.map(seat => ({
+        row: seat.row,
+        number: seat.number,
+        price: seat.price || 0,
+        ticketTypeId: seat.ticketType?.id || 0,
+        seatNumber: seat.seatNumber
+      }))
+    };
+    
+    // Also create a compatible ticketDetails array for legacy support
+    const seatTicketDetails: Array<{
+      type: string;
+      quantity: number;
+      price: number;
+      unitPrice: number;
+    }> = [];
+    // Group seats by ticket type
+    const seatsByTicketType = selectionState.selectedSeats.reduce((acc, seat) => {
+      const typeKey = seat.ticketType?.id?.toString() || 'default';
+      if (!acc[typeKey]) {
+        acc[typeKey] = {
+          ticketTypeId: seat.ticketType?.id || 0,
+          ticketTypeName: seat.ticketType?.name || 'Standard Seat',
+          count: 0,
+          totalPrice: 0,
+          seatNumbers: []
+        };
+      }
+      acc[typeKey].count++;
+      acc[typeKey].totalPrice += seat.price || 0;
+      acc[typeKey].seatNumbers.push(`${seat.row}${seat.number}`);
+      return acc;
+    }, {} as Record<string, { ticketTypeId: number, ticketTypeName: string, count: number, totalPrice: number, seatNumbers: string[] }>);
+    
+    // Add this to our booking data for compatibility
+    Object.values(seatsByTicketType).forEach(group => {
+      seatTicketDetails.push({
+        type: `${group.ticketTypeName} (${group.seatNumbers.join(', ')})`,
+        quantity: group.count,
+        price: group.totalPrice,
+        unitPrice: group.totalPrice / group.count
+      });
+    });
+
+    // We now pass this information directly to the BookingNavigator
+    // so we don't need a separate navigationState variable
+
+    // Use context API if available
+    if (bookingDispatch) {
+      try {
+        bookingDispatch({
+          type: 'UPDATE_SEATS',
+          payload: bookingData.selectedSeats
+        });
+      } catch (e) {
+        // Silent fallback to direct navigation
+        console.error('Failed to update booking context:', e);
+      }
+    }
+
+    // Navigate to food selection using our navigator
+    BookingNavigator.toFoodSelection(navigate, bookingData, {
+      ticketDetails: seatTicketDetails,
       seatSelection: oldFormatState,
       fromSeatSelection: true
-    };
-
-    // Navigate to food selection with combined ticket and seat data
-    navigate(`/event/${eventTitle}/food`, { state: navigationState });
+    });
   };
 
   if (loading) {

@@ -4,10 +4,12 @@ import { Toaster } from 'react-hot-toast';
 import HeroCarousel from './components/HeroCarousel';
 import AnimatedHeader from './components/AnimatedHeader';
 import { PrivateRoute } from './components/PrivateRoute';
+import { BookingProvider } from './contexts/BookingContext';
 import RouteTracker from './components/RouteTracker';
 import EventsList from './pages/EventsList';
 import About from './pages/About';
 import FoodSelection from './pages/FoodSelection';
+import PaymentSummary from './pages/PaymentSummary';
 import Payment from './pages/Payment';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFailed from './pages/PaymentFailed';
@@ -28,32 +30,35 @@ import SeatingDemo from './components/SeatingDemo';
 
 const App: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Google Analytics Route Tracker */}
-      <RouteTracker />
-      
-      {/* Toast Notifications */}
-      <Toaster />
-      
-      {/* Top Ribbon */}
-      <div className="bg-red-900 h-1 w-full" />
-      {/* Page Content */}
-      <AnimatedHeader />
-      <HeroCarousel />      
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <Routes>
-          <Route path="/" element={<EventsList />} />
-          <Route path="/event/:eventTitle/tickets" element={<TicketSelection />} />
-          <Route path="/event/:eventTitle/seats" element={<SeatSelectionPage />} />
-          <Route path="/event/:eventTitle/food" element={<FoodSelection />} />
-          <Route path="/food-selection" element={<FoodSelection />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/payment" element={<Payment />} />
-          <Route path="/payment-success" element={<PaymentSuccess />} />
-          <Route path="/payment-failed" element={<PaymentFailed />} />
-          <Route path="/payment-cancelled" element={<PaymentCancelled />} />
+    <BookingProvider>
+      <div className="min-h-screen bg-gray-50">
+        {/* Google Analytics Route Tracker */}
+        <RouteTracker />
+        
+        {/* Toast Notifications */}
+        <Toaster />
+        
+        {/* Top Ribbon */}
+        <div className="bg-red-900 h-1 w-full" />
+        {/* Page Content */}
+        <AnimatedHeader />
+        <HeroCarousel />      
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <Routes>
+            <Route path="/" element={<EventsList />} />
+            <Route path="/event/:eventTitle/tickets" element={<TicketSelection />} />
+            <Route path="/event/:eventTitle/seats" element={<SeatSelectionPage />} />
+            <Route path="/event/:eventTitle/food" element={<FoodSelection />} />
+            <Route path="/food-selection" element={<FoodSelection />} />
+            <Route path="/payment-summary" element={<PaymentSummary />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/payment" element={<Payment />} />
+            <Route path="/checkout" element={<Payment />} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/payment-failed" element={<PaymentFailed />} />
+            <Route path="/payment-cancelled" element={<PaymentCancelled />} />
           <Route path="/contact" element={<Contact />} />
           
           {/* Organizer Routes */}
@@ -98,6 +103,7 @@ const App: React.FC = () => {
         </Routes>
       </main>
     </div>
+    </BookingProvider>
   );
 };
 

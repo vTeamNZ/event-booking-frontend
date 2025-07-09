@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { FoodItem, getFoodItemsForEvent } from '../services/foodItemService';
+import { BookingData } from '../types/booking';
 import SEO from '../components/SEO';
 
 interface LocationState {
@@ -8,6 +9,18 @@ interface LocationState {
   eventTitle: string;
   ticketPrice: number;
   ticketDetails: Array<{
+    type: string;
+    quantity: number;
+    price: number;
+    unitPrice: number;
+  }>;
+}
+
+// Enhanced interface for both seat and ticket flows
+interface EnhancedLocationState extends BookingData {
+  // Legacy support for ticket-based flow
+  ticketPrice?: number;
+  ticketDetails?: Array<{
     type: string;
     quantity: number;
     price: number;
@@ -24,7 +37,31 @@ const FoodSelection: React.FC = () => {
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
   const [quantities, setQuantities] = useState<Record<number, number>>({});
 
-  const locationState = state as LocationState;
+  const locationState = state as EnhancedLocationState;
+
+  // Helper function to safely format prices
+  const formatPrice = (price: number | undefined): string => {
+    if (typeof price !== 'number') return '0.00';
+    return price.toFixed(2);
+  };
+
+  // Calculate ticket total based on booking type
+  const calculateTicketTotal = (): number => {
+    if (!locationState) return 0;
+
+    // New seat/ticket booking flow
+    if (locationState.bookingType === 'seats' && locationState.selectedSeats) {
+      return locationState.selectedSeats.reduce((sum, seat) => sum + (seat.price || 0), 0);
+    }
+
+    if (locationState.bookingType === 'tickets' && locationState.selectedTickets) {
+      // Fix: The price property already includes the calculation of price * quantity from TicketSelection
+      return locationState.selectedTickets.reduce((sum, ticket) => sum + ticket.price, 0);
+    }
+
+    // Legacy ticket flow support
+    return locationState.ticketPrice || 0;
+  };
 
   useEffect(() => {
     const fetchFoodItems = async () => {
@@ -71,19 +108,97 @@ const FoodSelection: React.FC = () => {
     }))
     .filter(item => item.quantity > 0);
 
-  const grandTotal = (locationState?.ticketPrice || 0) + foodTotal;
+  const ticketTotal = calculateTicketTotal();
+  const grandTotal = ticketTotal + foodTotal;
 
   const proceed = () => {
+    // Ensure we have location state
+    if (!locationState) {
+      console.error('Missing location state in FoodSelection');
+      navigate('/');
+      return;
+    }
+
+    // Prepare enhanced booking data for the new flow
+    const enhancedBookingData: BookingData = {
+      eventId: locationState.eventId,
+      eventTitle: locationState.eventTitle,
+      // Ensure we preserve the booking type from the previous step
+      bookingType: locationState.bookingType || 'tickets',
+      totalAmount: grandTotal,
+      selectedSeats: locationState.selectedSeats,
+      selectedTickets: locationState.selectedTickets,
+      selectedFoodItems: selectedFoodItems.map(item => ({
+        foodItemId: foodItems.find(f => f.name === item.name)?.id || 0,
+        quantity: item.quantity,
+        price: item.unitPrice,
+        name: item.name,
+      })),
+    };
+
+    // Create ticketDetails array - handle both tickets and seats
+    let legacyTicketDetails: Array<{
+      type: string;
+      quantity: number;
+      price: number;
+      unitPrice: number;
+    }> = [];
+    
+    // Case 1: We have ticket details from previous step (legacy format)
+    if (locationState.ticketDetails && locationState.ticketDetails.length > 0) {
+      legacyTicketDetails = locationState.ticketDetails;
+    }
+    // Case 2: We have selected tickets (new format)
+    else if (locationState.selectedTickets && locationState.selectedTickets.length > 0) {
+      legacyTicketDetails = locationState.selectedTickets.map(ticket => ({
+        type: ticket.type || ticket.name,
+        quantity: ticket.quantity,
+        price: ticket.price,
+        unitPrice: ticket.price / ticket.quantity
+      }));
+    }
+    // Case 3: We have selected seats (new format)
+    else if (locationState.selectedSeats && locationState.selectedSeats.length > 0) {
+      // Group seats by ticket type
+      const seatsByTicketType = locationState.selectedSeats.reduce((acc, seat) => {
+        const typeKey = seat.ticketTypeId.toString();
+        if (!acc[typeKey]) {
+          acc[typeKey] = {
+            ticketTypeId: seat.ticketTypeId,
+            count: 0,
+            totalPrice: 0,
+            seatNumbers: []
+          };
+        }
+        acc[typeKey].count++;
+        acc[typeKey].totalPrice += seat.price;
+        acc[typeKey].seatNumbers.push(`${seat.row}${seat.number}`);
+        return acc;
+      }, {} as Record<string, { ticketTypeId: number, count: number, totalPrice: number, seatNumbers: string[] }>);
+      
+      // Convert grouped seats to ticket details
+      legacyTicketDetails = Object.values(seatsByTicketType).map(group => ({
+        type: `Seat${group.count > 1 ? 's' : ''} (${group.seatNumbers.join(', ')})`,
+        quantity: group.count,
+        price: group.totalPrice,
+        unitPrice: group.totalPrice / group.count
+      }));
+    }
+
+    // For legacy compatibility, also pass the old format
     navigate('/payment', {
       state: {
+        // New enhanced booking data
+        ...enhancedBookingData,
+        // Legacy format for backward compatibility
         amount: grandTotal,
-        eventId: locationState?.eventId,
-        eventTitle: locationState?.eventTitle,
-        ticketDetails: locationState?.ticketDetails,
+        eventId: locationState.eventId,
+        eventTitle: locationState.eventTitle,
+        ticketDetails: legacyTicketDetails,
         selectedFoods: selectedFoodItems.map(item => ({
           name: item.name,
           quantity: item.quantity,
-          price: item.price,
+          price: item.unitPrice, // Pass the unit price, not the total price
         })),
       },
     });
@@ -100,6 +215,36 @@ const FoodSelection: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Add Food Items</h1>
           <h2 className="text-xl text-gray-600 mb-2">{locationState?.eventTitle}</h2>
           <p className="text-sm text-gray-500">Optional - Select any food items you'd like to add to your order</p>
+          
+          {/* Booking Summary */}
+          {locationState && (
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <h3 className="font-semibold text-gray-800 mb-1">Your Selection:</h3>
+              {locationState.bookingType === 'seats' && locationState.selectedSeats && (
+                <p className="text-sm text-gray-600">
+                  Seats: {locationState.selectedSeats.map(seat => `${seat.row}${seat.number}`).join(', ')}
+                </p>
+              )}
+              {locationState.bookingType === 'tickets' && locationState.selectedTickets && (
+                <div className="text-sm text-gray-600">
+                  {locationState.selectedTickets.map(ticket => (
+                    <p key={ticket.ticketTypeId}>
+                      {ticket.name}: {ticket.quantity} × ${formatPrice(ticket.price)}
+                    </p>
+                  ))}
+                </div>
+              )}
+              {locationState.ticketDetails && !locationState.bookingType && (
+                <div className="text-sm text-gray-600">
+                  {locationState.ticketDetails.map((ticket, index) => (
+                    <p key={index}>
+                      {ticket.type}: {ticket.quantity} × ${formatPrice(ticket.unitPrice)}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
       {loading ? (
@@ -143,7 +288,7 @@ const FoodSelection: React.FC = () => {
                 </div>
                 <div className="text-sm text-gray-600 mt-1">{item.description}</div>
                 <div className="text-gray-600 font-medium mt-2">
-                  ${item.price.toFixed(2)}
+                  ${formatPrice(item.price)}
                 </div>
               </div>              <div className="flex items-center space-x-3">
                 <button 
@@ -181,15 +326,15 @@ const FoodSelection: React.FC = () => {
         <div className="space-y-2 mb-6">
           <div className="flex items-center justify-between text-gray-600">
             <span>Ticket Total</span>
-            <span>${locationState?.ticketPrice.toFixed(2)}</span>
+            <span>${formatPrice(ticketTotal)}</span>
           </div>
           <div className="flex items-center justify-between text-gray-600">
             <span>Food Total</span>
-            <span>${foodTotal.toFixed(2)}</span>
+            <span>${formatPrice(foodTotal)}</span>
           </div>
           <div className="flex items-center justify-between text-xl font-bold text-gray-800 pt-2 border-t">
             <span>Grand Total</span>
-            <span>${grandTotal.toFixed(2)}</span>
+            <span>${formatPrice(grandTotal)}</span>
           </div>
         </div>
 
