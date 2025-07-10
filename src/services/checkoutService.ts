@@ -23,6 +23,7 @@ interface CreateCheckoutSessionRequest {
   cancelUrl: string;
   ticketDetails?: TicketLineItem[];
   foodDetails?: FoodLineItem[];
+  selectedSeats?: string[]; // Add this line
 }
 
 interface CreateCheckoutSessionResponse {
@@ -38,6 +39,9 @@ interface CheckoutSessionStatusResponse {
   amountTotal: number;
   paymentId?: string;
   eventTitle?: string;
+  bookedSeats?: string[];
+  customerName?: string;
+  ticketReference?: string;
 }
 
 export const createCheckoutSession = async (

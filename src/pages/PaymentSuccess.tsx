@@ -85,7 +85,7 @@ const PaymentSuccess: React.FC = () => {
           </div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Booking Confirmed!</h1>
           <p className="text-gray-600 mb-4">
-            {sessionData?.eventTitle ? `Your tickets for ${sessionData.eventTitle} have been booked.` : 'Thank you for your purchase.'}
+            {sessionData?.eventTitle ? `Your tickets for ${sessionData.eventTitle} have been booked and your e-ticket has been emailed to you.` : 'Thank you for your purchase.'}
           </p>
           <div className="text-sm text-gray-600 bg-blue-50 p-4 rounded-lg inline-flex items-center">
             <svg className="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,22 +98,45 @@ const PaymentSuccess: React.FC = () => {
         {sessionData && (
           <div className="bg-gray-50 rounded-lg p-6 mb-6">
             <div className="space-y-2">
+              {sessionData.customerName && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Customer Name:</span>
+                  <span className="font-medium">{sessionData.customerName}</span>
+                </div>
+              )}
+              
+              {sessionData.ticketReference && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Ticket Reference:</span>
+                  <span className="font-mono text-sm">{sessionData.ticketReference}</span>
+                </div>
+              )}
+              
               {sessionData.paymentId && (
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Payment Reference:</span>
                   <span className="font-mono text-sm">{sessionData.paymentId}</span>
                 </div>
               )}
+
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Amount Paid:</span>
                 <span className="font-bold text-primary">
                   ${sessionData.amountTotal ? (sessionData.amountTotal / 100).toFixed(2) : '0.00'}
                 </span>
               </div>
+              
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Email:</span>
                 <span className="text-sm">{sessionData.customerEmail}</span>
               </div>
+              
+              {sessionData.bookedSeats && sessionData.bookedSeats.length > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Seat(s):</span>
+                  <span className="text-sm font-medium">{sessionData.bookedSeats.join(', ')}</span>
+                </div>
+              )}
             </div>
           </div>
         )}
