@@ -224,6 +224,15 @@ const Payment: React.FC = () => {
         unitPrice: food.price, // food.price is already the unit price
       })) || [];
 
+      // Get selected seat numbers if this is a seat booking
+      let selectedSeatNumbers: string[] = [];
+      if (isNewFormat) {
+        const bookingData = state as BookingData;
+        if (bookingData.bookingType === 'seats' && bookingData.selectedSeats) {
+          selectedSeatNumbers = bookingData.selectedSeats.map(seat => `${seat.row}${seat.number}`);
+        }
+      }
+
       // Create checkout session
       const checkoutSession = await createCheckoutSession({
         eventId,
@@ -236,6 +245,7 @@ const Payment: React.FC = () => {
         cancelUrl: `${window.location.origin}/payment-cancelled`,
         ticketDetails: ticketLineItems,
         foodDetails: foodLineItems,
+        selectedSeats: selectedSeatNumbers.length > 0 ? selectedSeatNumbers : undefined,
       });
 
       // Redirect to Stripe Checkout
