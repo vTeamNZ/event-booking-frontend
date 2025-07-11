@@ -51,7 +51,13 @@ export interface SeatingLayoutResponse {
     eventId: number;
     mode?: string;
     seats: SeatingLayoutSeat[];
-    ticketTypes: TicketType[]; // Changed from sections to ticketTypes
+    ticketTypes: TicketType[];
+    // Aisle configuration
+    hasHorizontalAisles?: boolean;
+    horizontalAisleRows?: string;
+    hasVerticalAisles?: boolean;
+    verticalAisleSeats?: string;
+    aisleWidth?: number;
 }
 
 export interface SeatingSelectionState {

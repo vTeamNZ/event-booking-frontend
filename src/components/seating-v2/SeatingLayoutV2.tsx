@@ -58,6 +58,16 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
       try {
         setLoading(true);
         const response = await seatingAPIService.getEventSeatLayout(eventId);
+        
+        // DEBUG: Temporary logging to diagnose aisle issues
+        if (response.hasHorizontalAisles) {
+          console.log('DEBUG - Horizontal Aisle Data:', {
+            raw: response.horizontalAisleRows,
+            type: typeof response.horizontalAisleRows,
+            hasAisles: response.hasHorizontalAisles
+          });
+        }
+        
         setLayout(response);
         // Update selection state with ticket types
         setSelectionState(prev => ({
@@ -203,6 +213,7 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
       
       <div className="bg-white p-6 rounded-lg shadow">
         <SeatingGrid
+          layout={layout}
           seats={layout.seats}
           selectedSeats={selectionState.selectedSeats}
           onSeatClick={handleSeatClick}

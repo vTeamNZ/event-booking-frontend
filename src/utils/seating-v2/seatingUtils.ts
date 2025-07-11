@@ -413,3 +413,66 @@ export const toggleSeatSelection = (
 
   return newState;
 };
+
+/**
+ * Parse horizontal aisle rows from a JSON string or array
+ * Handles formats like [5,7] or ["5","7"] or "5,7"
+ * @returns Array of row numbers where aisles should appear
+ */
+export const parseHorizontalAisleRows = (aisleRowsData?: string): number[] => {
+  if (!aisleRowsData || aisleRowsData.trim() === '') {
+    return [];
+  }
+  
+  try {
+    // If it's already in [5,7] format
+    if (aisleRowsData.startsWith('[') && aisleRowsData.endsWith(']')) {
+      const cleanData = aisleRowsData.replace(/\\"/g, '"').replace(/\s/g, ''); // Remove escapes and whitespace
+      const parsed = JSON.parse(cleanData);
+      
+      if (Array.isArray(parsed)) {
+        return parsed.map(item => {
+          const num = typeof item === 'string' ? parseInt(item) : (typeof item === 'number' ? item : 0);
+          return num;
+        }).filter(num => num > 0);
+      }
+    }
+    
+    // Fallback to comma-separated string
+    return aisleRowsData
+      .split(',')
+      .map(row => {
+        const num = parseInt(row.trim());
+        return isNaN(num) ? 0 : num;
+      })
+      .filter(num => num > 0);
+    
+  } catch (e) {
+    console.error('Error parsing horizontal aisle rows:', e);
+    return [];
+  }
+};
+
+/**
+ * Parse vertical aisle seats from a JSON string or array
+ */
+export const parseVerticalAisleSeats = (aisleSeatsData?: string): number[] => {
+  if (!aisleSeatsData) return [];
+  
+  try {
+    // Parse JSON string if it's a string
+    const parsed = typeof aisleSeatsData === 'string' 
+      ? JSON.parse(aisleSeatsData) 
+      : aisleSeatsData;
+      
+    // Return as array of numbers
+    if (Array.isArray(parsed)) {
+      return parsed.map(item => Number(item));
+    }
+    
+    return [];
+  } catch (e) {
+    console.error('Failed to parse vertical aisle seats:', e);
+    return [];
+  }
+};

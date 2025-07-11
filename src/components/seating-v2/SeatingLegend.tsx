@@ -48,6 +48,17 @@ const SeatingLegend: React.FC<SeatingLegendProps> = ({
           </div>
         </div>
       </div>
+      
+      {/* Venue Features */}
+      <div>
+        <h3 className="text-lg font-semibold mb-3">Venue Features</h3>
+        <div className="flex flex-wrap gap-4">
+          <div className="flex items-center">
+            <div className="w-12 h-4 mr-2 bg-gray-200" />
+            <span>Aisles</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
