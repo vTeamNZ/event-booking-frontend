@@ -150,6 +150,22 @@ export class SeatingAPIService {
       throw new Error('Failed to fetch seat status');
     }
   }
+
+  /**
+   * Reserve multiple seats in a single transaction
+   */
+  async reserveMultipleSeats(request: { seatIds: number[], sessionId: string, eventId: number }): Promise<any> {
+    try {
+      console.log(`[SeatingAPIService] Reserving multiple seats: ${request.seatIds.join(', ')} for session ${request.sessionId}`);
+      const response = await api.post(`${this.baseUrl}/reserve-multiple`, request);
+      
+      console.log(`[SeatingAPIService] Multiple seats reserved:`, response.data);
+      return response.data;
+    } catch (error) {
+      console.error('[SeatingAPIService] Error reserving multiple seats:', error);
+      throw new Error('Failed to reserve seats');
+    }
+  }
 }
 
 // Export singleton instance

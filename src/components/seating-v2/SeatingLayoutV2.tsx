@@ -145,25 +145,21 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
     }
 
     try {
-      // For now, let's just reserve the first selected seat
-      if (selectionState.selectedSeats.length > 0) {
-        const firstSeat = selectionState.selectedSeats[0];
-        const reservationRequest = {
-          eventId,
-          sessionId: selectionState.sessionId,
-          seatId: firstSeat.id
-        };
+      // Reserve all seats in a single transaction
+      const reservationRequest = {
+        eventId,
+        sessionId: selectionState.sessionId,
+        seatIds: selectionState.selectedSeats.map(seat => seat.id)
+      };
 
-        const reservationResponse = await seatingAPIService.reserveSeat(reservationRequest);
-
-        // Assume success if we get a response
-        onSelectionComplete?.(selectionState);
-      } else {
-        toast.error('No seats selected');
-      }
+      const reservationResponse = await seatingAPIService.reserveMultipleSeats(reservationRequest);
+      
+      // Log the success and proceed with the booking
+      console.log(`Successfully reserved ${selectionState.selectedSeats.length} seats:`, reservationResponse);
+      onSelectionComplete?.(selectionState);
     } catch (err: any) {
       console.error('Failed to reserve seats:', err);
-      toast.error(err.message || 'Failed to reserve seats');
+      toast.error(err.message || 'Failed to reserve seats. Please try again.');
     }
   }, [eventId, selectionState, onSelectionComplete]);
 
