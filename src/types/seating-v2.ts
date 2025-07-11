@@ -6,6 +6,8 @@ export interface SeatingLayoutProps {
     maxSeats?: number;
     showLegend?: boolean;
     className?: string;
+    isAdmin?: boolean;
+    onAdminToggle?: (seatId: number) => void;
 }
 
 export interface SeatingGridProps {
@@ -17,6 +19,8 @@ export interface SeatingGridProps {
     showLegend?: boolean;
     maxSeats?: number;
     className?: string;
+    isAdmin?: boolean;
+    onAdminToggle?: (seatId: number) => void;
 }
 
 export interface TicketType {

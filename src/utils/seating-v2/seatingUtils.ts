@@ -164,7 +164,8 @@ export const convertToBackendStatus = (status: SeatStatus): number => {
 export const getSeatColor = (
   seat: SeatingLayoutSeat,
   isSelected: boolean,
-  canSelect: boolean
+  canSelect: boolean,
+  isAdmin: boolean = false
 ): string => {
   if (isSelected) {
     return 'bg-blue-500 text-white';
@@ -180,7 +181,9 @@ export const getSeatColor = (
     case SeatStatus.Booked:
       return 'bg-red-500 text-white';
     case SeatStatus.Unavailable:
-      return 'bg-gray-500 text-white';
+      return isAdmin 
+        ? 'bg-gray-500 text-white' 
+        : 'bg-transparent text-transparent border-transparent';
     default:
       return 'bg-gray-300 text-gray-700';
   }

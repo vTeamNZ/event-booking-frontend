@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { api } from '../services/api';
+import { adminSeatService } from '../services/adminSeatService';
+import { useAuth } from '../hooks/useAuth';
 import { SeatSelectionState } from '../types/seatSelection';
 import { SeatingLayoutV2, SeatingSelectionState } from '../components/seating-v2';
 import TicketTypeDisplay from '../components/TicketTypeDisplay';
@@ -29,9 +32,27 @@ const SeatSelectionPage: React.FC = () => {
   const [isActive, setIsActive] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   
   // Get booking context if available - use optional chaining to handle when context is not available
   const { dispatch: bookingDispatch } = useBooking() ?? {};
+  
+  // Get admin status from auth hook
+  const { isAdmin } = useAuth();
+
+  // Handler for admin seat toggle
+  const handleAdminSeatToggle = async (seatId: number) => {
+    try {
+      const result = await adminSeatService.toggleSeatAvailability(seatId);
+      toast.success(`Seat status updated to ${result.newStatus}`);
+      
+      // Force refresh of the seating layout component by incrementing the key
+      setRefreshKey(prev => prev + 1);
+    } catch (error: any) {
+      console.error('Error toggling seat availability:', error);
+      toast.error(error.response?.data?.message || 'Failed to update seat status');
+    }
+  };
 
   useEffect(() => {
     if (!state?.eventId) {
@@ -252,6 +273,14 @@ const SeatSelectionPage: React.FC = () => {
                   })}</span>
                   <span>📍 {event.location}</span>
                 </div>
+                {/* Admin indicator */}
+                {isAdmin() && (
+                  <div className="mt-2">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      🔧 Admin Mode: Click red × to make seats unavailable (invisible to users), green ✓ to make available
+                    </span>
+                  </div>
+                )}
               </div>
               
               {event.imageUrl && (
@@ -280,11 +309,14 @@ const SeatSelectionPage: React.FC = () => {
                 
                 {/* New Seating Layout System V2 */}
                 <SeatingLayoutV2 
+                  key={refreshKey}
                   eventId={state.eventId}
                   onSelectionComplete={handleSelectionComplete}
                   maxSeats={8}
                   showLegend={true}
                   className="seating-layout-container"
+                  isAdmin={isAdmin()}
+                  onAdminToggle={handleAdminSeatToggle}
                 />
               </div>
             </div>

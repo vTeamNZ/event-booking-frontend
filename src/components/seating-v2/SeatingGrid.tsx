@@ -15,7 +15,9 @@ const SeatingGrid: React.FC<SeatingGridProps> = ({
   selectedSeats,
   onSeatSelect,
   onSeatClick,
-  className = ''
+  className = '',
+  isAdmin = false,
+  onAdminToggle
 }) => {
   // Group and sort seats by row
   const seatsByRow = useMemo(() => {
@@ -49,6 +51,8 @@ const SeatingGrid: React.FC<SeatingGridProps> = ({
                 selectedSeat={getSelectedSeat(seat)}
                 canSelect={canSelectSeat(seat, selectedSeats)}
                 onClick={() => onSeatClick?.(seat) || onSeatSelect?.(seat)}
+                isAdmin={isAdmin}
+                onAdminToggle={onAdminToggle}
               />
             ))}
           </div>

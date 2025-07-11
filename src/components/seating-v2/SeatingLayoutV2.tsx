@@ -30,7 +30,9 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
   onSelectionComplete,
   maxSeats = 8,
   showLegend = true,
-  className = ''
+  className = '',
+  isAdmin = false,
+  onAdminToggle
 }) => {
   // Initialize selection state with memoized session ID
   const initialSelectionState = useMemo<SeatingSelectionState>(() => ({
@@ -204,6 +206,8 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
           seats={layout.seats}
           selectedSeats={selectionState.selectedSeats}
           onSeatClick={handleSeatClick}
+          isAdmin={isAdmin}
+          onAdminToggle={onAdminToggle}
         />
       </div>
 
