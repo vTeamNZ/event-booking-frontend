@@ -3,6 +3,7 @@ import { authService } from '../services/authService';
 import { Link } from 'react-router-dom';
 import SEO from '../components/SEO';
 import toast from 'react-hot-toast';
+import { api } from '../services/api';
 
 interface OrganizerProfile {
   id: number;
@@ -22,6 +23,14 @@ interface UserProfile {
   roles: string[];
 }
 
+interface Event {
+  id: number;
+  title: string;
+  date: string;
+  location: string;
+  isActive: boolean;
+}
+
 interface DashboardData {
   user: UserProfile;
   organizer: OrganizerProfile;
@@ -29,17 +38,41 @@ interface DashboardData {
 
 const OrganizerDashboard: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
-        const response = await authService.getCurrentUserFromAPI();
-        setDashboardData(response as DashboardData);
+        // First get the user data
+        const dashboardResponse = await authService.getCurrentUserFromAPI() as DashboardData;
+        if (!dashboardResponse.organizer) {
+          setError('You need to complete your organizer profile. Please contact support.');
+          toast.error('No organizer profile found');
+          setLoading(false);
+          return;
+        }
+        
+        setDashboardData(dashboardResponse as DashboardData);
+        
+        try {
+          // Then get the events data
+          const eventsResponse = await api.get<Event[]>('/api/Events/by-organizer');
+          setEvents(eventsResponse.data || []);
+        } catch (eventErr: any) {
+          const errorMessage = eventErr.response?.data?.message;
+          if (errorMessage === 'No organizer profile found. Please complete your organizer registration.') {
+            setError('You need to complete your organizer profile to manage events.');
+          } else {
+            toast.error(errorMessage || 'Failed to load events');
+          }
+          setEvents([]);
+        }
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Failed to load dashboard data');
-        toast.error('Failed to load dashboard data');
+        const errorMessage = err.response?.data?.message || 'Failed to load dashboard data';
+        setError(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -205,36 +238,56 @@ const OrganizerDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Recent Events */}
-              <div className="bg-white rounded-lg shadow">
+              {/* Events List */}
+              <div className="bg-white rounded-lg shadow overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-200">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium text-gray-900">Your Events</h3>
-                    <Link
-                      to="/organizer/events"
-                      className="text-primary hover:text-red-600 text-sm font-medium"
-                    >
-                      View All
-                    </Link>
-                  </div>
+                  <h3 className="text-lg font-medium text-gray-900">Your Events</h3>
                 </div>
-                <div className="p-6">
-                  <div className="text-center py-8">
-                    <div className="text-gray-400 mb-4">
-                      <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
+                <div className="divide-y divide-gray-200">
+                  {events.length === 0 ? (
+                    <div className="p-6 text-center text-gray-500">
+                      No events found. Create your first event to get started!
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No events yet</h3>
-                    <p className="text-gray-600 mb-4">Start by creating your first event</p>
-                    <p className="text-gray-500 text-xs mb-4">Note: New events will require admin approval before they appear to the public</p>
-                    <Link
-                      to="/organizer/events/create"
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-red-700"
-                    >
-                      Create Your First Event
-                    </Link>
-                  </div>
+                  ) : (
+                    events.map((event) => (
+                      <div key={event.id} className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="text-lg font-medium text-gray-900">{event.title}</h4>
+                            <div className="mt-1 text-sm text-gray-600">
+                              <p>Location: {event.location}</p>
+                              <p>Date: {new Date(event.date).toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-4">
+                            <Link
+                              to={`/event/${event.id}/manage-food`}
+                              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium"
+                            >
+                              Manage Food
+                            </Link>
+                            <Link
+                              to={`/event/${event.id}/edit`}
+                              className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md text-sm font-medium"
+                            >
+                              Edit Event
+                            </Link>
+                          </div>
+                        </div>
+                        <div className="mt-2">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              event.isActive
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}
+                          >
+                            {event.isActive ? 'Active' : 'Pending'}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>

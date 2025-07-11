@@ -64,26 +64,24 @@ const Register: React.FC = () => {
       setIsSubmitting(true);
       try {
         const registerData = {
-          fullName: values.fullName,
-          email: values.email,
+          fullName: values.fullName.trim(),
+          email: values.email.trim().toLowerCase(),
           password: values.password,
           role: values.role,
-          ...(values.role === 'Organizer' && {
-            organizationName: values.organizationName,
-            phoneNumber: values.phoneNumber,
-            website: values.website,
-          })
+          organizationName: values.role === 'Organizer' ? values.organizationName?.trim() : undefined,
+          phoneNumber: values.role === 'Organizer' ? values.phoneNumber?.trim() : undefined,
+          website: values.role === 'Organizer' ? values.website?.trim() : undefined
         };
 
         await authService.register(registerData);
         toast.success('Registration successful! Please login to continue.');
         navigate('/login');
       } catch (error: any) {
-        const errorMessage = error.response?.data?.message || 
-                           error.response?.data || 
-                           'Registration failed. Please try again.';
-        setStatus(errorMessage);
-        toast.error(errorMessage);
+        const errorMessage = typeof error.response?.data === 'object' 
+          ? error.response?.data?.message || JSON.stringify(error.response?.data)
+          : error.response?.data || 'Registration failed. Please try again.';
+        setStatus(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage));
+        toast.error(typeof errorMessage === 'string' ? errorMessage : 'Registration failed. Please try again.');
       } finally {
         setIsSubmitting(false);
       }
@@ -283,7 +281,9 @@ const Register: React.FC = () => {
             </div>
 
             {formik.status && (
-              <div className="text-red-500 text-sm text-center">{formik.status}</div>
+              <div className="text-red-500 text-sm text-center">
+                {typeof formik.status === 'string' ? formik.status : 'An error occurred during registration'}
+              </div>
             )}
 
             <div>

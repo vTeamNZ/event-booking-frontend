@@ -48,6 +48,16 @@ const EventCreateSchema = Yup.object().shape({
   seatSelectionMode: Yup.string()
     .oneOf(['1', '3'], 'Invalid seat selection mode')
     .required('Seat selection mode is required'),
+  image: Yup.mixed()
+    .test('fileSize', 'Image file size cannot exceed 5MB', function(value) {
+      if (!value || !(value instanceof File)) return true;
+      return value.size <= 5 * 1024 * 1024; // 5MB limit
+    })
+    .test('fileType', 'Invalid image format. Allowed formats: JPG, JPEG, PNG, GIF, WEBP', function(value) {
+      if (!value || !(value instanceof File)) return true;
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      return allowedTypes.includes(value.type);
+    }),
 });
 
 const CreateEvent: React.FC = () => {
@@ -471,13 +481,31 @@ const CreateEvent: React.FC = () => {
         formData.append('seatSelectionMode', modeValue.toString());
         console.log(`Selected seat mode after: ${formData.get('seatSelectionMode')}`);
 
-        const eventResponse = await api.post('/api/Events', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
+        // Validate image size before sending
+        const imageFile = formData.get('image') as File;
+        if (imageFile && imageFile.size > 5 * 1024 * 1024) {
+          toast.error('Image file size cannot exceed 5MB');
+          setSubmitting(false);
+          return;
+        }
 
-        const eventId = (eventResponse.data as any).id;
+        let eventResponse;
+        try {
+          eventResponse = await api.post('/api/Events', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+        } catch (error: any) {
+          if (error.response?.data) {
+            toast.error(error.response.data);
+          } else {
+            toast.error('Failed to create event. Please try again.');
+          }
+          throw error;
+        }
+
+        const eventId = (eventResponse.data as { id: number }).id;
 
         // Create ticket types
         for (const ticketType of ticketTypes) {

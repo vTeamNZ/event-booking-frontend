@@ -27,6 +27,7 @@ import AdminEvents from './pages/AdminEvents';
 import AdminUsers from './pages/AdminUsers';
 import { VenueManagement } from './pages/VenueManagement';
 import SeatingDemo from './components/SeatingDemo';
+import ManageFoodItems from './pages/ManageFoodItems';
 
 const App: React.FC = () => {
   return (
@@ -99,7 +100,14 @@ const App: React.FC = () => {
               <VenueManagement />
             </PrivateRoute>
           } />
-          <Route path="/seating-demo" element={<SeatingDemo />} />
+          <Route path="/seating-demo" element={<SeatingDemo />} />            <Route 
+              path="/event/:eventId/manage-food" 
+              element={
+                <PrivateRoute>
+                  <ManageFoodItems />
+                </PrivateRoute>
+              } 
+            />
         </Routes>
       </main>
     </div>
