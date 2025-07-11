@@ -63,6 +63,12 @@ export interface ReserveSeatRequest {
   sessionId: string;
 }
 
+export interface MarkSeatsBookedRequest {
+  eventId: number;
+  seatNumbers: string[];
+  organizerEmail: string;
+}
+
 export interface SelectedSeat {
   seat: Seat;
   reservedUntil?: Date;

@@ -6,6 +6,8 @@ import SEO from '../components/SEO';
 import { useAuth } from '../hooks/useAuth';
 import { reservationService, TicketReservationRequest } from '../services/reservationService';
 import { BookingData } from '../types/booking';
+import { qrCodeService, QRCodeGenerationRequest } from '../services/qrCodeService';
+import { seatSelectionService } from '../services/seatSelectionService';
 
 interface LegacyPaymentLocationState {
   amount: number;
@@ -309,6 +311,131 @@ const Payment: React.FC = () => {
     }
   };
 
+  const handleGenerateQRTickets = async (customerDetails: CustomerDetails) => {
+    if (!isAuthenticated || !isOrganizer()) {
+      message.error('Only organizers can generate QR tickets without payment');
+      return;
+    }
+
+    if (!eventId) {
+      setError('Missing event information');
+      return;
+    }
+
+    if (!user?.fullName || !user?.email) {
+      setError('Missing organizer information');
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      // Generate seat numbers based on booking data
+      let seatNumbers: string[] = [];
+      
+      if (isNewFormat) {
+        const bookingData = state as BookingData;
+        if (bookingData.bookingType === 'seats' && bookingData.selectedSeats) {
+          // Use actual selected seats
+          seatNumbers = bookingData.selectedSeats.map(seat => `${seat.row}${seat.number}`);
+        } else if (bookingData.bookingType === 'tickets' && bookingData.selectedTickets) {
+          // Generate sequential seat numbers for ticket-based bookings
+          let seatCounter = 1;
+          bookingData.selectedTickets.forEach(ticket => {
+            for (let i = 0; i < ticket.quantity; i++) {
+              seatNumbers.push(`A${seatCounter}`); // Using row A for general tickets
+              seatCounter++;
+            }
+          });
+        }
+      } else {
+        // Legacy format - generate seats based on ticket details
+        let seatCounter = 1;
+        ticketDetails.forEach(ticket => {
+          for (let i = 0; i < ticket.quantity; i++) {
+            seatNumbers.push(`A${seatCounter}`);
+            seatCounter++;
+          }
+        });
+      }
+
+      // Generate QR codes for each seat
+      const qrResults = [];
+      for (const seatNo of seatNumbers) {
+        const qrRequest: QRCodeGenerationRequest = {
+          eventID: eventId.toString(),
+          eventName: eventTitle,
+          seatNo: seatNo,
+          firstName: user.fullName, // Use organizer's name
+          paymentGUID: qrCodeService.generateGUID(),
+          buyerEmail: user.email, // Use organizer's email as buyer
+          organizerEmail: user.email // Use organizer's email as organizer
+        };
+
+        try {
+          const qrResult = await qrCodeService.generateETicket(qrRequest);
+          qrResults.push({ seatNo, result: qrResult });
+          
+          if (qrResult.isDuplicate) {
+            message.warning(`Ticket for seat ${seatNo} already exists - duplicate prevented`);
+          }
+        } catch (error) {
+          console.error(`Failed to generate QR code for seat ${seatNo}:`, error);
+          message.error(`Failed to generate QR code for seat ${seatNo}`);
+        }
+      }
+
+      if (qrResults.length > 0) {
+        const successCount = qrResults.filter(r => !r.result.isDuplicate).length;
+        const duplicateCount = qrResults.filter(r => r.result.isDuplicate).length;
+        
+        if (successCount > 0) {
+          message.success(`Successfully generated ${successCount} QR ticket(s)!`);
+        }
+        if (duplicateCount > 0) {
+          message.info(`${duplicateCount} ticket(s) already existed and were not regenerated.`);
+        }
+        
+        // Mark seats as booked in the database (only for successfully generated tickets)
+        try {
+          const successfulSeatNumbers = qrResults
+            .filter(r => !r.result.isDuplicate)
+            .map(r => r.seatNo);
+          
+          if (successfulSeatNumbers.length > 0) {
+            await seatSelectionService.markSeatsAsBooked({
+              eventId: eventId,
+              seatNumbers: successfulSeatNumbers,
+              organizerEmail: user.email
+            });
+            console.log(`Successfully marked ${successfulSeatNumbers.length} seats as booked`);
+          }
+        } catch (seatBookingError) {
+          console.error('Error marking seats as booked:', seatBookingError);
+          // Don't show error to user since QR codes were already generated successfully
+          // This is a non-critical operation that can be handled later if needed
+        }
+        
+        // Navigate to success page with QR ticket information
+        navigate('/payment/success', {
+          state: {
+            eventTitle,
+            isQRTickets: true,
+            qrResults: qrResults,
+            organizerGenerated: true
+          }
+        });
+      } else {
+        setError('No QR tickets were generated. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error generating QR tickets:', err);
+      setError('An error occurred while generating QR tickets. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       <SEO 
@@ -446,27 +573,28 @@ const Payment: React.FC = () => {
                             : 'bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary'
                         }`}
                       >
-                        {loading ? 'Processing...' : `Pay $${amount.toFixed(2)} with Stripe`}
+                        {loading ? 'Processing...' : `Pay $${amount.toFixed(2)}`}
                       </button>
                       <button
                         type="button"
                         disabled={loading}
                         onClick={() => {
-                          const formData = new FormData(document.querySelector('form') as HTMLFormElement);
+                          const form = document.querySelector('form') as HTMLFormElement;
+                          const formData = new FormData(form);
                           const customerDetails = {
                             firstName: formData.get('firstName') as string,
                             lastName: formData.get('lastName') as string,
                             email: formData.get('email') as string,
                             mobile: formData.get('mobile') as string
                           };
-                          handleReserveTickets(customerDetails);
+                          handleGenerateQRTickets(customerDetails);
                         }}
-                        className="w-full flex justify-center py-3 px-4 border border-purple-500 rounded-md shadow-sm text-sm font-medium text-purple-500 bg-white hover:bg-purple-50"
+                        className="w-full flex justify-center py-3 px-4 border border-green-500 rounded-md shadow-sm text-sm font-medium text-white bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                       >
-                        {loading ? 'Processing...' : 'Reserve without Payment (Organizer Only)'}
+                        {loading ? 'Generating...' : 'Generate QR Tickets (Organizer Only)'}
                       </button>
                       <p className="text-xs text-gray-500 text-center mt-2">
-                        As an organizer, you can reserve tickets without payment.
+                        As an organizer, you can generate QR tickets directly using your details.
                       </p>
                     </div>
                   ) : (
@@ -479,7 +607,7 @@ const Payment: React.FC = () => {
                           : 'bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary'
                       }`}
                     >
-                      {loading ? 'Creating Checkout...' : `Pay $${amount.toFixed(2)} with Stripe`}
+                      {loading ? 'Creating Checkout...' : `Pay $${amount.toFixed(2)}`}
                     </button>
                   )}
                 </div>

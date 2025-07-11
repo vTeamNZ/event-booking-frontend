@@ -3,6 +3,7 @@ import {
   SeatLayoutResponse,
   PricingResponse,
   ReserveSeatRequest,
+  MarkSeatsBookedRequest,
   Seat
 } from '../types/seatSelection';
 import { TicketType } from '../types/ticketTypes';
@@ -110,6 +111,27 @@ export const seatSelectionService = {
       }));
     } catch (error) {
       console.error('Error fetching ticket types:', error);
+      throw error;
+    }
+  },
+
+  // Mark seats as booked (organizer only)
+  async markSeatsAsBooked(request: MarkSeatsBookedRequest): Promise<{
+    message: string;
+    markedSeats: number;
+    seatNumbers: string[];
+  }> {
+    try {
+      console.log('Marking seats as booked:', request);
+      const response = await api.post<{
+        message: string;
+        markedSeats: number;
+        seatNumbers: string[];
+      }>('/api/seats/mark-booked', request);
+      console.log('Seats marked as booked successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error marking seats as booked:', error);
       throw error;
     }
   }
