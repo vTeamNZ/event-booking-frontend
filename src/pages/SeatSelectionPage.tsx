@@ -6,7 +6,6 @@ import { adminSeatService } from '../services/adminSeatService';
 import { useAuth } from '../hooks/useAuth';
 import { SeatSelectionState } from '../types/seatSelection';
 import { SeatingLayoutV2, SeatingSelectionState } from '../components/seating-v2';
-import TicketTypeDisplay from '../components/TicketTypeDisplay';
 import { useBooking } from '../contexts/BookingContext';
 import { BookingData } from '../types/booking';
 import { BookingFlowHelper } from '../utils/bookingFlowHelpers';
@@ -302,11 +301,6 @@ const SeatSelectionPage: React.FC = () => {
           {state?.eventId ? (
             <div className="flex flex-col items-center w-full">
               <div className="w-full max-w-4xl mx-auto">
-                {/* Ticket Types Display */}
-                <div className="mb-6">
-                  <TicketTypeDisplay eventId={state.eventId} />
-                </div>
-                
                 {/* New Seating Layout System V2 */}
                 <SeatingLayoutV2 
                   key={refreshKey}

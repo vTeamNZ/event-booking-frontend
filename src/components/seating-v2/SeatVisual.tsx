@@ -42,18 +42,31 @@ const SeatVisual: React.FC<SeatVisualProps> = ({
   // Hide unavailable seats completely for non-admin users
   const isUnavailableForNonAdmin = seat.status === SeatStatus.Unavailable && !isAdmin;
 
+  // Get background color from ticket type for available seats
+  const getBackgroundStyle = () => {
+    if (isUnavailableForNonAdmin) return {};
+    if (isSelected) return { backgroundColor: '#3B82F6' }; // bg-blue-500
+    if (seat.status === SeatStatus.Booked) return { backgroundColor: '#EF4444' }; // bg-red-500
+    if (seat.status === SeatStatus.Reserved) return { backgroundColor: seat.ticketType?.color || '#6B7280' };
+    if (seat.status === SeatStatus.Available) return { backgroundColor: seat.ticketType?.color || '#6B7280' };
+    return { backgroundColor: '#6B7280' }; // Default gray
+  };
+
   return (
-    <div className="relative">
+    <div className="relative flex-shrink-0 flex items-center justify-center w-7 h-7">
       <button
         type="button"
         className={`
-          w-8 h-8 rounded 
+          w-6 h-6 rounded 
           ${seatColor}
           ${canSelect ? 'cursor-pointer hover:opacity-80' : 'cursor-not-allowed'}
           transition-colors duration-200
+          flex items-center justify-center
+          text-xs font-medium
           ${className}
           ${isUnavailableForNonAdmin ? 'pointer-events-none' : ''}
         `}
+        style={getBackgroundStyle()}
         onClick={onClick}
         disabled={!canSelect}
         title={isUnavailableForNonAdmin ? '' : tooltip}

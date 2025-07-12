@@ -31,31 +31,16 @@ const SeatingLegend: React.FC<SeatingLegendProps> = ({
         <h3 className="text-lg font-semibold mb-3">Seat Status</h3>
         <div className="flex flex-wrap gap-4">
           <div className="flex items-center">
-            <div className="w-4 h-4 rounded mr-2 bg-gray-200" />
-            <span>Available</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-4 h-4 rounded mr-2 bg-green-500" />
+            <div className="w-4 h-4 rounded mr-2 bg-blue-500" />
             <span>Selected</span>
           </div>
           <div className="flex items-center">
-            <div className="w-4 h-4 rounded mr-2 bg-amber-500" />
+            <div className="w-4 h-4 rounded mr-2 bg-gray-300 border-2 border-yellow-400" />
             <span>Reserved</span>
           </div>
           <div className="flex items-center">
             <div className="w-4 h-4 rounded mr-2 bg-red-500" />
             <span>Booked</span>
-          </div>
-        </div>
-      </div>
-      
-      {/* Venue Features */}
-      <div>
-        <h3 className="text-lg font-semibold mb-3">Venue Features</h3>
-        <div className="flex flex-wrap gap-4">
-          <div className="flex items-center">
-            <div className="w-12 h-4 mr-2 bg-gray-200" />
-            <span>Aisles</span>
           </div>
         </div>
       </div>

@@ -100,13 +100,13 @@ const SeatSelectionView: React.FC<SeatSelectionViewProps> = ({
             {loading ? (
               <p>Loading seat map...</p>
             ) : (
-              <div className="grid grid-cols-10 gap-1 p-4">
+              <div className="grid grid-cols-10 gap-2 p-4">
                 {venueLayout.elements
                   .filter(element => element.type === 'seat')
                   .map(seat => (
                     <button
                       key={seat.id}
-                      className="w-8 h-8 rounded transition-colors"
+                      className="w-6 h-6 rounded transition-colors"
                       style={{ backgroundColor: getSeatColor(seat) }}
                       onClick={() => handleSeatClick(seat.id)}
                       onMouseEnter={() => setHoveredSeat(seat.id)}

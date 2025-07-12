@@ -159,7 +159,31 @@ export const convertToBackendStatus = (status: SeatStatus): number => {
 };
 
 /**
- * Get the CSS color class for a seat based on its status
+ * Convert hex color to RGB values
+ */
+const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+};
+
+/**
+ * Calculate text color (white or black) based on background brightness
+ */
+const getTextColor = (backgroundColor: string): string => {
+  const rgb = hexToRgb(backgroundColor);
+  if (!rgb) return 'text-white'; // Default to white for invalid colors
+  
+  // Calculate luminance using the relative luminance formula
+  const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
+  return luminance > 0.5 ? 'text-black' : 'text-white';
+};
+
+/**
+ * Get the CSS color class for a seat based on its status and ticket type
  */
 export const getSeatColor = (
   seat: SeatingLayoutSeat,
@@ -167,25 +191,38 @@ export const getSeatColor = (
   canSelect: boolean,
   isAdmin: boolean = false
 ): string => {
+  // Handle special status cases first
+  if (seat.status === SeatStatus.Unavailable) {
+    return isAdmin 
+      ? 'bg-gray-500 text-white' 
+      : 'bg-transparent text-transparent border-transparent';
+  }
+
   if (isSelected) {
     return 'bg-blue-500 text-white';
   }
 
+  // Get the base color from ticket type
+  const baseColor = seat.ticketType?.color || '#6B7280'; // Default gray if no ticket type color
+  const textColor = getTextColor(baseColor);
+
   switch (seat.status) {
     case SeatStatus.Available:
-      return canSelect
-        ? 'bg-green-500 text-white hover:bg-green-600'
-        : 'bg-green-300 text-gray-700';
+      if (canSelect) {
+        // Use ticket type color with hover effect
+        return `text-white hover:opacity-80`;
+      } else {
+        // Dimmed version for non-selectable available seats
+        return `opacity-60 ${textColor}`;
+      }
     case SeatStatus.Reserved:
-      return 'bg-yellow-500 text-white';
+      // Use a yellow overlay/border but keep ticket type base color
+      return `border-2 border-yellow-400 ${textColor}`;
     case SeatStatus.Booked:
-      return 'bg-red-500 text-white';
-    case SeatStatus.Unavailable:
-      return isAdmin 
-        ? 'bg-gray-500 text-white' 
-        : 'bg-transparent text-transparent border-transparent';
+      // Use red overlay but keep some hint of ticket type color
+      return `bg-red-500 text-white opacity-80`;
     default:
-      return 'bg-gray-300 text-gray-700';
+      return `${textColor}`;
   }
 };
 

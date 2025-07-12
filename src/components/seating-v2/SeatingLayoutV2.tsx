@@ -207,7 +207,10 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
     <div className={`space-y-6 ${className}`}>
       {showLegend && (
         <SeatingLegend
-          ticketTypes={layout.ticketTypes}
+          ticketTypes={layout.ticketTypes.filter(type => 
+            type.name?.toLowerCase() !== 'general' && 
+            type.type?.toLowerCase() !== 'general'
+          )}
         />
       )}
       

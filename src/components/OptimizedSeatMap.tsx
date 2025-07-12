@@ -16,7 +16,7 @@ interface OptimizedSeatMapProps {
 }
 
 const CustomSeat: React.FC<CustomSeatProps> = ({ seat, isSelected, onSelect }) => {
-  const baseClasses = "w-8 h-8 m-1 rounded flex items-center justify-center text-xs font-medium transition-colors cursor-pointer relative";
+  const baseClasses = "w-6 h-6 m-1 rounded flex items-center justify-center text-xs font-medium transition-colors cursor-pointer relative";
   
   // Debug logging for seat colors and tooltip info
   console.log(`Rendering seat ${seat.row}-${seat.number}:`, {
@@ -67,9 +67,9 @@ const CustomSeat: React.FC<CustomSeatProps> = ({ seat, isSelected, onSelect }) =
 
 const OptimizedSeatMap: React.FC<OptimizedSeatMapProps> = ({ rows, selectedSeatIds, onSeatSelect }) => {
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-2 overflow-auto max-h-[calc(100vh-200px)]">
       {rows.map((row, rowIndex) => (
-        <div key={rowIndex} className="flex">
+        <div key={rowIndex} className="flex py-0.5">
           {row.seats.map((seat) => (
             <CustomSeat
               key={seat.id}
