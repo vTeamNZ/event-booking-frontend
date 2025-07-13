@@ -1,6 +1,6 @@
 // Seating Summary Component - Shows selection summary and checkout
 import React from 'react';
-import { X } from 'lucide-react';
+import { X, RefreshCw } from 'lucide-react';
 import { SeatingSummaryProps } from '../../types/seating-v2';
 import { formatPrice } from '../../utils/seating-v2/seatingUtils';
 
@@ -9,7 +9,8 @@ const SeatingSummary: React.FC<SeatingSummaryProps> = ({
   totalPrice,
   onProceed,
   onClear,
-  onRemoveSeat
+  onRemoveSeat,
+  onRefresh
 }) => {
   const hasSelectedSeats = selectedSeats.length > 0;
 
@@ -69,24 +70,46 @@ const SeatingSummary: React.FC<SeatingSummaryProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-between items-center pt-4 space-x-4">
-          <button
-            onClick={onClear}
-            className="flex-1 px-4 py-2 rounded-md transition-colors text-gray-700 bg-gray-100 hover:bg-gray-200"
-          >
-            Clear Selection
-          </button>
-          <button
-            onClick={onProceed}
-            disabled={!hasSelectedSeats}
-            className={`flex-1 px-4 py-2 rounded-md font-semibold transition-colors ${
-              hasSelectedSeats
-                ? 'text-white bg-blue-600 hover:bg-blue-700'
-                : 'text-gray-400 bg-gray-200 cursor-not-allowed'
-            }`}
-          >
-            Continue to Checkout
-          </button>
+        <div className="space-y-3 pt-4">
+          {/* Refresh Button (for debugging/manual refresh) */}
+          {onRefresh && (
+            <div className="flex justify-center">
+              <button
+                onClick={onRefresh}
+                className="flex items-center gap-2 px-3 py-1 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                title="Refresh seat layout"
+              >
+                <RefreshCw size={14} />
+                Refresh Layout
+              </button>
+            </div>
+          )}
+          
+          {/* Main Action Buttons */}
+          <div className="flex justify-between items-center space-x-4">
+            <button
+              onClick={onClear}
+              disabled={!hasSelectedSeats}
+              className={`flex-1 px-4 py-2 rounded-md transition-colors ${
+                hasSelectedSeats
+                  ? 'text-gray-700 bg-gray-100 hover:bg-gray-200'
+                  : 'text-gray-400 bg-gray-50 cursor-not-allowed'
+              }`}
+            >
+              Clear Selection
+            </button>
+            <button
+              onClick={onProceed}
+              disabled={!hasSelectedSeats}
+              className={`flex-1 px-4 py-2 rounded-md font-semibold transition-colors ${
+                hasSelectedSeats
+                  ? 'text-white bg-blue-600 hover:bg-blue-700'
+                  : 'text-gray-400 bg-gray-200 cursor-not-allowed'
+              }`}
+            >
+              Continue to Checkout
+            </button>
+          </div>
         </div>
       </div>
     </div>

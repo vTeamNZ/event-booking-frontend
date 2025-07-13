@@ -95,6 +95,7 @@ export interface SeatingSummaryProps {
     onProceed: () => void;
     onClear: () => void;
     onRemoveSeat?: (seat: SeatingSelectedSeat) => void;
+    onRefresh?: () => void;
     className?: string;
 }
 

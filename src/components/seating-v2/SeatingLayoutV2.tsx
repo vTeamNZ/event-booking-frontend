@@ -283,8 +283,20 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
     if (!isSelecting) {
       // For deselection, try the API but don't let failures block UI updates
       try {
-        const releaseResult = await handleSeatReserve(seat, isSelecting);
+        await handleSeatReserve(seat, isSelecting);
         console.log(`[SeatingLayoutV2] Successfully released seat ${seat.row}${seat.number} on server`);
+        
+        // After successful deselection, refresh the entire seat layout to ensure UI consistency
+        setTimeout(async () => {
+          try {
+            console.log('[SeatingLayoutV2] Refreshing layout after deselection to ensure UI consistency');
+            const freshLayout = await seatingAPIService.getEventSeatLayout(eventId);
+            setLayout(freshLayout);
+          } catch (refreshError) {
+            console.warn('[SeatingLayoutV2] Failed to refresh layout after deselection:', refreshError);
+          }
+        }, 500); // Small delay to allow backend to process the release
+        
       } catch (error: any) {
         console.warn(`[SeatingLayoutV2] Failed to release seat ${seat.row}${seat.number} on server, continuing with UI update:`, error);
         // Remove local reservation tracking even if API fails
@@ -348,42 +360,53 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
 
   // Handle clear selection
   const handleClearSelection = useCallback(async () => {
-    try {
-      // If there are selected seats, release them on the server
-      if (selectionState.selectedSeats.length > 0) {
-        // Extract all seat IDs
-        const seatIds = selectionState.selectedSeats.map(seat => seat.id);
-        
-        // Release all seats at once using the batch method
-        await seatingAPIService.releaseSeats(
-          seatIds, 
-          selectionState.sessionId
-        );
-        
-        // Clean up local storage for all released seats
-        seatIds.forEach(seatId => {
-          removeSeatReservation(eventId, seatId);
-        });
+    // Early return if no seats are selected
+    if (selectionState.selectedSeats.length === 0) {
+      toast('No seats selected to clear', { icon: 'ℹ️' });
+      return;
+    }
 
-        toast.success('All seats released');
+    try {
+      // Extract all seat IDs
+      const seatIds = selectionState.selectedSeats.map(seat => seat.id);
+      
+      // Release all seats at once using the batch method
+      await seatingAPIService.releaseSeats(
+        seatIds, 
+        selectionState.sessionId
+      );
+      
+      // Clean up local storage for all released seats
+      seatIds.forEach(seatId => {
+        removeSeatReservation(eventId, seatId);
+      });
+
+      toast.success('All seats released');
+      
+      // Refresh the layout after clearing all selections to ensure visual consistency
+      console.log('[SeatingLayoutV2] Refreshing layout after clearing all selections');
+      try {
+        const freshLayout = await seatingAPIService.getEventSeatLayout(eventId);
+        setLayout(freshLayout);
+      } catch (refreshError) {
+        console.warn('[SeatingLayoutV2] Failed to refresh layout after clearing selections:', refreshError);
       }
 
-      // Reset selection state before page refresh
+      // Reset selection state 
       setSelectionState(prev => ({
         ...initialSelectionState,
         sessionId: prev.sessionId // Preserve session ID
       }));
       
-      // Perform hard page refresh
-      console.log('[SeatingLayoutV2] Performing hard page refresh');
-      window.location.reload();
-      
     } catch (error) {
       console.error('[SeatingLayoutV2] Error clearing selection:', error);
-      toast.error('Failed to release seats. Refreshing page anyway.');
+      toast.error('Failed to release seats. Please try again.');
       
-      // Still do a hard page refresh even if the API calls fail
-      window.location.reload();
+      // Reset selection state anyway since we want to clear the UI
+      setSelectionState(prev => ({
+        ...initialSelectionState,
+        sessionId: prev.sessionId // Preserve session ID
+      }));
     }
   }, [initialSelectionState, selectionState.selectedSeats, selectionState.sessionId, eventId]);
 
@@ -402,6 +425,17 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
       if (releaseResult.updatedLayout) {
         console.log('[SeatingLayoutV2] Refreshing layout after removing seat');
         setLayout(releaseResult.updatedLayout);
+      } else {
+        // If no updated layout was returned, manually refresh after a short delay
+        setTimeout(async () => {
+          try {
+            console.log('[SeatingLayoutV2] Manually refreshing layout after seat removal');
+            const freshLayout = await seatingAPIService.getEventSeatLayout(eventId);
+            setLayout(freshLayout);
+          } catch (refreshError) {
+            console.warn('[SeatingLayoutV2] Failed to refresh layout after seat removal:', refreshError);
+          }
+        }, 500);
       }
       
       console.log(`[SeatingLayoutV2] Released seat ${seat.row}${seat.number} for session ${selectionState.sessionId}`);
@@ -497,6 +531,73 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
       .finally(() => setLoading(false));
   }, [eventId]);
 
+  // Periodic sync to ensure seat layout consistency (especially important after deselection)
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
+    // Only start the interval if we have selected seats
+    if (selectionState.selectedSeats.length > 0) {
+      intervalId = setInterval(async () => {
+        try {
+          console.log('[SeatingLayoutV2] Periodic sync - checking seat layout consistency');
+          const freshLayout = await seatingAPIService.getEventSeatLayout(eventId);
+          
+          // Check if any of our selected seats are no longer reserved on the server
+          const currentSeatIds = selectionState.selectedSeats.map(s => s.id);
+          const serverSeatStates = freshLayout.seats.filter(s => currentSeatIds.includes(s.id));
+          
+          const inconsistencies = serverSeatStates.filter(serverSeat => {
+            const isReservedByUs = isSeatReservedBySession(eventId, serverSeat.id, selectionState.sessionId);
+            return !isReservedByUs && serverSeat.status === SeatStatus.Available;
+          });
+
+          if (inconsistencies.length > 0) {
+            console.log('[SeatingLayoutV2] Found inconsistencies, refreshing layout:', inconsistencies.map(s => s.seatNumber));
+            setLayout(freshLayout);
+          }
+        } catch (error) {
+          console.warn('[SeatingLayoutV2] Error during periodic sync:', error);
+        }
+      }, 15000); // Check every 15 seconds
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [eventId, selectionState.selectedSeats, selectionState.sessionId]);
+
+  // Auto-refresh layout when page comes back into focus (user returns from checkout)
+  useEffect(() => {
+    const handleFocus = async () => {
+      if (!document.hidden && layout) {
+        console.log('[SeatingLayoutV2] Page focus detected, refreshing layout to ensure consistency');
+        try {
+          const freshLayout = await seatingAPIService.getEventSeatLayout(eventId);
+          setLayout(freshLayout);
+        } catch (error) {
+          console.warn('[SeatingLayoutV2] Failed to refresh layout on focus:', error);
+        }
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Small delay to allow any pending operations to complete
+        setTimeout(handleFocus, 500);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [eventId, layout]);
+
   if (loading) {
     return <SeatingLoadingSpinner />;
   }
@@ -544,6 +645,7 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
         onProceed={handleReservation}
         onClear={handleClearSelection}
         onRemoveSeat={handleRemoveSeat}
+        onRefresh={refreshLayout}
       />
     </div>
   );
