@@ -42,6 +42,8 @@ class ReservationService {
   }
 
   async releaseSeats(seats: SeatHoldRequest[]): Promise<{ message: string }> {
+    // CONSOLIDATED: This is reservation-specific, keep as-is for now
+    // But consider if this can be merged with seatingAPIService in the future
     const response = await api.post('/api/reservations/release', seats);
     return response.data as { message: string };
   }

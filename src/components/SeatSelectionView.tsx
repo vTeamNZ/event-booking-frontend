@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Check, X, AlertCircle, Users, Star, Eye, Accessibility } from 'lucide-react';
 import { message } from 'antd';
 import { seatSelectionService } from '../services/seatSelectionService';
+import { seatingAPIService } from '../services/seating-v2/seatingAPIService';
 import { getTicketTypeName } from '../utils/ticketTypeUtils';
 import { TicketType } from '../types/ticketTypes';
 import { SeatStatus, SeatStatusInfo, getTicketTypeStyle, getSeatStatusClasses } from '../types/seatStatus';
@@ -137,11 +138,26 @@ export const useSeatStatus = (eventId: string, realTimeUpdates: boolean = true) 
 
   const releaseSeats = async (seatIds: string[]) => {
     try {
-      await fetch(`/api/events/${eventId}/release-seats`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ seatIds }),
-      });
+      // CONSOLIDATED: Use modern seating API service for consistency
+      // Convert string IDs to numbers if needed
+      const numericSeatIds = seatIds.map(id => {
+        // Extract numeric ID if string contains composite identifier
+        const numericId = parseInt(id, 10);
+        return isNaN(numericId) ? parseInt(id.split('-').pop() || '0', 10) : numericId;
+      }).filter(id => id > 0);
+
+      if (numericSeatIds.length > 0) {
+        // Use the modern seating API service
+        const sessionId = `${eventId}-${Date.now()}`; // Generate or retrieve session ID
+        await seatingAPIService.releaseSeats(numericSeatIds, sessionId);
+      } else {
+        // Fallback to legacy endpoint for non-numeric IDs
+        await fetch(`/api/events/${eventId}/release-seats`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ seatIds }),
+        });
+      }
       
       const updatedStatuses = { ...seatStatuses };
       seatIds.forEach(seatId => {

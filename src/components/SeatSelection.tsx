@@ -127,7 +127,7 @@ const SeatSelection: React.FC<SeatSelectionProps> = ({
     const isSelected = selectionState.selectedSeats.some(s => s.seat.id === seatId);
     
     if (isSelected) {
-      // Deselect seat
+      // Deselect seat - CONSOLIDATED: Use updated seatSelectionService
       try {
         await seatSelectionService.releaseSeat(seatId, sessionId);
         setSelectionState(prev => ({

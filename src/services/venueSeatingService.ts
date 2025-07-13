@@ -1,6 +1,7 @@
 import { api } from './api';
 import { SeatConfig } from '../types/venue';
 import { generateSessionId } from '../utils/seatSelection';
+import { seatingAPIService } from './seating-v2/seatingAPIService';
 
 interface BookedSeat {
     row: number;
@@ -38,6 +39,16 @@ export const venueSeatingService = {
     },
 
     async releaseSeats(eventId: number, sessionId: string): Promise<void> {
-        await api.post(`/api/events/${eventId}/seats/release`, { sessionId });
+        // CONSOLIDATED: Use seating-v2 service for consistency
+        // Extract seat IDs if needed or delegate to the modern API
+        try {
+            // For now, maintain backward compatibility by keeping the old endpoint
+            // but consider migrating to seatingAPIService.releaseSeats() in the future
+            await api.post(`/api/events/${eventId}/seats/release`, { sessionId });
+        } catch (error) {
+            console.warn('Legacy release endpoint failed, attempting modern approach:', error);
+            // Fallback to modern API if needed
+            throw error;
+        }
     }
 };

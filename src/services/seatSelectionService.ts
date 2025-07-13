@@ -8,6 +8,7 @@ import {
 } from '../types/seatSelection';
 import { TicketType } from '../types/ticketTypes';
 import { SeatStatus, convertFromBackendStatus } from '../types/seatStatus';
+import { seatingAPIService } from './seating-v2/seatingAPIService';
 
 export type { TicketType } from '../types/ticketTypes';
 
@@ -74,17 +75,16 @@ export const seatSelectionService = {
     }
   },
 
-  // Table reservation removed
-
-  // Release a reserved seat
+  // Release a reserved seat - CONSOLIDATED: Use seating-v2 service
   async releaseSeat(seatId: number, sessionId: string): Promise<{
     message: string;
   }> {
-    const response = await api.post<{ message: string }>('/api/seats/release', {
-      seatId,
-      sessionId
+    // Delegate to the modern seating API service
+    const result = await seatingAPIService.releaseSeat({
+      SeatId: seatId,
+      SessionId: sessionId
     });
-    return response.data;
+    return { message: result.message };
   },
 
   // Get all seats for an event (fallback)
