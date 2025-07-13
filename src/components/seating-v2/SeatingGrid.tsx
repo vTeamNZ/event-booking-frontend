@@ -9,6 +9,7 @@ import {
   parseHorizontalAisleRows,
   parseVerticalAisleSeats
 } from '../../utils/seating-v2/seatingUtils';
+import { isSeatReservedBySession } from '../../utils/seating-v2/sessionStorage';
 import SeatVisual from './SeatVisual';
 
 const SeatingGrid: React.FC<SeatingGridProps> = ({
@@ -56,6 +57,18 @@ const SeatingGrid: React.FC<SeatingGridProps> = ({
 
   const getSelectedSeat = (seat: SeatingLayoutSeat): SeatingSelectedSeat | undefined =>
     selectedSeats.find(s => s.row === seat.row && s.number === seat.number);
+    
+  // Check if a seat is reserved by the current session
+  const checkSeatReservedBySession = (seat: SeatingLayoutSeat): boolean => {
+    if (layout?.eventId) {
+      // Get current session ID
+      const currentSessionId = sessionStorage.getItem('seatingSessionId') || '';
+      if (currentSessionId) {
+        return isSeatReservedBySession(layout.eventId, seat.id, currentSessionId);
+      }
+    }
+    return false;
+  };
 
   // Helper function to convert row label to number
   const getRowNumber = (rowLabel: string): number => {
@@ -211,10 +224,11 @@ const SeatingGrid: React.FC<SeatingGridProps> = ({
                             seat={seat}
                             isSelected={isSelected(seat)}
                             selectedSeat={getSelectedSeat(seat)}
-                            canSelect={canSelectSeat(seat, selectedSeats)}
+                            canSelect={canSelectSeat(seat, selectedSeats, layout?.eventId, sessionStorage.getItem('seatingSessionId') || undefined)}
                             onClick={() => onSeatClick?.(seat) || onSeatSelect?.(seat)}
                             isAdmin={isAdmin}
                             onAdminToggle={onAdminToggle}
+                            isReservedByCurrentSession={checkSeatReservedBySession(seat)}
                           />
                         </div>
                       </React.Fragment>

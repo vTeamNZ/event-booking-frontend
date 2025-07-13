@@ -23,6 +23,13 @@ export interface SeatingStage {
 
 export interface SeatingTicketType extends TicketType {}
 
+export interface SeatProperties {
+  rowLetter?: string;
+  seatNumber?: string;
+  isVip?: boolean;
+  isAccessible?: boolean;
+}
+
 export interface SeatingLayoutSeat {
   id: number;
   seatNumber: string;
@@ -36,12 +43,7 @@ export interface SeatingLayoutSeat {
   status: SeatStatus;
   ticketType?: SeatingTicketType;
   reservedUntil?: string | Date;
-  properties?: {
-    rowLetter?: string;
-    seatNumber?: string;
-    isVip?: boolean;
-    isAccessible?: boolean;
-  };
+  properties?: SeatProperties;
 }
 
 export interface SeatingLayoutResponse {
@@ -94,6 +96,8 @@ export interface SeatingLayoutProps {
   maxSeats?: number;
   showLegend?: boolean;
   className?: string;
+  isAdmin?: boolean;
+  onAdminToggle?: (seat: SeatingLayoutSeat) => void;
 }
 
 export interface SeatVisualProps {
@@ -108,8 +112,11 @@ export interface SeatVisualProps {
 
 export interface SeatingGridProps {
   layout: SeatingLayoutResponse;
+  seats: SeatingLayoutSeat[];
   selectedSeats: SeatingSelectedSeat[];
-  onSeatSelect: (seat: SeatingLayoutSeat) => void;
+  onSeatClick: (seat: SeatingLayoutSeat) => void;
+  isAdmin?: boolean;
+  onAdminToggle?: (seat: SeatingLayoutSeat) => void;
   className?: string;
 }
 
@@ -122,12 +129,14 @@ export interface SeatingSummaryProps {
   totalPrice: number;
   onProceed: () => void;
   onClear: () => void;
+  onRemoveSeat?: (seat: SeatingSelectedSeat) => void;
 }
 
-export interface SeatingSelectedSeat extends SeatingLayoutSeat {
-  reservedUntil: Date;
+export interface SeatingSelectedSeat extends Omit<SeatingLayoutSeat, 'ticketType' | 'reservedUntil'> {
+  selectedAt?: Date;
+  reservedUntil: string | Date;
   ticketType?: SeatingTicketType;
-  selectedAt: Date;
+  price: number;
 }
 
 export interface SeatingSelectionState {

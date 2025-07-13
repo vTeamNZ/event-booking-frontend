@@ -402,3 +402,78 @@ When contributing to the seating system:
 ## License
 
 This seating system is part of the event booking application and follows the same licensing terms.
+
+### Session Management
+
+The seating system includes comprehensive session storage management to handle booking completion and prevent conflicts:
+
+```tsx
+import { 
+  completeBookingCleanup, 
+  safeBookingCompletionCleanup,
+  clearAllSeatingData 
+} from '../utils/seating-v2/sessionStorage';
+
+// When booking is completed (payment success, reservation, etc.)
+function onPaymentSuccess(eventId: number) {
+  // Clear all session data for the event
+  completeBookingCleanup(eventId, 'payment_success');
+}
+
+// Safe cleanup when you have various data sources
+function onBookingComplete() {
+  // Automatically extracts eventId from various sources
+  const cleanupSuccessful = safeBookingCompletionCleanup(
+    searchParams,     // URLSearchParams
+    navigationState,  // Router state
+    sessionData,      // Session data
+    'booking_complete'
+  );
+  
+  if (!cleanupSuccessful) {
+    console.warn('Could not complete session cleanup');
+  }
+}
+
+// Manual cleanup for specific event
+function clearEventData(eventId: number) {
+  clearAllSeatingData(eventId);
+}
+```
+
+#### Available Session Functions
+
+| Function | Purpose |
+|----------|---------|
+| `completeBookingCleanup(eventId, context)` | Comprehensive cleanup when booking is completed |
+| `safeBookingCompletionCleanup(searchParams, state, data, context)` | Smart cleanup that extracts eventId from various sources |
+| `clearAllSeatingData(eventId)` | Clear all seating-related data for an event |
+| `clearSessionId(eventId)` | Clear only the session ID |
+| `storeSessionId(eventId, sessionId)` | Store session ID |
+| `getSessionId(eventId)` | Retrieve session ID |
+
+#### Development Debugging
+
+In development mode, debugging functions are available in the browser console:
+
+```javascript
+// Check all seating storage keys
+window.showSeatingStorage();
+
+// Manual cleanup for testing
+window.clearSeatingSession(eventId);
+
+// Clear all data for specific event
+window.clearAllSeatingData(eventId);
+```
+
+#### Session Storage Keys
+
+The system uses the following localStorage keys:
+- `seating_session_{eventId}` - Session ID for seat reservations
+- `selected_seats_{eventId}` - Currently selected seat IDs
+- `seating_session_timestamp_{eventId}` - Session timestamp for expiration
+- `seating_step_{eventId}` - Current booking step
+- `seating_form_data_{eventId}` - Form data
+- `seating_temporary_selection_{eventId}` - Temporary selections
+- `seating_reservation_expiry_{eventId}` - Reservation expiry time

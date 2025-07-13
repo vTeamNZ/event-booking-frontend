@@ -1,5 +1,6 @@
 // Seating Summary Component - Shows selection summary and checkout
 import React from 'react';
+import { X } from 'lucide-react';
 import { SeatingSummaryProps } from '../../types/seating-v2';
 import { formatPrice } from '../../utils/seating-v2/seatingUtils';
 
@@ -7,32 +8,54 @@ const SeatingSummary: React.FC<SeatingSummaryProps> = ({
   selectedSeats,
   totalPrice,
   onProceed,
-  onClear
+  onClear,
+  onRemoveSeat
 }) => {
+  const hasSelectedSeats = selectedSeats.length > 0;
+
   return (
     <div className="bg-white p-6 rounded-lg shadow">
       <h3 className="text-lg font-semibold mb-4">Selected Seats ({selectedSeats.length})</h3>
       
       <div className="space-y-4">
-        {/* Selected Seats List */}
+        {/* Selected Seats List or Empty State Message */}
         <div className="space-y-2 max-h-48 overflow-y-auto">
-          {selectedSeats.map(selected => (
-            <div key={selected.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-              <div className="flex-1">
-                <div className="font-medium">
-                  Seat {selected.row}{selected.number}
+          {hasSelectedSeats ? (
+            selectedSeats.map(selected => (
+              <div key={selected.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                <div className="flex-1">
+                  <div className="font-medium">
+                    Seat {selected.row}{selected.number}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {selected.ticketType?.name || 'General Admission'}
+                  </div>
                 </div>
-                <div className="text-sm text-gray-600">
-                  {selected.ticketType?.name || 'General Admission'}
+                <div className="flex items-center">
+                  <div className="font-semibold text-green-600 mr-3">
+                    {formatPrice(selected.price || 0)}
+                  </div>
+                  {onRemoveSeat && (
+                    <button 
+                      onClick={() => onRemoveSeat(selected)}
+                      className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                      title="Remove seat"
+                      aria-label={`Remove seat ${selected.row}${selected.number}`}
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
                 </div>
               </div>
-              <div className="text-right">
-                <div className="font-semibold text-green-600">
-                  {formatPrice(selected.price || 0)}
-                </div>
+            ))
+          ) : (
+            <div className="flex items-center justify-center p-8 text-center">
+              <div className="text-gray-500">
+                <div className="text-lg mb-2">No seats selected</div>
+                <div className="text-sm">Please select at least one seat to continue</div>
               </div>
             </div>
-          ))}
+          )}
         </div>
 
         {/* Total Price */}
@@ -49,13 +72,18 @@ const SeatingSummary: React.FC<SeatingSummaryProps> = ({
         <div className="flex justify-between items-center pt-4 space-x-4">
           <button
             onClick={onClear}
-            className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+            className="flex-1 px-4 py-2 rounded-md transition-colors text-gray-700 bg-gray-100 hover:bg-gray-200"
           >
             Clear Selection
           </button>
           <button
             onClick={onProceed}
-            className="flex-1 px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors font-semibold"
+            disabled={!hasSelectedSeats}
+            className={`flex-1 px-4 py-2 rounded-md font-semibold transition-colors ${
+              hasSelectedSeats
+                ? 'text-white bg-blue-600 hover:bg-blue-700'
+                : 'text-gray-400 bg-gray-200 cursor-not-allowed'
+            }`}
           >
             Continue to Checkout
           </button>

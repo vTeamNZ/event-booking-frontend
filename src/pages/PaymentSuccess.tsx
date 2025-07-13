@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { verifyCheckoutSession } from '../services/checkoutService';
 import SEO from '../components/SEO';
+import { safeBookingCompletionCleanup, completeBookingCleanup } from '../utils/seating-v2/sessionStorage';
 
 const PaymentSuccess: React.FC = () => {
   const navigate = useNavigate();
@@ -49,6 +50,42 @@ const PaymentSuccess: React.FC = () => {
 
     verifyPayment();
   }, [sessionId, isQRTicketSuccess, isReservationSuccess]);
+
+  // Clear session storage when booking is completed successfully
+  useEffect(() => {
+    // Only run cleanup after we have determined the booking was successful
+    if (loading) return;
+
+    let shouldCleanup = false;
+    let cleanupContext = '';
+
+    if (isQRTicketSuccess) {
+      shouldCleanup = true;
+      cleanupContext = 'qr_ticket_generation';
+    } else if (isReservationSuccess) {
+      shouldCleanup = true;
+      cleanupContext = 'reservation_success';
+    } else if (sessionData?.isSuccessful && !error) {
+      shouldCleanup = true;
+      cleanupContext = 'stripe_payment_success';
+    }
+
+    if (shouldCleanup) {
+      // Try to extract event ID and clear session storage
+      const cleanupSuccessful = safeBookingCompletionCleanup(
+        searchParams,
+        navigationState,
+        sessionData,
+        cleanupContext
+      );
+
+      if (cleanupSuccessful) {
+        console.log('[PaymentSuccess] Session storage cleanup completed successfully');
+      } else {
+        console.warn('[PaymentSuccess] Could not complete session storage cleanup - event ID not found');
+      }
+    }
+  }, [loading, sessionData, error, isQRTicketSuccess, isReservationSuccess, searchParams, navigationState]);
 
   if (loading) {
     return (

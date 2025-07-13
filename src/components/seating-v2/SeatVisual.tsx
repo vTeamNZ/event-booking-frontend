@@ -13,6 +13,7 @@ interface SeatVisualProps {
   className?: string;
   isAdmin?: boolean;
   onAdminToggle?: (seatId: number) => void;
+  isReservedByCurrentSession?: boolean;
 }
 
 const SeatVisual: React.FC<SeatVisualProps> = ({
@@ -23,7 +24,8 @@ const SeatVisual: React.FC<SeatVisualProps> = ({
   onClick,
   className = '',
   isAdmin = false,
-  onAdminToggle
+  onAdminToggle,
+  isReservedByCurrentSession = false
 }) => {
   const seatColor = getSeatColor(seat, isSelected, canSelect, isAdmin);
   const tooltip = getSeatTooltip(seat, selectedSeat);
@@ -47,7 +49,21 @@ const SeatVisual: React.FC<SeatVisualProps> = ({
     if (isUnavailableForNonAdmin) return {};
     if (isSelected) return { backgroundColor: '#3B82F6' }; // bg-blue-500
     if (seat.status === SeatStatus.Booked) return { backgroundColor: '#EF4444' }; // bg-red-500
-    if (seat.status === SeatStatus.Reserved) return { backgroundColor: seat.ticketType?.color || '#6B7280' };
+    
+    // For reserved seats, check if it's reserved by current session
+    if (seat.status === SeatStatus.Reserved) {
+      // If this seat is owned by the current session, use a special style
+      if (isReservedByCurrentSession) {
+        return { 
+          backgroundColor: seat.ticketType?.color || '#6B7280',
+          borderColor: '#3B82F6', // Blue border
+          borderWidth: '2px',
+          borderStyle: 'dashed'
+        };
+      }
+      return { backgroundColor: seat.ticketType?.color || '#6B7280' };
+    }
+    
     if (seat.status === SeatStatus.Available) return { backgroundColor: seat.ticketType?.color || '#6B7280' };
     return { backgroundColor: '#6B7280' }; // Default gray
   };

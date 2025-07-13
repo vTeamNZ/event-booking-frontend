@@ -1,6 +1,7 @@
 // Utility functions for Seating System V2
 import { SeatingLayoutSeat, SeatingSelectedSeat, SeatingSelectionState, TicketType } from '../../types/seating-v2';
 import { SeatStatus } from '../../types/seatStatus';
+import { isSeatReservedBySession } from './sessionStorage';
 
 /**
  * Generate a unique session ID
@@ -56,6 +57,21 @@ export const calculateTotalPrice = (selectionState: SeatingSelectionState): numb
 };
 
 /**
+ * Clear all seat selections and reset state
+ */
+export const clearAllSelections = (
+  state: SeatingSelectionState
+): SeatingSelectionState => {
+  return {
+    ...state,
+    selectedSeats: [],
+    selectedTables: [],
+    generalTickets: [],
+    totalPrice: 0
+  };
+};
+
+/**
  * Calculate detailed price breakdown by ticket type
  */
 export const calculatePriceBreakdown = (
@@ -106,11 +122,19 @@ export const calculatePriceBreakdown = (
  */
 export const canSelectSeat = (
   seat: SeatingLayoutSeat,
-  selectedSeats: SeatingSelectedSeat[]
+  selectedSeats: SeatingSelectedSeat[],
+  eventId?: number,
+  sessionId?: string
 ): boolean => {
   // Can't select if already selected (allow deselection)
-  if (selectedSeats.some(s => s.id === seat.id)) {
+  // Use consistent seat identification with row and number to match toggleSeatSelection
+  if (selectedSeats.some(s => s.row === seat.row && s.number === seat.number)) {
     return true; // Allow clicking on already selected seats to deselect
+  }
+
+  // Check if seat is reserved by current session (allows selection/deselection)
+  if (eventId && sessionId && isSeatReservedBySession(eventId, seat.id, sessionId)) {
+    return true; // Allow selecting/deselecting seats reserved by current session
   }
 
   // Handle both string and numeric status formats

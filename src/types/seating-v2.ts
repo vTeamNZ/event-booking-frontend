@@ -94,6 +94,7 @@ export interface SeatingSummaryProps {
     totalPrice: number;
     onProceed: () => void;
     onClear: () => void;
+    onRemoveSeat?: (seat: SeatingSelectedSeat) => void;
     className?: string;
 }
 
@@ -105,10 +106,11 @@ export enum SeatSelectionMode {
 
 // API request/response interfaces
 export interface SeatingReservationRequest {
-    eventId?: number;
-    seatIds?: number[];
-    seatId?: number; // For backward compatibility
-    sessionId: string;
+    EventId: number;
+    SeatId: number;
+    SessionId: string;
+    Row: string;
+    Number: number;
 }
 
 export interface SeatingReservationResponse {
@@ -119,9 +121,8 @@ export interface SeatingReservationResponse {
 }
 
 export interface SeatingReleaseRequest {
-    sessionId: string;
-    seatIds?: number[];
-    seatId?: number; // For backward compatibility
+    SeatId: number;
+    SessionId: string;
 }
 
 export interface SeatingPricingResponse {

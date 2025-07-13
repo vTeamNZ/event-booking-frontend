@@ -8,6 +8,7 @@ import { reservationService, TicketReservationRequest } from '../services/reserv
 import { BookingData } from '../types/booking';
 import { qrCodeService, QRCodeGenerationRequest } from '../services/qrCodeService';
 import { seatSelectionService } from '../services/seatSelectionService';
+import { completeBookingCleanup } from '../utils/seating-v2/sessionStorage';
 
 interface LegacyPaymentLocationState {
   amount: number;
@@ -293,9 +294,14 @@ const Payment: React.FC = () => {
       
       if (result.success) {
         message.success('Tickets reserved successfully!');
+        
+        // Clear session storage since reservation is completed
+        completeBookingCleanup(eventId, 'reservation_success');
+        
         navigate(`/payment/success`, {
           state: {
             eventTitle,
+            eventId, // Include eventId in state for cleanup verification
             reservationId: result.reservationId,
             isReservation: true
           }
@@ -416,10 +422,14 @@ const Payment: React.FC = () => {
           // This is a non-critical operation that can be handled later if needed
         }
         
+        // Clear session storage before navigation since booking is completed
+        completeBookingCleanup(eventId, 'qr_ticket_generation');
+        
         // Navigate to success page with QR ticket information
         navigate('/payment/success', {
           state: {
             eventTitle,
+            eventId, // Include eventId in state for cleanup verification
             isQRTickets: true,
             qrResults: qrResults,
             organizerGenerated: true
