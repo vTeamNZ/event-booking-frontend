@@ -94,103 +94,128 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = () => {
         description="Review your booking details before completing payment."
         keywords={['payment summary', 'booking review', 'event tickets']}
       />
-      <div className="container mx-auto p-4 max-w-2xl">
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-6">Payment Summary</h1>
-          
-          {/* Event Details */}
-          <div className="border-b pb-4 mb-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">{bookingData.eventTitle}</h2>
+      <div className="min-h-screen bg-gray-50">
+        {/* Hero Section */}
+        <div className="relative">
+          {/* Event Image */}
+          <div className="relative h-[300px] w-full overflow-hidden">
+            <div 
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ 
+                backgroundImage: `url('${(bookingData as any).imageUrl || '/events/fallback.jpg'}')`,
+                filter: 'brightness(0.7)'
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-black/70" />
           </div>
 
-          {/* Ticket/Seat Details */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">
-              {bookingData.bookingType === 'seats' ? 'Selected Seats' : 'Selected Tickets'}
-            </h3>
-            
-            {bookingData.bookingType === 'seats' && bookingData.selectedSeats && (
-              <div className="space-y-2">
-                {bookingData.selectedSeats.map((seat, index) => (
-                  <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span>Seat {seat.row}{seat.number}</span>
-                    <span className="font-medium">${formatPrice(seat.price)}</span>
-                  </div>
-                ))}
-                <div className="flex justify-between items-center py-2 font-medium">
-                  <span>Seats Subtotal:</span>
-                  <span>${formatPrice(ticketSubtotal)}</span>
-                </div>
-              </div>
-            )}
-
-            {bookingData.bookingType === 'tickets' && bookingData.selectedTickets && (
-              <div className="space-y-2">
-                {bookingData.selectedTickets.map((ticket, index) => (
-                  <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <div>
-                      <div className="font-medium">{ticket.name}</div>
-                      <div className="text-sm text-gray-600">
-                        {ticket.quantity} × ${formatPrice(ticket.price)}
-                      </div>
-                    </div>
-                    <span className="font-medium">${formatPrice(ticket.price * ticket.quantity)}</span>
-                  </div>
-                ))}
-                <div className="flex justify-between items-center py-2 font-medium">
-                  <span>Tickets Subtotal:</span>
-                  <span>${formatPrice(ticketSubtotal)}</span>
-                </div>
-              </div>
-            )}
+          {/* Event Details Overlay */}
+          <div className="absolute inset-0 flex items-center">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full text-white">
+              <button
+                onClick={() => navigate(-1)}
+                className="text-white/80 hover:text-white mb-6 flex items-center gap-2 transition-colors"
+              >
+                ← Back
+              </button>
+              <h1 className="text-3xl font-bold mb-2">{bookingData.eventTitle}</h1>
+              <p className="text-lg text-white/90">Review your order</p>
+            </div>
           </div>
+        </div>
 
-          {/* Food Items */}
-          {bookingData.selectedFoodItems && bookingData.selectedFoodItems.length > 0 && (
+        {/* Main Content */}
+        <div className="max-w-2xl mx-auto -mt-10 relative z-10 px-4 sm:px-6 lg:px-8 pb-12">
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            {/* Ticket/Seat Details */}
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">Food Items</h3>
-              <div className="space-y-2">
-                {bookingData.selectedFoodItems.map((item, index) => (
-                  <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <div>
-                      <div className="font-medium">{item.name}</div>
-                      <div className="text-sm text-gray-600">
-                        {item.quantity} × ${formatPrice(item.price)}
-                      </div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                {bookingData.bookingType === 'seats' ? 'Selected Seats' : 'Selected Tickets'}
+              </h3>
+              
+              {bookingData.bookingType === 'seats' && bookingData.selectedSeats && (
+                <div className="space-y-2">
+                  {bookingData.selectedSeats.map((seat, index) => (
+                    <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
+                      <span>Seat {seat.row}{seat.number}</span>
+                      <span className="font-medium">${formatPrice(seat.price)}</span>
                     </div>
-                    <span className="font-medium">${formatPrice(item.price * item.quantity)}</span>
+                  ))}
+                  <div className="flex justify-between items-center py-2 font-medium">
+                    <span>Seats Subtotal:</span>
+                    <span>${formatPrice(ticketSubtotal)}</span>
                   </div>
-                ))}
-                <div className="flex justify-between items-center py-2 font-medium">
-                  <span>Food Subtotal:</span>
-                  <span>${formatPrice(foodSubtotal)}</span>
+                </div>
+              )}
+
+              {bookingData.bookingType === 'tickets' && bookingData.selectedTickets && (
+                <div className="space-y-2">
+                  {bookingData.selectedTickets.map((ticket, index) => (
+                    <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
+                      <div>
+                        <div className="font-medium">{ticket.name}</div>
+                        <div className="text-sm text-gray-600">
+                          {ticket.quantity} × ${formatPrice(ticket.price)}
+                        </div>
+                      </div>
+                      <span className="font-medium">${formatPrice(ticket.price * ticket.quantity)}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between items-center py-2 font-medium">
+                    <span>Tickets Subtotal:</span>
+                    <span>${formatPrice(ticketSubtotal)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Food Items */}
+            {bookingData.selectedFoodItems && bookingData.selectedFoodItems.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">Food Items</h3>
+                <div className="space-y-2">
+                  {bookingData.selectedFoodItems.map((item, index) => (
+                    <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
+                      <div>
+                        <div className="font-medium">{item.name}</div>
+                        <div className="text-sm text-gray-600">
+                          {item.quantity} × ${formatPrice(item.price)}
+                        </div>
+                      </div>
+                      <span className="font-medium">${formatPrice(item.price * item.quantity)}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between items-center py-2 font-medium">
+                    <span>Food Subtotal:</span>
+                    <span>${formatPrice(foodSubtotal)}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Total */}
-          <div className="border-t pt-4 mb-6">
-            <div className="flex justify-between items-center text-2xl font-bold text-gray-800">
-              <span>Total Amount:</span>
-              <span>${formatPrice(grandTotal)}</span>
+            {/* Total */}
+            <div className="border-t pt-4 mb-6">
+              <div className="flex justify-between items-center text-2xl font-bold text-gray-800">
+                <span>Total Amount:</span>
+                <span>${formatPrice(grandTotal)}</span>
+              </div>
             </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-between space-x-4">
-            <button
-              onClick={() => navigate(-1)}
-              className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Back
-            </button>
-            <button
-              onClick={handleProceedToPayment}
-              className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Proceed to Payment
-            </button>
+            {/* Action Buttons */}
+            <div className="flex justify-between space-x-4">
+              <button
+                onClick={() => navigate(-1)}
+                className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Back
+              </button>
+              <button
+                onClick={handleProceedToPayment}
+                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Proceed to Payment
+              </button>
+            </div>
           </div>
         </div>
       </div>

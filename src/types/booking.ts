@@ -3,6 +3,7 @@ export interface BookingData {
   eventTitle: string;
   bookingType: 'seats' | 'tickets';
   totalAmount: number;
+  imageUrl?: string;
   selectedSeats?: Array<{
     row: string;
     number: number;

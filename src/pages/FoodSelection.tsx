@@ -20,6 +20,7 @@ interface LocationState {
 interface EnhancedLocationState extends BookingData {
   // Legacy support for ticket-based flow
   ticketPrice?: number;
+  imageUrl?: string;
   ticketDetails?: Array<{
     type: string;
     quantity: number;
@@ -38,6 +39,14 @@ const FoodSelection: React.FC = () => {
   const [quantities, setQuantities] = useState<Record<number, number>>({});
 
   const locationState = state as EnhancedLocationState;
+
+  // Check for direct page access
+  useEffect(() => {
+    if (!state) {
+      navigate('/');
+      return;
+    }
+  }, [state, navigate]);
 
   // Helper function to safely format prices
   const formatPrice = (price: number | undefined): string => {
@@ -123,6 +132,7 @@ const FoodSelection: React.FC = () => {
     const enhancedBookingData: BookingData = {
       eventId: locationState.eventId,
       eventTitle: locationState.eventTitle,
+      imageUrl: locationState.imageUrl,
       // Ensure we preserve the booking type from the previous step
       bookingType: locationState.bookingType || 'tickets',
       totalAmount: grandTotal,
@@ -210,150 +220,184 @@ const FoodSelection: React.FC = () => {
         description="Book Food With Your Ticket. Enhance your event experience with delicious food options. Pay online securely with Stripe."
         keywords={['Book Food With Your Ticket', 'Enjoy Food + Entertainment', 'Pay Securely With Stripe']}
       />
-      <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8 mt-6">
-        <div className="border-b pb-4 mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Add Food Items</h1>
-          <h2 className="text-xl text-gray-600 mb-2">{locationState?.eventTitle}</h2>
-          <p className="text-sm text-gray-500">Optional - Select any food items you'd like to add to your order</p>
-          
-          {/* Booking Summary */}
-          {locationState && (
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-              <h3 className="font-semibold text-gray-800 mb-1">Your Selection:</h3>
-              {locationState.bookingType === 'seats' && locationState.selectedSeats && (
-                <p className="text-sm text-gray-600">
-                  Seats: {locationState.selectedSeats.map(seat => `${seat.row}${seat.number}`).join(', ')}
-                </p>
-              )}
-              {locationState.bookingType === 'tickets' && locationState.selectedTickets && (
-                <div className="text-sm text-gray-600">
-                  {locationState.selectedTickets.map(ticket => (
-                    <p key={ticket.ticketTypeId}>
-                      {ticket.name}: {ticket.quantity} × ${formatPrice(ticket.price)}
-                    </p>
-                  ))}
-                </div>
-              )}
-              {locationState.ticketDetails && !locationState.bookingType && (
-                <div className="text-sm text-gray-600">
-                  {locationState.ticketDetails.map((ticket, index) => (
-                    <p key={index}>
-                      {ticket.type}: {ticket.quantity} × ${formatPrice(ticket.unitPrice)}
-                    </p>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-      {loading ? (
-        <div className="text-center py-8">
-          <div className="text-gray-600">Loading food items...</div>
-        </div>
-      ) : error ? (
-        <div className="text-center py-8">
-          <div className="text-red-600">{error}</div>
-        </div>
-      ) : foodItems.length === 0 ? (
-        <div className="text-center py-8 px-4">
-          <div className="mb-4">
-            <svg className="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">No Food Items Available</h3>
-          <p className="text-gray-600 max-w-md mx-auto">
-            There are no pre-order food options available for this event. You can proceed to payment for your ticket, or food and beverages may be available for purchase at the venue.
-          </p>
-          <div className="mt-6">
-            <button
-              onClick={proceed}
-              className="px-6 py-3 rounded-lg bg-primary text-white hover:bg-red-600 transition-colors duration-200"
-            >
-              Continue to Payment
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {foodItems.map((item) => (
+      <div className="min-h-screen bg-gray-50">
+        {/* Hero Section */}
+        <div className="relative">
+          {/* Event Image */}
+          <div className="relative h-[300px] w-full overflow-hidden">
             <div 
-              key={item.id} 
-              className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-            >
-              <div className="flex-1">
-                <div className="flex items-baseline">
-                  <span className="text-lg font-semibold text-gray-800">{item.name}</span>
-                </div>
-                <div className="text-sm text-gray-600 mt-1">{item.description}</div>
-                <div className="text-gray-600 font-medium mt-2">
-                  ${formatPrice(item.price)}
-                </div>
-              </div>              <div className="flex items-center space-x-3">
-                <button 
-                  onClick={() => handleQtyChange(item.id, -1)}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-200 ${
-                    item.price === 0 
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                      : 'bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-gray-800'
-                  }`}
-                  disabled={quantities[item.id] === 0 || item.price === 0}
-                >
-                  -
-                </button>
-                <span className="w-8 text-center font-semibold text-gray-800">
-                  {quantities[item.id] || 0}
-                </span>
-                <button 
-                  onClick={() => handleQtyChange(item.id, 1)}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-200 ${
-                    item.price === 0 
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                      : 'bg-primary text-white hover:bg-red-600'
-                  }`}
-                  disabled={item.price === 0}
-                >
-                  +
-                </button>
-              </div>
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ 
+                backgroundImage: `url('${locationState?.imageUrl || '/events/fallback.jpg'}')`,
+                filter: 'brightness(0.7)'
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-black/70" />
+          </div>
+
+          {/* Event Details Overlay */}
+          <div className="absolute inset-0 flex items-center">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full text-white">
+              <button
+                onClick={() => navigate(-1)}
+                className="text-white/80 hover:text-white mb-6 flex items-center gap-2 transition-colors"
+              >
+                ← Back
+              </button>
+              <h1 className="text-3xl font-bold mb-2">{locationState?.eventTitle}</h1>
+              <p className="text-lg text-white/90">Select food and beverages for your event</p>
             </div>
-          ))}
-        </div>
-      )}
-
-      <div className="mt-8 pt-6 border-t">
-        <div className="space-y-2 mb-6">
-          <div className="flex items-center justify-between text-gray-600">
-            <span>Ticket Total</span>
-            <span>${formatPrice(ticketTotal)}</span>
-          </div>
-          <div className="flex items-center justify-between text-gray-600">
-            <span>Food Total</span>
-            <span>${formatPrice(foodTotal)}</span>
-          </div>
-          <div className="flex items-center justify-between text-xl font-bold text-gray-800 pt-2 border-t">
-            <span>Grand Total</span>
-            <span>${formatPrice(grandTotal)}</span>
           </div>
         </div>
 
-        <div className="flex justify-between space-x-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="px-6 py-3 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors duration-200 flex items-center"
-          >
-            <span className="mr-2">←</span> Back
-          </button>
+        {/* Main Content */}
+        <div className="max-w-3xl mx-auto -mt-10 relative z-10 px-4 sm:px-6 lg:px-8 pb-12">
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="border-b pb-4 mb-6">
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">Add Food Items</h1>
+              <h2 className="text-xl text-gray-600 mb-2">{locationState?.eventTitle}</h2>
+              <p className="text-sm text-gray-500">Optional - Select any food items you'd like to add to your order</p>
+              
+              {/* Booking Summary */}
+              {locationState && (
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <h3 className="font-semibold text-gray-800 mb-1">Your Selection:</h3>
+                  {locationState.bookingType === 'seats' && locationState.selectedSeats && (
+                    <p className="text-sm text-gray-600">
+                      Seats: {locationState.selectedSeats.map(seat => `${seat.row}${seat.number}`).join(', ')}
+                    </p>
+                  )}
+                  {locationState.bookingType === 'tickets' && locationState.selectedTickets && (
+                    <div className="text-sm text-gray-600">
+                      {locationState.selectedTickets.map(ticket => (
+                        <p key={ticket.ticketTypeId}>
+                          {ticket.name}: {ticket.quantity} × ${formatPrice(ticket.price)}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                  {locationState.ticketDetails && !locationState.bookingType && (
+                    <div className="text-sm text-gray-600">
+                      {locationState.ticketDetails.map((ticket, index) => (
+                        <p key={index}>
+                          {ticket.type}: {ticket.quantity} × ${formatPrice(ticket.unitPrice)}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
-          <button
-            onClick={proceed}
-            className="flex-1 px-6 py-3 rounded-lg bg-primary text-white hover:bg-red-600 transition-colors duration-200 flex items-center justify-center"
-          >
-            Proceed to Payment
-          </button>        </div>
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="text-gray-600">Loading food items...</div>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <div className="text-red-600">{error}</div>
+              </div>
+            ) : foodItems.length === 0 ? (
+              <div className="text-center py-8 px-4">
+                <div className="mb-4">
+                  <svg className="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">No Food Items Available</h3>
+                <p className="text-gray-600 max-w-md mx-auto">
+                  There are no pre-order food options available for this event. You can proceed to payment for your ticket, or food and beverages may be available for purchase at the venue.
+                </p>
+                <div className="mt-6">
+                  <button
+                    onClick={proceed}
+                    className="px-6 py-3 rounded-lg bg-primary text-white hover:bg-red-600 transition-colors duration-200"
+                  >
+                    Continue to Payment
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {foodItems.map((item) => (
+                  <div 
+                    key={item.id} 
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-baseline">
+                        <span className="text-lg font-semibold text-gray-800">{item.name}</span>
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">{item.description}</div>
+                      <div className="text-gray-600 font-medium mt-2">
+                        ${formatPrice(item.price)}
+                      </div>
+                    </div>              <div className="flex items-center space-x-3">
+                      <button 
+                        onClick={() => handleQtyChange(item.id, -1)}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-200 ${
+                          item.price === 0 
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                            : 'bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-gray-800'
+                        }`}
+                        disabled={quantities[item.id] === 0 || item.price === 0}
+                      >
+                        -
+                      </button>
+                      <span className="w-8 text-center font-semibold text-gray-800">
+                        {quantities[item.id] || 0}
+                      </span>
+                      <button 
+                        onClick={() => handleQtyChange(item.id, 1)}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-200 ${
+                          item.price === 0 
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                            : 'bg-primary text-white hover:bg-red-600'
+                        }`}
+                        disabled={item.price === 0}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-8 pt-6 border-t">
+              <div className="space-y-2 mb-6">
+                <div className="flex items-center justify-between text-gray-600">
+                  <span>Ticket Total</span>
+                  <span>${formatPrice(ticketTotal)}</span>
+                </div>
+                <div className="flex items-center justify-between text-gray-600">
+                  <span>Food Total</span>
+                  <span>${formatPrice(foodTotal)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xl font-bold text-gray-800 pt-2 border-t">
+                  <span>Grand Total</span>
+                  <span>${formatPrice(grandTotal)}</span>
+                </div>
+              </div>
+
+              <div className="flex justify-between space-x-4">
+                <button
+                  onClick={() => navigate(-1)}
+                  className="px-6 py-3 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors duration-200 flex items-center"
+                >
+                  <span className="mr-2">←</span> Back
+                </button>
+
+                <button
+                  onClick={proceed}
+                  className="flex-1 px-6 py-3 rounded-lg bg-primary text-white hover:bg-red-600 transition-colors duration-200 flex items-center justify-center"
+                >
+                  Proceed to Payment
+                </button>        </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
     </>
   );
 };

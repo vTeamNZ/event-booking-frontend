@@ -54,16 +54,18 @@ const SeatSelectionPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!state?.eventId) {
-      navigate('/');
-      return;
-    }
-
     const fetchEvent = async () => {
+      // Get eventId from state or from URL params
+      const targetEventId = state?.eventId || eventTitle;
       try {
         setLoading(true);
-        const response = await api.get<Event>(`/api/Events/${state.eventId}`);
+        if (!targetEventId) {
+          setError('Event ID not found. Please check the URL.');
+          setLoading(false);
+          return;
+        }
         
+        const response = await api.get<Event>(`/api/Events/${targetEventId}`);
         const eventData = response.data;
         setEvent(eventData);
         
@@ -86,7 +88,7 @@ const SeatSelectionPage: React.FC = () => {
     };
 
     fetchEvent();
-  }, [state?.eventId, navigate, eventTitle]);
+  }, [state?.eventId, eventTitle]);
 
   const handleSelectionComplete = (selectionState: SeatingSelectionState) => {
     // For backward compatibility - convert to old format
@@ -139,6 +141,7 @@ const SeatSelectionPage: React.FC = () => {
       eventTitle: event?.title || eventTitle || '',
       bookingType: 'seats' as const,
       totalAmount: selectionState.totalPrice,
+      imageUrl: event?.imageUrl || '/events/fallback.jpg',
       selectedSeats: selectionState.selectedSeats.map(seat => ({
         row: seat.row,
         number: seat.number,
@@ -249,46 +252,52 @@ const SeatSelectionPage: React.FC = () => {
       />
       
       <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <div className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <button
-                  onClick={() => navigate(-1)}
-                  className="text-blue-600 hover:text-blue-700 mb-2 flex items-center gap-2"
-                >
-                  ← Back
-                </button>
-                <h1 className="text-3xl font-bold text-gray-900">{event.title}</h1>
-                <div className="flex items-center gap-4 mt-2 text-gray-600">
-                  <span>📅 {new Date(event.date).toLocaleDateString('en-NZ', {
+        {/* Hero Section */}
+        <div className="relative">
+          {/* Event Image */}
+          <div className="relative h-[400px] w-full overflow-hidden">
+            <div 
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ 
+                backgroundImage: `url('${event.imageUrl || '/events/fallback.jpg'}')`,
+                filter: 'brightness(0.7)'
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-black/70" />
+          </div>
+
+          {/* Event Details Overlay */}
+          <div className="absolute inset-0 flex items-center">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full text-white">
+              <button
+                onClick={() => navigate(-1)}
+                className="text-white/80 hover:text-white mb-6 flex items-center gap-2 transition-colors"
+              >
+                ← Back
+              </button>
+              <h1 className="text-4xl font-bold mb-4">{event.title}</h1>
+              <div className="flex flex-wrap items-center gap-6 text-lg">
+                <span className="flex items-center gap-2">
+                  <span className="text-white/80">📅</span>
+                  {new Date(event.date).toLocaleDateString('en-NZ', {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
                     hour: '2-digit',
                     minute: '2-digit'
-                  })}</span>
-                  <span>📍 {event.location}</span>
-                </div>
-                {/* Admin indicator */}
-                {isAdmin() && (
-                  <div className="mt-2">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                      🔧 Admin Mode: Click red × to make seats unavailable (invisible to users), green ✓ to make available
-                    </span>
-                  </div>
-                )}
+                  })}
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="text-white/80">📍</span>
+                  {event.location}
+                </span>
               </div>
-              
-              {event.imageUrl && (
-                <div className="hidden lg:block">
-                  <img
-                    src={event.imageUrl}
-                    alt={event.title}
-                    className="w-32 h-20 object-cover rounded-lg shadow-md"
-                  />
+              {isAdmin() && (
+                <div className="mt-4">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                    🔧 Admin Mode: Click red × to make seats unavailable, green ✓ to make available
+                  </span>
                 </div>
               )}
             </div>
@@ -296,12 +305,11 @@ const SeatSelectionPage: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Make sure we have a valid eventId */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-10 pb-12">
           {state?.eventId ? (
-            <div className="flex flex-col items-center w-full">
-              <div className="w-full max-w-4xl mx-auto">
-                {/* New Seating Layout System V2 */}
+            <div className="bg-white rounded-xl shadow-xl p-6">
+              <div className="max-w-4xl mx-auto">
+                <h2 className="text-2xl font-semibold text-gray-900 mb-6">Select Your Seats</h2>
                 <SeatingLayoutV2 
                   key={refreshKey}
                   eventId={state.eventId}
@@ -322,7 +330,7 @@ const SeatSelectionPage: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <div className="bg-white border-t mt-12">
+        <div className="bg-white border-t">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="text-center text-gray-500 text-sm">
               Need help? Contact our support team at support@example.com
