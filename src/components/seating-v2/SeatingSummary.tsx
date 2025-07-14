@@ -103,7 +103,7 @@ const SeatingSummary: React.FC<SeatingSummaryProps> = ({
               disabled={!hasSelectedSeats}
               className={`flex-1 px-4 py-2 rounded-md font-semibold transition-colors ${
                 hasSelectedSeats
-                  ? 'text-white bg-blue-600 hover:bg-blue-700'
+                  ? 'text-white bg-primary hover:bg-red-600'
                   : 'text-gray-400 bg-gray-200 cursor-not-allowed'
               }`}
             >
