@@ -1,25 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
-import { api } from '../services/api';
+import { adminService, User, CreateUserRequest, ResetPasswordRequest } from '../services/adminService';
 import toast from 'react-hot-toast';
-
-interface User {
-  id: string;
-  userName: string;
-  email: string;
-  fullName: string;
-  role: string;
-  emailConfirmed: boolean;
-  lockoutEnd?: string;
-  isOrganizer: boolean;
-}
 
 const AdminUsers: React.FC = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Modal states
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  
+  // Form states
+  const [createForm, setCreateForm] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    role: 'Customer',
+    phoneNumber: '',
+    organizationName: '',
+    website: ''
+  });
+  
+  const [resetForm, setResetForm] = useState({
+    email: '',
+    newPassword: ''
+  });
 
   useEffect(() => {
     fetchUsers();
@@ -28,14 +38,70 @@ const AdminUsers: React.FC = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/admin/users');
-      setUsers(response.data as User[]);
+      const data = await adminService.getAllUsers();
+      // Map the data to match local interface
+      const mappedUsers = data.map(user => ({
+        ...user,
+        userName: user.email, // Use email as username fallback
+        isOrganizer: user.roles.includes('Organizer')
+      }));
+      setUsers(mappedUsers);
     } catch (error: any) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (createForm.role === 'Admin') {
+        await adminService.createAdmin(createForm);
+      } else if (createForm.role === 'Organizer') {
+        await adminService.createOrganizer(createForm);
+      } else {
+        toast.error('Regular user creation not implemented yet');
+        return;
+      }
+      
+      toast.success(`${createForm.role} user created successfully`);
+      setShowCreateModal(false);
+      setCreateForm({
+        fullName: '',
+        email: '',
+        password: '',
+        role: 'Customer',
+        phoneNumber: '',
+        organizationName: '',
+        website: ''
+      });
+      fetchUsers(); // Refresh the list
+    } catch (error: any) {
+      console.error('Error creating user:', error);
+      toast.error(error.response?.data?.message || 'Failed to create user');
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await adminService.resetUserPassword(resetForm);
+      toast.success('Password reset successfully');
+      setShowResetModal(false);
+      setResetForm({ email: '', newPassword: '' });
+      setSelectedUser(null);
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      toast.error(error.response?.data?.message || 'Failed to reset password');
+    }
+  };
+
+  const openResetModal = (user: User) => {
+    setSelectedUser(user);
+    setResetForm({ email: user.email, newPassword: '' });
+    setShowResetModal(true);
   };
 
   const filteredUsers = users.filter(user =>
@@ -80,12 +146,20 @@ const AdminUsers: React.FC = () => {
                 <h1 className="text-3xl font-bold text-gray-900">Manage Users</h1>
                 <p className="mt-2 text-gray-600">View and manage all system users</p>
               </div>
-              <button
-                onClick={() => navigate('/admin')}
-                className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
-              >
-                Back to Dashboard
-              </button>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark"
+                >
+                  Create User
+                </button>
+                <button
+                  onClick={() => navigate('/admin')}
+                  className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+                >
+                  Back to Dashboard
+                </button>
+              </div>
             </div>
           </div>
 
@@ -129,6 +203,9 @@ const AdminUsers: React.FC = () => {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Account Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
                     </th>
                   </tr>
                 </thead>
@@ -183,6 +260,22 @@ const AdminUsers: React.FC = () => {
                             </button>
                           )}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => openResetModal(user)}
+                          className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 px-3 py-1 rounded-md text-xs mr-2"
+                        >
+                          Reset Password
+                        </button>
+                        {user.roles.includes('Organizer') && (
+                          <button
+                            onClick={() => navigate('/admin/organizers')}
+                            className="bg-blue-100 text-blue-800 hover:bg-blue-200 px-3 py-1 rounded-md text-xs"
+                          >
+                            Manage
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -258,6 +351,173 @@ const AdminUsers: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Create User Modal */}
+        {showCreateModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h2 className="text-xl font-bold mb-4">Create New User</h2>
+              <form onSubmit={handleCreateUser}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={createForm.fullName}
+                      onChange={(e) => setCreateForm({...createForm, fullName: e.target.value})}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary focus:border-primary"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Email</label>
+                    <input
+                      type="email"
+                      required
+                      value={createForm.email}
+                      onChange={(e) => setCreateForm({...createForm, email: e.target.value})}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary focus:border-primary"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Password</label>
+                    <input
+                      type="password"
+                      required
+                      value={createForm.password}
+                      onChange={(e) => setCreateForm({...createForm, password: e.target.value})}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary focus:border-primary"
+                      placeholder="Minimum 6 characters"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Role</label>
+                    <select
+                      value={createForm.role}
+                      onChange={(e) => setCreateForm({...createForm, role: e.target.value})}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary focus:border-primary"
+                    >
+                      <option value="Customer">Customer</option>
+                      <option value="Organizer">Organizer</option>
+                      <option value="Admin">Admin</option>
+                    </select>
+                  </div>
+                  
+                  {createForm.role === 'Organizer' && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Phone Number</label>
+                        <input
+                          type="text"
+                          value={createForm.phoneNumber}
+                          onChange={(e) => setCreateForm({...createForm, phoneNumber: e.target.value})}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary focus:border-primary"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Organization Name</label>
+                        <input
+                          type="text"
+                          value={createForm.organizationName}
+                          onChange={(e) => setCreateForm({...createForm, organizationName: e.target.value})}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary focus:border-primary"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Website</label>
+                        <input
+                          type="url"
+                          value={createForm.website}
+                          onChange={(e) => setCreateForm({...createForm, website: e.target.value})}
+                          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary focus:border-primary"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+                
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateModal(false);
+                      setCreateForm({
+                        fullName: '',
+                        email: '',
+                        password: '',
+                        role: 'Customer',
+                        phoneNumber: '',
+                        organizationName: '',
+                        website: ''
+                      });
+                    }}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark"
+                  >
+                    Create User
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Reset Password Modal */}
+        {showResetModal && selectedUser && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h2 className="text-xl font-bold mb-4">Reset Password</h2>
+              <p className="text-gray-600 mb-4">
+                Reset password for: <strong>{selectedUser.fullName}</strong> ({selectedUser.email})
+              </p>
+              <form onSubmit={handleResetPassword}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">New Password</label>
+                    <input
+                      type="password"
+                      required
+                      value={resetForm.newPassword}
+                      onChange={(e) => setResetForm({...resetForm, newPassword: e.target.value})}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary focus:border-primary"
+                      placeholder="Enter new password (minimum 6 characters)"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowResetModal(false);
+                      setResetForm({ email: '', newPassword: '' });
+                      setSelectedUser(null);
+                    }}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+                  >
+                    Reset Password
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
