@@ -26,15 +26,28 @@ interface EventFromAPI {
   organizerId: number | null;
   imageUrl: string | null;
   isActive: boolean;
+  seatSelectionMode?: 1 | 3; // 1=EventHall, 3=GeneralAdmission
+  venueId?: number | null;
+  venue?: {
+    id: number;
+    name: string;
+    description: string;
+    address: string;
+    city: string;
+    layoutType: string;
+    capacity: number;
+  } | null;
 }
 
-interface Event extends EventFromAPI {
+interface Event extends Omit<EventFromAPI, 'seatSelectionMode'> {
   isActive: boolean;
+  isAdminApproved: boolean;
   organizerName: string;
   city: string;
   facebookUrl: string | null;
   youtubeUrl: string | null;
   organizerSlug: string;
+  seatSelectionMode?: 1 | 3; // Only EventHall or GeneralAdmission
 }
 
 // Helper function to create URL-friendly slug
@@ -94,7 +107,8 @@ const EventsList: React.FC = () => {
           
           const eventWithDetails = {
             ...event,
-            isActive: event.date ? new Date(event.date) > new Date() : false,
+            isActive: (event.date ? new Date(event.date) > new Date() : false) && event.isActive, // Consider both future date AND admin approval
+            isAdminApproved: event.isActive, // Store original admin approval status
             organizerName,
             city,
             facebookUrl: organizer?.facebookUrl || null,
@@ -143,7 +157,8 @@ const EventsList: React.FC = () => {
     const filtered = events.filter(event => {
       const matchesOrganizer = !organizerSlug || createSlug(event.organizerName || '') === organizerSlug;
       const matchesCity = selectedCity === 'all' || event.city === selectedCity;
-      return matchesOrganizer && matchesCity;
+      // Show events that are admin-approved, regardless of date (past events will show as disabled)
+      return matchesOrganizer && matchesCity && event.isAdminApproved;
     });
 
     // Sort events: upcoming first (soonest first), then past events (most recent first)
@@ -187,7 +202,17 @@ const EventsList: React.FC = () => {
   const handleEventClick = (event: Event) => {
     if (!event.isActive) return;
     const eventSlug = createUrlSlug(event.title);
-    navigate(`/event/${eventSlug}/tickets`, {
+    
+    // Get the event's seat selection mode, defaulting to GeneralAdmission if not specified
+    const seatMode = event.seatSelectionMode ?? 3;
+    
+    // For allocated seating events, always go to seat selection first
+    // For general admission, go to ticket selection
+    const route = seatMode === 1 
+      ? `/event/${eventSlug}/seats` 
+      : `/event/${eventSlug}/tickets`;
+    
+    navigate(route, {
       state: {
         eventId: event.id,
         eventTitle: event.title,
@@ -195,7 +220,9 @@ const EventsList: React.FC = () => {
         eventDate: event.date,
         eventLocation: event.location,
         eventDescription: event.description,
-        organizerName: event.organizerName
+        organizerName: event.organizerName,
+        seatSelectionMode: seatMode,
+        venue: event.venue
       },
     });
   };
@@ -288,6 +315,7 @@ const EventsList: React.FC = () => {
           {filteredEvents.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500 text-lg">No events found matching your filters.</p>
+              <p className="text-gray-400 text-sm mt-2">Events must be approved by an admin before they appear here.</p>
               <button
                 onClick={() => {
                   setSelectedCity('all');

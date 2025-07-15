@@ -23,6 +23,7 @@ interface CreateCheckoutSessionRequest {
   cancelUrl: string;
   ticketDetails?: TicketLineItem[];
   foodDetails?: FoodLineItem[];
+  selectedSeats?: string[]; // Add this line
 }
 
 interface CreateCheckoutSessionResponse {
@@ -38,6 +39,9 @@ interface CheckoutSessionStatusResponse {
   amountTotal: number;
   paymentId?: string;
   eventTitle?: string;
+  bookedSeats?: string[];
+  customerName?: string;
+  ticketReference?: string;
 }
 
 export const createCheckoutSession = async (
@@ -45,6 +49,11 @@ export const createCheckoutSession = async (
 ): Promise<CreateCheckoutSessionResponse> => {
   try {
     console.log('Creating checkout session with data:', JSON.stringify(requestData, null, 2));
+    
+    // Log selected seats specifically if they exist
+    if (requestData.selectedSeats && requestData.selectedSeats.length > 0) {
+      console.log(`Including ${requestData.selectedSeats.length} selected seats: ${requestData.selectedSeats.join(', ')}`);
+    }
     
     const response = await api.post<CreateCheckoutSessionResponse>(
       '/api/payment/create-checkout-session', 
