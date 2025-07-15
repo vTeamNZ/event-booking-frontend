@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { api } from '../services/api';
+import { authService } from '../services/authService';
 import SEO from '../components/SEO';
 
 interface Organizer {
@@ -71,61 +72,94 @@ const EventsList: React.FC = () => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        // First, fetch all events
-        const eventsResponse = await api.get<EventFromAPI[]>('/api/Events');
-        console.log('Events from API:', eventsResponse.data);
         
-        // Get unique organizer IDs from events
-        const organizerIds = eventsResponse.data
-          .map(event => event.organizerId)
-          .filter((value, index, self) => self.indexOf(value) === index)
-          .filter(id => id != null); // Filter out null organizerIds
+        // Check if current user is an organizer
+        const currentUser = authService.getCurrentUser();
+        const isOrganizer = currentUser && currentUser.roles && currentUser.roles.includes('Organizer');
         
-        console.log('Fetching organizers for IDs:', organizerIds);
+        let eventsResponse;
+        let eventsWithDetails;
         
-        // Fetch organizer details for each unique organizerId
-        const organizerPromises = organizerIds.map(id => 
-          api.get<Organizer>(`/api/Organizers/${id}`)
-        );
-        const organizerResponses = await Promise.all(organizerPromises);
-        
-        // Debug organizer responses
-        console.log('Organizer Responses:', organizerResponses.map(r => r.data));
-        
-        // Create a map of organizerId to organizer details
-        const organizerMap = new Map<number, Organizer>(
-          organizerResponses.map(response => [response.data.id, response.data])
-        );
-        
-        // Extract city and combine event data with organizer names and active status
-        const eventsWithDetails = eventsResponse.data.map(event => {
-          // Extract city from location (assumes format like "Venue Name, Street, City, Region")
-          const locationParts = event.location.split(',').map(part => part.trim());
-          const city = locationParts[locationParts.length - 2] || locationParts[0];
-          const organizer = event.organizerId ? organizerMap.get(event.organizerId) : null;
-          const organizerName = organizer?.name || 'Unknown Organizer';
+        if (isOrganizer) {
+          // Fetch organizer's events using the by-organizer endpoint
+          eventsResponse = await api.get<EventFromAPI[]>('/api/Events/by-organizer');
+          console.log('Organizer events from API:', eventsResponse.data);
           
-          const eventWithDetails = {
-            ...event,
-            isActive: (event.date ? new Date(event.date) > new Date() : false) && event.isActive, // Consider both future date AND admin approval
-            isAdminApproved: event.isActive, // Store original admin approval status
-            organizerName,
-            city,
-            facebookUrl: organizer?.facebookUrl || null,
-            youtubeUrl: organizer?.youtubeUrl || null,
-            organizerSlug: createSlug(organizerName)
-          };
-          
-          // Debug event social media URLs
-          console.log(`Event ${event.id} (${event.title}) social URLs:`, {
-            organizerId: event.organizerId,
-            organizer: organizer,
-            facebookUrl: eventWithDetails.facebookUrl,
-            youtubeUrl: eventWithDetails.youtubeUrl
+          // For organizer view, we don't need to fetch additional organizer details
+          // since they're viewing their own events
+          eventsWithDetails = eventsResponse.data.map(event => {
+            // Extract city from location
+            const locationParts = event.location.split(',').map(part => part.trim());
+            const city = locationParts[locationParts.length - 2] || locationParts[0];
+            
+            return {
+              ...event,
+              isActive: (event.date ? new Date(event.date) > new Date() : false) && event.isActive,
+              isAdminApproved: event.isActive, // Store original admin approval status
+              organizerName: currentUser.fullName || 'My Events',
+              city,
+              facebookUrl: null,
+              youtubeUrl: null,
+              organizerSlug: createSlug(currentUser.fullName || 'my-events')
+            };
           });
+        } else {
+          // Original logic for public view - fetch all events
+          eventsResponse = await api.get<EventFromAPI[]>('/api/Events');
+          console.log('Events from API:', eventsResponse.data);
           
-          return eventWithDetails;
-        });
+          // Get unique organizer IDs from events
+          const organizerIds = eventsResponse.data
+            .map(event => event.organizerId)
+            .filter((value, index, self) => self.indexOf(value) === index)
+            .filter(id => id != null); // Filter out null organizerIds
+          
+          console.log('Fetching organizers for IDs:', organizerIds);
+          
+          // Fetch organizer details for each unique organizerId
+          const organizerPromises = organizerIds.map(id => 
+            api.get<Organizer>(`/api/Organizers/${id}`)
+          );
+          const organizerResponses = await Promise.all(organizerPromises);
+          
+          // Debug organizer responses
+          console.log('Organizer Responses:', organizerResponses.map(r => r.data));
+          
+          // Create a map of organizerId to organizer details
+          const organizerMap = new Map<number, Organizer>(
+            organizerResponses.map(response => [response.data.id, response.data])
+          );
+          
+          // Extract city and combine event data with organizer names and active status
+          eventsWithDetails = eventsResponse.data.map(event => {
+            // Extract city from location (assumes format like "Venue Name, Street, City, Region")
+            const locationParts = event.location.split(',').map(part => part.trim());
+            const city = locationParts[locationParts.length - 2] || locationParts[0];
+            const organizer = event.organizerId ? organizerMap.get(event.organizerId) : null;
+            const organizerName = organizer?.name || 'Unknown Organizer';
+            
+            const eventWithDetails = {
+              ...event,
+              isActive: (event.date ? new Date(event.date) > new Date() : false) && event.isActive, // Consider both future date AND admin approval
+              isAdminApproved: event.isActive, // Store original admin approval status
+              organizerName,
+              city,
+              facebookUrl: organizer?.facebookUrl || null,
+              youtubeUrl: organizer?.youtubeUrl || null,
+              organizerSlug: createSlug(organizerName)
+            };
+            
+            // Debug event social media URLs
+            console.log(`Event ${event.id} (${event.title}) social URLs:`, {
+              organizerId: event.organizerId,
+              organizer: organizer,
+              facebookUrl: eventWithDetails.facebookUrl,
+              youtubeUrl: eventWithDetails.youtubeUrl
+            });
+            
+            return eventWithDetails;
+          });
+        }
         
         setEvents(eventsWithDetails);
       } catch (error) {
@@ -154,11 +188,21 @@ const EventsList: React.FC = () => {
   }, [events]);
 
   const filteredEvents = useMemo(() => {
+    const currentUser = authService.getCurrentUser();
+    const isOrganizer = currentUser && currentUser.roles && currentUser.roles.includes('Organizer');
+    
     const filtered = events.filter(event => {
       const matchesOrganizer = !organizerSlug || createSlug(event.organizerName || '') === organizerSlug;
       const matchesCity = selectedCity === 'all' || event.city === selectedCity;
-      // Show events that are admin-approved, regardless of date (past events will show as disabled)
-      return matchesOrganizer && matchesCity && event.isAdminApproved;
+      
+      if (isOrganizer) {
+        // For organizers: show all their events (active and inactive) 
+        // since we already filtered to their events in the API call
+        return matchesCity;
+      } else {
+        // For public view: show events that are admin-approved, regardless of date (past events will show as disabled)
+        return matchesOrganizer && matchesCity && event.isAdminApproved;
+      }
     });
 
     // Sort events: upcoming first (soonest first), then past events (most recent first)
