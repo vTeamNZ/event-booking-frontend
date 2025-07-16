@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import toast from 'react-hot-toast';
 import { api } from '../services/api';
-import { createTicketType, createTicketTypesBulk } from '../services/eventService';
+import { createTicketType } from '../services/eventService';
 import { useVenues } from '../hooks/useVenues';
 import { seatSelectionService } from '../services/seatSelectionService';
 import { Venue } from '../types/seatSelection';
@@ -507,90 +507,26 @@ const CreateEvent: React.FC = () => {
 
         const eventId = (eventResponse.data as { id: number }).id;
 
-        // Create ticket types in bulk for better performance
-        try {
-          const ticketTypesForBulkCreation = ticketTypes.map(ticketType => {
-            // If ticket type doesn't have a color, generate one based on its type name
-            const color = ticketType.color || getStableColor(ticketType.type || `ticket-${Math.random().toString(36).substr(2, 9)}`);
-            
-            return {
-              eventId: eventId,
-              type: ticketType.type,
-              name: ticketType.name,
-              price: ticketType.price,
-              description: ticketType.description,
-              color: color,
-              seatRows: ticketType.seatRows.map(row => ({
-                rowStart: row.rowStart,
-                rowEnd: row.rowEnd,
-                maxTickets: row.maxTickets
-              }))
-            };
+        // Create ticket types
+        for (const ticketType of ticketTypes) {
+          // If ticket type doesn't have a color, generate one based on its type name
+          const color = ticketType.color || getStableColor(ticketType.type || `ticket-${Math.random().toString(36).substr(2, 9)}`);
+          
+          // Use the service to create ticket types with synchronized fields
+          await createTicketType({
+            eventId: eventId,
+            type: ticketType.type,
+            name: ticketType.name,
+            price: ticketType.price,
+            description: ticketType.description,
+            color: color,
+            seatRows: ticketType.seatRows.map(row => ({
+              rowStart: row.rowStart,
+              rowEnd: row.rowEnd,
+              maxTickets: row.maxTickets
+            }))
           });
-
-          console.log(`Creating ${ticketTypesForBulkCreation.length} ticket types in bulk...`);
-          const startTime = Date.now();
-          await createTicketTypesBulk(ticketTypesForBulkCreation);
-          const endTime = Date.now();
-          console.log(`Successfully created all ticket types in bulk in ${endTime - startTime}ms`);
-        } catch (bulkError: any) {
-          console.warn('Bulk creation failed, falling back to individual creation:', bulkError);
-          
-          // Check if it's a timeout error
-          if (bulkError.code === 'ECONNABORTED' || bulkError.message?.includes('timeout')) {
-            toast.error('Request timed out. The server may be processing your request. Please check your events list in a moment.');
-          }
-          
-          // Fallback to individual creation if bulk fails
-          let createdCount = 0;
-          for (const ticketType of ticketTypes) {
-            try {
-              // If ticket type doesn't have a color, generate one based on its type name
-              const color = ticketType.color || getStableColor(ticketType.type || `ticket-${Math.random().toString(36).substr(2, 9)}`);
-              
-              console.log(`Creating ticket type "${ticketType.type}"...`);
-              const startTime = Date.now();
-              
-              // Use the service to create ticket types with synchronized fields
-              await createTicketType({
-                eventId: eventId,
-                type: ticketType.type,
-                name: ticketType.name,
-                price: ticketType.price,
-                description: ticketType.description,
-                color: color,
-                seatRows: ticketType.seatRows.map(row => ({
-                  rowStart: row.rowStart,
-                  rowEnd: row.rowEnd,
-                  maxTickets: row.maxTickets
-                }))
-              });
-              
-              const endTime = Date.now();
-              createdCount++;
-              console.log(`Created ticket type "${ticketType.type}" with color: ${color} in ${endTime - startTime}ms`);
-              
-              // Show progress for long operations
-              if (ticketTypes.length > 3) {
-                toast.success(`Created ${createdCount} of ${ticketTypes.length} ticket types...`, { duration: 1000 });
-              }
-            } catch (individualError: any) {
-              console.error(`Failed to create ticket type "${ticketType.type}":`, individualError);
-              
-              // Check if it's a timeout error
-              if (individualError.code === 'ECONNABORTED' || individualError.message?.includes('timeout')) {
-                toast.error(`Timeout creating ticket type "${ticketType.type}". The server may still be processing this request.`);
-              } else {
-                toast.error(`Failed to create ticket type "${ticketType.type}"`);
-              }
-              
-              // Continue with other ticket types instead of failing completely
-            }
-          }
-          
-          if (createdCount > 0) {
-            console.log(`Successfully created ${createdCount} out of ${ticketTypes.length} ticket types individually`);
-          }
+          console.log(`Created ticket type "${ticketType.type}" with color: ${color}`);
         }
 
         toast.success('Event created successfully!');
