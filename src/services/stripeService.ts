@@ -37,7 +37,7 @@ interface PaymentStatusResponse {
 
 export const getStripe = async () => {
   if (!stripePromise) {
-    const response = await api.get<StripeConfig>('/api/payment/config');
+    const response = await api.get<StripeConfig>('/payment/config');
     stripePromise = loadStripe(response.data.publishableKey);
   }
   return stripePromise;
@@ -94,7 +94,7 @@ export const createPaymentIntent = async (
     
     try {
       const response = await api.post<PaymentIntent>(
-        '/api/payment/create-payment-intent', 
+        '/payment/create-payment-intent', 
         requestData
       );
       
@@ -129,7 +129,7 @@ export const createPaymentIntent = async (
 export const verifyPayment = async (paymentIntentId: string): Promise<PaymentStatusResponse> => {
   try {
     const response = await api.get<PaymentStatusResponse>(
-      `/api/payment/verify-payment/${paymentIntentId}`
+      `/payment/verify-payment/${paymentIntentId}`
     );
     
     console.log('Payment verification result:', response.data);

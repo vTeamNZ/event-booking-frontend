@@ -52,7 +52,7 @@ export const VenueSeatLayout: React.FC<VenueSeatLayoutProps> = ({
         
         // Check if seat is booked
         if (bookedSeats.has(seatKey)) {
-            toast.error('This seat is already booked');
+            // Visual feedback is sufficient - seat color shows status
             return;
         }
 

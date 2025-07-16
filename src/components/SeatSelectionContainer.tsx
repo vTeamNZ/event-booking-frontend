@@ -36,7 +36,7 @@ export const SeatSelectionContainer: React.FC = () => {
       try {
         setLoading(true);
         // Get event by title (URL slug)
-        const response = await api.get(`/api/events/by-title/${encodeURIComponent(eventTitle || '')}`);
+        const response = await api.get(`/events/by-title/${encodeURIComponent(eventTitle || '')}`);
         setEvent(response.data as Event);
       } catch (err: any) {
         setError('Event not found');

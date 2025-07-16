@@ -5,9 +5,7 @@ export type { TicketType, TicketTypeDisplay } from '../types/ticketTypes';
 
 export const getTicketTypesForEvent = async (eventId: number): Promise<TicketTypeDisplay[]> => {
     try {
-        console.log('Fetching ticket types for event:', eventId);
-        const response = await api.get<TicketType[]>(`/api/TicketTypes/event/${eventId}`);
-        console.log('Received ticket types:', response.data);
+        const response = await api.get<TicketType[]>(`/TicketTypes/event/${eventId}`);
         
         // Transform TicketType to TicketTypeDisplay
         return response.data.map(ticket => ({
@@ -26,15 +24,15 @@ export const getTicketTypesForEvent = async (eventId: number): Promise<TicketTyp
 };
 
 export const createTicketType = async (ticketType: Omit<TicketType, 'id'>): Promise<TicketType> => {
-    const response = await api.post<TicketType>('/api/TicketTypes', ticketType);
+    const response = await api.post<TicketType>('/TicketTypes', ticketType);
     return response.data;
 };
 
 export const updateTicketType = async (id: number, ticketType: Partial<TicketType>): Promise<TicketType> => {
-    const response = await api.put<TicketType>(`/api/TicketTypes/${id}`, ticketType);
+    const response = await api.put<TicketType>(`/TicketTypes/${id}`, ticketType);
     return response.data;
 };
 
 export const deleteTicketType = async (id: number): Promise<void> => {
-    await api.delete(`/api/TicketTypes/${id}`);
+    await api.delete(`/TicketTypes/${id}`);
 };

@@ -1,14 +1,39 @@
 // Utility functions for managing session storage in the seating system
 
+// Fallback storage for when localStorage is blocked
+const fallbackStorage = new Map<string, string>();
+
+/**
+ * Check if localStorage is available and accessible
+ */
+const isLocalStorageAvailable = (): boolean => {
+  try {
+    const testKey = '__localStorage_test__';
+    localStorage.setItem(testKey, 'test');
+    localStorage.removeItem(testKey);
+    return true;
+  } catch (error) {
+    console.warn('[SessionStorage] localStorage is not available, using fallback storage');
+    return false;
+  }
+};
+
 /**
  * Store the session ID in local storage with event ID as part of the key
  */
 export const storeSessionId = (eventId: number, sessionId: string): void => {
   try {
-    localStorage.setItem(`seating_session_${eventId}`, sessionId);
-    console.log(`[SessionStorage] Stored session ID for event ${eventId}: ${sessionId}`);
+    const key = `seating_session_${eventId}`;
+    if (isLocalStorageAvailable()) {
+      localStorage.setItem(key, sessionId);
+      console.log(`[SessionStorage] Stored session ID for event ${eventId}: ${sessionId}`);
+    } else {
+      fallbackStorage.set(key, sessionId);
+      console.log(`[SessionStorage] Stored session ID in fallback storage for event ${eventId}: ${sessionId}`);
+    }
   } catch (error) {
-    console.error('[SessionStorage] Error storing session ID:', error);
+    console.error('[SessionStorage] Error storing session ID, using fallback:', error);
+    fallbackStorage.set(`seating_session_${eventId}`, sessionId);
   }
 };
 
@@ -17,12 +42,20 @@ export const storeSessionId = (eventId: number, sessionId: string): void => {
  */
 export const getSessionId = (eventId: number): string | null => {
   try {
-    const sessionId = localStorage.getItem(`seating_session_${eventId}`);
+    const key = `seating_session_${eventId}`;
+    let sessionId: string | null = null;
+    
+    if (isLocalStorageAvailable()) {
+      sessionId = localStorage.getItem(key);
+    } else {
+      sessionId = fallbackStorage.get(key) || null;
+    }
+    
     console.log(`[SessionStorage] Retrieved session ID for event ${eventId}: ${sessionId}`);
     return sessionId;
   } catch (error) {
-    console.error('[SessionStorage] Error retrieving session ID:', error);
-    return null;
+    console.error('[SessionStorage] Error retrieving session ID, checking fallback:', error);
+    return fallbackStorage.get(`seating_session_${eventId}`) || null;
   }
 };
 
@@ -31,10 +64,17 @@ export const getSessionId = (eventId: number): string | null => {
  */
 export const clearSessionId = (eventId: number): void => {
   try {
-    localStorage.removeItem(`seating_session_${eventId}`);
-    console.log(`[SessionStorage] Cleared session ID for event ${eventId}`);
+    const key = `seating_session_${eventId}`;
+    if (isLocalStorageAvailable()) {
+      localStorage.removeItem(key);
+      console.log(`[SessionStorage] Cleared session ID for event ${eventId}`);
+    } else {
+      fallbackStorage.delete(key);
+      console.log(`[SessionStorage] Cleared session ID from fallback storage for event ${eventId}`);
+    }
   } catch (error) {
     console.error('[SessionStorage] Error clearing session ID:', error);
+    fallbackStorage.delete(`seating_session_${eventId}`);
   }
 };
 

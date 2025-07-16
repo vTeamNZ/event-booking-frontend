@@ -12,7 +12,7 @@ import {
 import { ReservedSeatDTO } from '../../types/seating-v2/reservedSeatDTO';
 
 export class SeatingAPIService {
-  private baseUrl = '/api/seats';
+  private baseUrl = '/seats';
 
   /**
    * Get seat layout for an event
@@ -119,7 +119,7 @@ export class SeatingAPIService {
   async getEventTicketTypes(eventId: number): Promise<SeatingTicketType[]> {
     try {
       console.log(`[SeatingAPIService] Fetching ticket types for event ${eventId}`);
-      const response = await api.get<SeatingTicketType[]>(`/api/TicketTypes/event/${eventId}`);
+      const response = await api.get<SeatingTicketType[]>(`/TicketTypes/event/${eventId}`);
       
       console.log(`[SeatingAPIService] Ticket types response:`, response.data);
       return response.data;

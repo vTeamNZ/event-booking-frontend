@@ -16,10 +16,10 @@ export const seatSelectionService = {
   // Get seat layout for an event
   async getEventSeatLayout(eventId: number): Promise<SeatLayoutResponse> {
     console.log(`************* SEAT SELECTION SERVICE API CALL *************`);
-    console.log(`Making API call to: ${api.defaults.baseURL}/api/seats/event/${eventId}/layout`);
+    console.log(`Making API call to: ${api.defaults.baseURL}/seats/event/${eventId}/layout`);
     
     try {
-      const response = await api.get<SeatLayoutResponse>(`/api/seats/event/${eventId}/layout`);
+      const response = await api.get<SeatLayoutResponse>(`/seats/event/${eventId}/layout`);
       
       // Convert backend numeric status to enum values
       response.data.seats = response.data.seats.map(seat => ({
@@ -50,7 +50,7 @@ export const seatSelectionService = {
   // Get pricing information for an event
   async getEventPricing(eventId: number): Promise<PricingResponse> {
     try {
-      const response = await api.get<PricingResponse>(`/api/events/${eventId}/pricing`);
+      const response = await api.get<PricingResponse>(`/events/${eventId}/pricing`);
       return response.data;
     } catch (error) {
       console.error('Error fetching pricing:', error);
@@ -66,7 +66,7 @@ export const seatSelectionService = {
     price: number;
   }> {
     try {
-      const response = await api.post('/api/seats/reserve', request);
+      const response = await api.post('/seats/reserve', request);
       const data = response.data as { message: string; reservedUntil: string; seatNumber: string; price: number; };
       return data;
     } catch (error) {
@@ -89,7 +89,7 @@ export const seatSelectionService = {
 
   // Get all seats for an event (fallback)
   async getSeats(eventId: number): Promise<Seat[]> {
-    const response = await api.get<Seat[]>(`/api/seats/event/${eventId}`);
+    const response = await api.get<Seat[]>(`/seats/event/${eventId}`);
     return response.data;
   },
 
@@ -98,7 +98,7 @@ export const seatSelectionService = {
   // Get ticket types for an event
   async getEventTicketTypes(eventId: number): Promise<TicketType[]> {
     try {
-      const response = await api.get<TicketType[]>(`/api/TicketTypes/event/${eventId}`);
+      const response = await api.get<TicketType[]>(`/TicketTypes/event/${eventId}`);
       console.log('Received ticket types:', response.data);
       
       // Ensure all required fields are present
@@ -127,7 +127,7 @@ export const seatSelectionService = {
         message: string;
         markedSeats: number;
         seatNumbers: string[];
-      }>('/api/seats/mark-booked', request);
+      }>('/seats/mark-booked', request);
       console.log('Seats marked as booked successfully:', response.data);
       return response.data;
     } catch (error) {

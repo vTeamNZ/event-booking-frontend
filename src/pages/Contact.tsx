@@ -27,7 +27,7 @@ const Contact: React.FC = () => {
                   <span className="text-2xl mr-4">📞</span>
                   <div>
                     <h3 className="font-medium text-gray-800">Phone</h3>
-                    <p className="text-gray-600">Gayan - +64 22 544 6816</p>
+                    <p className="text-gray-600">+64 22 544 6816</p>
                   </div>
                 </div>
                 <div className="flex items-start">
@@ -35,10 +35,10 @@ const Contact: React.FC = () => {
                   <div>
                     <h3 className="font-medium text-gray-800">Email</h3>
                     <a 
-                      href="mailto:gayan@kiwilanka.co.nz" 
+                      href="mailto:support@kiwilanka.co.nz" 
                       className="text-primary hover:text-red-600 transition-colors duration-200"
                     >
-                      gayan@kiwilanka.co.nz
+                      support@kiwilanka.co.nz
                     </a>
                   </div>
                 </div>

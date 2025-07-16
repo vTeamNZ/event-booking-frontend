@@ -28,7 +28,7 @@ const CinemaSeatLayout: React.FC<Props> = ({ eventId, onSelectionComplete }) => 
     const loadSeats = async () => {
       try {
         setLoading(true);
-        const response = await api.get<LayoutResponse>(`/api/seats/event/${eventId}/layout`);
+        const response = await api.get<LayoutResponse>(`/seats/event/${eventId}/layout`);
         const layout = response.data;
 
         // Group seats by row

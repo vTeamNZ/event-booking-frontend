@@ -64,11 +64,16 @@ const TicketSelection: React.FC = () => {
       return;
     }
     
-    api.get<Event>(`/api/Events/${state.eventId}`)
+    api.get<Event>(`/Events/${state.eventId}`)
       .then(response => {
         const event = response.data;
         setEvent(event);
-        const active = new Date(event.date) > new Date();
+        // Check if event is today or in the future (same logic as backend)
+        const today = new Date();
+        const eventDay = new Date(event.date);
+        today.setHours(0, 0, 0, 0);
+        eventDay.setHours(0, 0, 0, 0);
+        const active = eventDay >= today;
         setIsActive(active);
         
         if (event.seatSelectionMode) {

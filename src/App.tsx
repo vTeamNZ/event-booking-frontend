@@ -21,6 +21,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import OrganizerDashboard from './pages/OrganizerDashboard';
 import CreateEvent from './pages/CreateEvent';
+import EventPreview from './pages/EventPreview';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminOrganizers from './pages/AdminOrganizers';
 import AdminEvents from './pages/AdminEvents';
@@ -71,6 +72,11 @@ const App: React.FC = () => {
           <Route path="/organizer/events/create" element={
             <PrivateRoute>
               <CreateEvent />
+            </PrivateRoute>
+          } />
+          <Route path="/event/:id/preview" element={
+            <PrivateRoute>
+              <EventPreview />
             </PrivateRoute>
           } />
           

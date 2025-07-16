@@ -27,6 +27,7 @@ interface EventFromAPI {
   organizerId: number | null;
   imageUrl: string | null;
   isActive: boolean;
+  status?: number; // 0=Draft, 1=Pending, 2=Active, 3=Inactive
   seatSelectionMode?: 1 | 3; // 1=EventHall, 3=GeneralAdmission
   venueId?: number | null;
   venue?: {
@@ -43,6 +44,7 @@ interface EventFromAPI {
 interface Event extends Omit<EventFromAPI, 'seatSelectionMode'> {
   isActive: boolean;
   isAdminApproved: boolean;
+  status?: number;
   organizerName: string;
   city: string;
   facebookUrl: string | null;
@@ -82,12 +84,15 @@ const EventsList: React.FC = () => {
         
         if (isOrganizer) {
           // Fetch organizer's events using the by-organizer endpoint
-          eventsResponse = await api.get<EventFromAPI[]>('/api/Events/by-organizer');
+          eventsResponse = await api.get<EventFromAPI[]>('/Events/by-organizer');
           console.log('Organizer events from API:', eventsResponse.data);
+          
+          // Ensure we have a valid array
+          const organizerEvents = Array.isArray(eventsResponse.data) ? eventsResponse.data : [];
           
           // For organizer view, we don't need to fetch additional organizer details
           // since they're viewing their own events
-          eventsWithDetails = eventsResponse.data.map(event => {
+          eventsWithDetails = organizerEvents.map(event => {
             // Extract city from location
             const locationParts = event.location.split(',').map(part => part.trim());
             const city = locationParts[locationParts.length - 2] || locationParts[0];
@@ -96,6 +101,7 @@ const EventsList: React.FC = () => {
               ...event,
               isActive: (event.date ? new Date(event.date) > new Date() : false) && event.isActive,
               isAdminApproved: event.isActive, // Store original admin approval status
+              status: event.status, // Include status from API
               organizerName: currentUser.fullName || 'My Events',
               city,
               facebookUrl: null,
@@ -105,11 +111,14 @@ const EventsList: React.FC = () => {
           });
         } else {
           // Original logic for public view - fetch all events
-          eventsResponse = await api.get<EventFromAPI[]>('/api/Events');
+          eventsResponse = await api.get<EventFromAPI[]>('/Events');
           console.log('Events from API:', eventsResponse.data);
           
+          // Ensure we have a valid array
+          const publicEvents = Array.isArray(eventsResponse.data) ? eventsResponse.data : [];
+          
           // Get unique organizer IDs from events
-          const organizerIds = eventsResponse.data
+          const organizerIds = publicEvents
             .map(event => event.organizerId)
             .filter((value, index, self) => self.indexOf(value) === index)
             .filter(id => id != null); // Filter out null organizerIds
@@ -118,7 +127,7 @@ const EventsList: React.FC = () => {
           
           // Fetch organizer details for each unique organizerId
           const organizerPromises = organizerIds.map(id => 
-            api.get<Organizer>(`/api/Organizers/${id}`)
+            api.get<Organizer>(`/Organizers/${id}`)
           );
           const organizerResponses = await Promise.all(organizerPromises);
           
@@ -131,7 +140,7 @@ const EventsList: React.FC = () => {
           );
           
           // Extract city and combine event data with organizer names and active status
-          eventsWithDetails = eventsResponse.data.map(event => {
+          eventsWithDetails = publicEvents.map(event => {
             // Extract city from location (assumes format like "Venue Name, Street, City, Region")
             const locationParts = event.location.split(',').map(part => part.trim());
             const city = locationParts[locationParts.length - 2] || locationParts[0];
@@ -142,6 +151,7 @@ const EventsList: React.FC = () => {
               ...event,
               isActive: (event.date ? new Date(event.date) > new Date() : false) && event.isActive, // Consider both future date AND admin approval
               isAdminApproved: event.isActive, // Store original admin approval status
+              status: event.status, // Include status from API
               organizerName,
               city,
               facebookUrl: organizer?.facebookUrl || null,
@@ -190,18 +200,25 @@ const EventsList: React.FC = () => {
   const filteredEvents = useMemo(() => {
     const currentUser = authService.getCurrentUser();
     const isOrganizer = currentUser && currentUser.roles && currentUser.roles.includes('Organizer');
+    const isAdmin = currentUser && currentUser.roles && currentUser.roles.includes('Admin');
     
     const filtered = events.filter(event => {
       const matchesOrganizer = !organizerSlug || createSlug(event.organizerName || '') === organizerSlug;
       const matchesCity = selectedCity === 'all' || event.city === selectedCity;
       
+      // Get event status (default to Active if not specified)
+      const eventStatus = event.status ?? (event.isActive ? 2 : 3);
+      
       if (isOrganizer) {
-        // For organizers: show all their events (active and inactive) 
-        // since we already filtered to their events in the API call
+        // Organizers can see all their events including drafts for testing
         return matchesCity;
+      } else if (isAdmin) {
+        // Admins can see active events + pending events for review
+        const canSeeEvent = eventStatus === 2 || eventStatus === 1; // Active or Pending
+        return matchesOrganizer && matchesCity && canSeeEvent;
       } else {
-        // For public view: show events that are admin-approved, regardless of date (past events will show as disabled)
-        return matchesOrganizer && matchesCity && event.isAdminApproved;
+        // Public users can only see active events
+        return matchesOrganizer && matchesCity && eventStatus === 2;
       }
     });
 
@@ -244,7 +261,21 @@ const EventsList: React.FC = () => {
   };
   
   const handleEventClick = (event: Event) => {
-    if (!event.isActive) return;
+    const currentUser = authService.getCurrentUser();
+    const isOrganizer = currentUser && currentUser.roles && currentUser.roles.includes('Organizer');
+    const isAdmin = currentUser && currentUser.roles && currentUser.roles.includes('Admin');
+    const eventStatus = event.status ?? (event.isActive ? 2 : 3);
+    
+    // Allow booking for:
+    // - Active events (everyone)
+    // - Draft events (organizers for testing)
+    // - Pending events (admins for review)
+    const canBook = eventStatus === 2 || 
+                   (eventStatus === 0 && isOrganizer) || 
+                   (eventStatus === 1 && isAdmin);
+    
+    if (!canBook) return;
+    
     const eventSlug = createUrlSlug(event.title);
     
     // Get the event's seat selection mode, defaulting to GeneralAdmission if not specified
@@ -275,6 +306,41 @@ const EventsList: React.FC = () => {
     e.stopPropagation();
     window.open(url, '_blank');
   };
+
+  // Helper function to get status badge
+  const getStatusBadge = (event: Event) => {
+    const currentUser = authService.getCurrentUser();
+    const isOrganizer = currentUser && currentUser.roles && currentUser.roles.includes('Organizer');
+    const isAdmin = currentUser && currentUser.roles && currentUser.roles.includes('Admin');
+    
+    // Only show status badges to organizers and admins
+    if (!isOrganizer && !isAdmin) return null;
+    
+    const eventStatus = event.status ?? (event.isActive ? 2 : 3);
+    
+    const statusConfig = {
+      0: { color: 'bg-gray-100 text-gray-800', text: '📝 Draft - Test Ready', testLabel: 'Test Booking' },
+      1: { color: 'bg-yellow-100 text-yellow-800', text: '⏳ Pending Review', testLabel: 'Review & Test' },
+      2: { color: 'bg-green-100 text-green-800', text: '✅ Active', testLabel: '' },
+      3: { color: 'bg-red-100 text-red-800', text: '❌ Inactive', testLabel: '' }
+    };
+    
+    const config = statusConfig[eventStatus as keyof typeof statusConfig] || statusConfig[2];
+    
+    return (
+      <div className="flex flex-col gap-1">
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
+          {config.text}
+        </span>
+        {(eventStatus === 0 || eventStatus === 1) && config.testLabel && (
+          <span className="text-xs text-blue-600 font-medium">
+            👆 {config.testLabel}
+          </span>
+        )}
+      </div>
+    );
+  };
+
   return (
     <>
       <SEO 
@@ -380,7 +446,7 @@ const EventsList: React.FC = () => {
                   {/* Image Container - Clickable */}
                   <div 
                     className="relative cursor-pointer"
-                    onClick={() => event.isActive && handleEventClick(event)}
+                    onClick={() => handleEventClick(event)}
                   >
                     <img
                       src={event.imageUrl || '/events/fallback.jpg'}
@@ -413,8 +479,9 @@ const EventsList: React.FC = () => {
                   {/* Event Info */}
                   <div className="p-5">
                     <div className="flex justify-between items-start">
-                      <div className="flex-1">                        <div className="mb-2">
-                          <h2 className="text-xl font-bold text-gray-800">{event.title}</h2>
+                      <div className="flex-1">                        <div className="mb-2 flex items-start justify-between">
+                          <h2 className="text-xl font-bold text-gray-800 flex-1">{event.title}</h2>
+                          {getStatusBadge(event)}
                         </div>
                         <p className="text-sm text-gray-600 mb-2 line-clamp-3">{event.description}</p>
                         <p className="text-sm text-gray-500 mb-1" style={{ textIndent: '-1.7em', paddingLeft: '1.7em' }}> 📍 {event.location}</p>
@@ -447,6 +514,9 @@ const EventsList: React.FC = () => {
                         )}
                       </div>
                     </div>
+
+                    {/* Status Badge - Only for Organizer and Admin */}
+                    {getStatusBadge(event)}
                   </div>
                 </div>
               ))}

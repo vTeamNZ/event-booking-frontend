@@ -3,6 +3,7 @@ import config from '../config/api';
 
 export const api = axios.create({
     baseURL: config.apiBaseUrl,
+    timeout: 300000, // 5 minutes timeout for long operations like event creation
     headers: {
         'Content-Type': 'application/json'
     }

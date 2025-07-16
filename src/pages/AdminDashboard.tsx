@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import SEO from '../components/SEO';
 import { api } from '../services/api';
 import toast from 'react-hot-toast';
@@ -48,11 +48,11 @@ const AdminDashboard: React.FC = () => {
       setLoading(true);
       
       // Fetch dashboard stats
-      const statsResponse = await api.get('/api/admin/dashboard-stats');
+      const statsResponse = await api.get('/admin/dashboard-stats');
       setStats(statsResponse.data as DashboardStats);
 
       // Fetch pending organizers
-      const organizersResponse = await api.get('/api/admin/organizers?verified=false');
+      const organizersResponse = await api.get('/admin/organizers?verified=false');
       setPendingOrganizers(organizersResponse.data as Organizer[]);
       
     } catch (error: any) {
@@ -65,7 +65,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleVerifyOrganizer = async (organizerId: number) => {
     try {
-      await api.put(`/api/admin/organizers/${organizerId}/verify`, {});
+      await api.put(`/admin/organizers/${organizerId}/verify`, {});
       toast.success('Organizer verified successfully');
       fetchDashboardData(); // Refresh data
     } catch (error: any) {
@@ -293,6 +293,27 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Pending Events for Review */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg shadow mb-8">
+            <div className="px-6 py-4 border-b border-yellow-200 bg-yellow-100">
+              <h3 className="text-lg font-medium text-yellow-900">🔍 Events Pending Review</h3>
+              <p className="text-sm text-yellow-700 mt-1">Events submitted by organizers waiting for admin approval. Click "Test Event" to experience the booking process.</p>
+            </div>
+            <div className="p-6">
+              <div className="text-center text-gray-500">
+                <p>Loading pending events...</p>
+                <div className="mt-4">
+                  <Link
+                    to="/admin/events"
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    View All Events for Review
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </>

@@ -34,7 +34,7 @@ const AdminOrganizers: React.FC = () => {
     try {
       setLoading(true);
       const verifiedParam = filter === 'all' ? '' : `?verified=${filter === 'verified'}`;
-      const response = await api.get(`/api/admin/organizers${verifiedParam}`);
+      const response = await api.get(`/admin/organizers${verifiedParam}`);
       setOrganizers(response.data as Organizer[]);
     } catch (error: any) {
       console.error('Error fetching organizers:', error);
@@ -46,7 +46,7 @@ const AdminOrganizers: React.FC = () => {
 
   const handleVerifyOrganizer = async (organizerId: number) => {
     try {
-      await api.put(`/api/admin/organizers/${organizerId}/verify`, {});
+      await api.put(`/admin/organizers/${organizerId}/verify`, {});
       toast.success('Organizer verified successfully');
       fetchOrganizers();
     } catch (error: any) {
@@ -58,7 +58,7 @@ const AdminOrganizers: React.FC = () => {
   const handleUnverifyOrganizer = async (organizerId: number) => {
     if (window.confirm('Are you sure you want to remove verification from this organizer?')) {
       try {
-        await api.put(`/api/admin/organizers/${organizerId}/unverify`);
+        await api.put(`/admin/organizers/${organizerId}/unverify`);
         toast.success('Organizer verification removed');
         fetchOrganizers();
       } catch (error: any) {

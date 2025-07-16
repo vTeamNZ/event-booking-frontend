@@ -18,17 +18,17 @@ interface ReserveSeatRequest {
 
 export const venueSeatingService = {
     async getBookedSeats(eventId: number): Promise<BookedSeat[]> {
-        const response = await api.get(`/api/events/${eventId}/seats/booked`);
+        const response = await api.get(`/events/${eventId}/seats/booked`);
         return response.data as BookedSeat[];
     },
 
     async reserveSeat(eventId: number, request: ReserveSeatRequest): Promise<void> {
-        await api.post(`/api/events/${eventId}/seats/reserve`, request);
+        await api.post(`/events/${eventId}/seats/reserve`, request);
     },
 
     async confirmSeats(eventId: number, seats: SeatConfig[]): Promise<void> {
         const sessionId = generateSessionId();
-        await api.post(`/api/events/${eventId}/seats/confirm`, {
+        await api.post(`/events/${eventId}/seats/confirm`, {
             sessionId,
             seats: seats.map(seat => ({
                 row: seat.row,
@@ -44,7 +44,7 @@ export const venueSeatingService = {
         try {
             // For now, maintain backward compatibility by keeping the old endpoint
             // but consider migrating to seatingAPIService.releaseSeats() in the future
-            await api.post(`/api/events/${eventId}/seats/release`, { sessionId });
+            await api.post(`/events/${eventId}/seats/release`, { sessionId });
         } catch (error) {
             console.warn('Legacy release endpoint failed, attempting modern approach:', error);
             // Fallback to modern API if needed

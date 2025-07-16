@@ -37,19 +37,19 @@ export interface TicketReservationRequest {
 
 class ReservationService {
   async holdSeats(seats: SeatHoldRequest[]): Promise<{ message: string; expiresAt: string }> {
-    const response = await api.post('/api/reservations/hold', seats);
+    const response = await api.post('/reservations/hold', seats);
     return response.data as { message: string; expiresAt: string };
   }
 
   async releaseSeats(seats: SeatHoldRequest[]): Promise<{ message: string }> {
     // CONSOLIDATED: This is reservation-specific, keep as-is for now
     // But consider if this can be merged with seatingAPIService in the future
-    const response = await api.post('/api/reservations/release', seats);
+    const response = await api.post('/reservations/release', seats);
     return response.data as { message: string };
   }
 
   async getReservationStatus(eventId: number): Promise<ReservationStatus[]> {
-    const response = await api.get(`/api/reservations/event/${eventId}/status`);
+    const response = await api.get(`/reservations/event/${eventId}/status`);
     return response.data as ReservationStatus[];
   }
 
@@ -59,12 +59,12 @@ class ReservationService {
     number: number;
     includeFood?: boolean;
   }): Promise<any> {
-    const response = await api.post('/api/reservations', reservation);
+    const response = await api.post('/reservations', reservation);
     return response.data;
   }
 
   async reserveTickets(reservationData: TicketReservationRequest): Promise<{ success: boolean; reservationId: string }> {
-    const response = await api.post('/api/reservations/reserve-tickets', reservationData);
+    const response = await api.post('/reservations/reserve-tickets', reservationData);
     return response.data as { success: boolean; reservationId: string };
   }
 }

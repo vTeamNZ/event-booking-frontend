@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KiwiLanka Events - Emergency Fallback</title>
+    
+    <!-- Emergency SPA routing fallback - No web.config required -->
+    <script>
+        // Handle direct URL access for React SPA without web.config
+        (function() {
+            console.log('Emergency SPA routing active');
+            
+            var path = window.location.pathname;
+            var search = window.location.search;
+            var hash = window.location.hash;
+            
+            // If not on root and not a file, redirect to root with route parameter
+            if (path !== '/' && !path.includes('.') && !path.startsWith('/api/')) {
+                console.log('Redirecting SPA route:', path);
+                
+                // Store the intended route
+                sessionStorage.setItem('intended_route', path);
+                
+                // Redirect to root
+                if (path !== '/') {
+                    window.location.replace('/' + search + hash);
+                    return;
+                }
+            }
+            
+            // If we're on root, check for intended route
+            var intendedRoute = sessionStorage.getItem('intended_route');
+            if (intendedRoute && window.React && window.ReactDOM) {
+                sessionStorage.removeItem('intended_route');
+                // Let React Router handle it after app loads
+                setTimeout(function() {
+                    if (window.history && window.history.pushState) {
+                        window.history.pushState({}, '', intendedRoute);
+                        // Dispatch popstate to trigger React Router
+                        window.dispatchEvent(new PopStateEvent('popstate'));
+                    }
+                }, 100);
+            }
+        })();
+    </script>
+</head>
+<body>
+    <div id="root">
+        <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: Arial, sans-serif;">
+            <div style="text-align: center;">
+                <h2>Loading KiwiLanka Events...</h2>
+                <p>If this page doesn't load automatically, <a href="/">click here</a>.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- This would be replaced with your actual React build files -->
+    <script>
+        // Fallback if React doesn't load
+        setTimeout(function() {
+            if (!window.React) {
+                document.getElementById('root').innerHTML = 
+                    '<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">' +
+                    '<h1>KiwiLanka Events</h1>' +
+                    '<p>We\'re experiencing technical difficulties. Please try again later.</p>' +
+                    '<p><a href="/">Return to Home</a></p>' +
+                    '</div>';
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

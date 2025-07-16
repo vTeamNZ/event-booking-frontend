@@ -14,7 +14,7 @@ export const adminSeatService = {
    */
   toggleSeatAvailability: async (seatId: number): Promise<ToggleSeatAvailabilityResponse> => {
     const response = await api.put<ToggleSeatAvailabilityResponse>(
-      `/api/Admin/seats/${seatId}/toggle-availability`
+      `/Admin/seats/${seatId}/toggle-availability`
     );
     return response.data;
   }

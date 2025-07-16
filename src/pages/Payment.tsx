@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createCheckoutSession } from '../services/checkoutService';
-import { message, Button, Space } from 'antd';
+import { message } from 'antd';
 import SEO from '../components/SEO';
 import { useAuth } from '../hooks/useAuth';
 import { reservationService, TicketReservationRequest } from '../services/reservationService';
@@ -9,6 +9,7 @@ import { BookingData } from '../types/booking';
 import { qrCodeService, QRCodeGenerationRequest } from '../services/qrCodeService';
 import { seatSelectionService } from '../services/seatSelectionService';
 import { completeBookingCleanup } from '../utils/seating-v2/sessionStorage';
+import { processingFeeService, ProcessingFeeCalculation } from '../services/processingFeeService';
 
 interface LegacyPaymentLocationState {
   amount: number;
@@ -40,6 +41,8 @@ const Payment: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user, isAuthenticated, isOrganizer } = useAuth();
+  const [processingFee, setProcessingFee] = useState<ProcessingFeeCalculation | null>(null);
+  const [loadingProcessingFee, setLoadingProcessingFee] = useState(true);
 
   // Extract state - handle both new BookingData and legacy format
   const state = location.state as (BookingData | LegacyPaymentLocationState) | null;
@@ -161,9 +164,34 @@ const Payment: React.FC = () => {
     console.log('Payment state validation successful');
   }, [state, eventId, eventTitle, ticketDetails, isNewFormat, navigate]);
 
-  // Don't render anything if we don't have valid state
-  // We already have a useEffect that redirects if data is invalid
-  // This serves as a fallback if the redirect hasn't happened yet
+  // Calculate processing fees
+  useEffect(() => {
+    const calculateProcessingFees = async () => {
+      if (!eventId || amount <= 0) {
+        setLoadingProcessingFee(false);
+        return;
+      }
+
+      try {
+        setLoadingProcessingFee(true);
+        const feeCalculation = await processingFeeService.calculateProcessingFee(eventId, amount);
+        setProcessingFee(feeCalculation);
+      } catch (error) {
+        console.error('Error calculating processing fees:', error);
+        // If processing fee calculation fails, continue without fees
+        setProcessingFee(null);
+      } finally {
+        setLoadingProcessingFee(false);
+      }
+    };
+
+    calculateProcessingFees();
+  }, [eventId, amount]);
+
+  // Calculate final amount to use throughout the component
+  const finalAmount = processingFee && processingFee.processingFeeAmount > 0 
+    ? processingFee.totalAmount 
+    : amount;
   if (!state || !eventId || !eventTitle) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -288,7 +316,7 @@ const Payment: React.FC = () => {
           email: customerDetails.email,
           mobile: customerDetails.mobile || undefined
         },
-        totalAmount: amount
+        totalAmount: finalAmount
       };
       
       const result = await reservationService.reserveTickets(reservationData);
@@ -532,9 +560,31 @@ const Payment: React.FC = () => {
 
                 {/* Grand Total */}
                 <div className="border-t border-gray-200 pt-4">
-                  <div className="flex justify-between text-lg font-bold text-gray-900">
+                  <div className="flex justify-between text-base font-medium text-gray-800 mb-2">
+                    <span>Subtotal</span>
+                    <span>${amount.toFixed(2)}</span>
+                  </div>
+                  
+                  {/* Processing Fee */}
+                  {processingFee && processingFee.processingFeeAmount > 0 && (
+                    <div className="flex justify-between text-sm text-gray-600 mb-2">
+                      <span>{processingFee.description}</span>
+                      <span>${processingFee.processingFeeAmount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  
+                  {loadingProcessingFee && (
+                    <div className="flex justify-between text-sm text-gray-500 mb-2">
+                      <span>Calculating processing fee...</span>
+                      <span>-</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between text-lg font-bold text-gray-900 border-t pt-2">
                     <span>Total Amount</span>
-                    <span className="text-primary">${amount.toFixed(2)}</span>
+                    <span className="text-primary">
+                      ${processingFee ? processingFee.totalAmount.toFixed(2) : amount.toFixed(2)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -612,7 +662,7 @@ const Payment: React.FC = () => {
                             : 'bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary'
                         }`}
                       >
-                        {loading ? 'Processing...' : `Pay $${amount.toFixed(2)}`}
+                        {loading ? 'Processing...' : `Pay $${finalAmount.toFixed(2)}`}
                       </button>
                       <button
                         type="button"
@@ -646,7 +696,7 @@ const Payment: React.FC = () => {
                           : 'bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary'
                       }`}
                     >
-                      {loading ? 'Creating Checkout...' : `Pay $${amount.toFixed(2)}`}
+                      {loading ? 'Creating Checkout...' : `Pay $${finalAmount.toFixed(2)}`}
                     </button>
                   )}
                 </div>

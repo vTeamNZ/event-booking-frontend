@@ -14,6 +14,8 @@ interface Event {
   capacity: number;
   imageUrl?: string;
   isActive: boolean;
+  status?: number; // 0=Draft, 1=Pending, 2=Active, 3=Inactive
+  statusText?: string;
   seatSelectionMode: number;
   organizer?: {
     id: number;
@@ -21,6 +23,9 @@ interface Event {
     isVerified: boolean;
   } | null;
   reservationsCount: number;
+  processingFeePercentage?: number;
+  processingFeeFixedAmount?: number;
+  processingFeeEnabled?: boolean;
 }
 
 const AdminEvents: React.FC = () => {
@@ -29,6 +34,12 @@ const AdminEvents: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingProcessingFee, setEditingProcessingFee] = useState<Event | null>(null);
+  const [processingFeeForm, setProcessingFeeForm] = useState({
+    percentage: 0,
+    fixedAmount: 0,
+    enabled: false
+  });
 
   useEffect(() => {
     fetchEvents();
@@ -38,7 +49,7 @@ const AdminEvents: React.FC = () => {
     try {
       setLoading(true);
       const activeParam = filter === 'all' ? '' : `?active=${filter === 'active'}`;
-      const response = await api.get(`/api/admin/events${activeParam}`);
+      const response = await api.get(`/Admin/events${activeParam}`);
       setEvents(response.data as Event[]);
     } catch (error: any) {
       console.error('Error fetching events:', error);
@@ -50,7 +61,7 @@ const AdminEvents: React.FC = () => {
 
   const handleToggleEventStatus = async (eventId: number) => {
     try {
-      await api.put(`/api/admin/events/${eventId}/toggle-status`);
+      await api.put(`/Admin/events/${eventId}/toggle-status`);
       toast.success('Event status updated successfully');
       fetchEvents();
     } catch (error: any) {
@@ -59,12 +70,86 @@ const AdminEvents: React.FC = () => {
     }
   };
 
+  const handleEditProcessingFee = (event: Event) => {
+    setEditingProcessingFee(event);
+    setProcessingFeeForm({
+      percentage: event.processingFeePercentage || 0,
+      fixedAmount: event.processingFeeFixedAmount || 0,
+      enabled: event.processingFeeEnabled || false
+    });
+  };
+
+  const handleUpdateProcessingFee = async () => {
+    if (!editingProcessingFee) return;
+
+    try {
+      await api.put(`/Admin/events/${editingProcessingFee.id}/processing-fee`, {
+        processingFeePercentage: processingFeeForm.percentage,
+        processingFeeFixedAmount: processingFeeForm.fixedAmount,
+        processingFeeEnabled: processingFeeForm.enabled
+      });
+      toast.success('Processing fee updated successfully');
+      setEditingProcessingFee(null);
+      fetchEvents();
+    } catch (error: any) {
+      console.error('Error updating processing fee:', error);
+      toast.error('Failed to update processing fee');
+    }
+  };
+
+  const calculateProcessingFeeExample = () => {
+    const baseAmount = 50; // Example $50 ticket
+    const percentage = processingFeeForm.percentage / 100;
+    const percentageFee = baseAmount * percentage;
+    const totalFee = percentageFee + processingFeeForm.fixedAmount;
+    return {
+      percentageFee: percentageFee.toFixed(2),
+      fixedFee: processingFeeForm.fixedAmount.toFixed(2),
+      totalFee: totalFee.toFixed(2),
+      totalAmount: (baseAmount + totalFee).toFixed(2)
+    };
+  };
+
   const getSeatSelectionModeLabel = (mode: number) => {
     switch (mode) {
       case 1: return 'Event Hall Seating';
       case 2: return 'Table Seating';
       case 3: return 'General Admission';
       default: return 'Unknown';
+    }
+  };
+
+  const getStatusBadge = (event: Event) => {
+    const status = event.status ?? (event.isActive ? 2 : 3); // Default to Active/Inactive based on isActive
+    
+    const badges = {
+      0: { color: 'bg-gray-100 text-gray-800', text: 'Draft' },
+      1: { color: 'bg-yellow-100 text-yellow-800', text: 'Pending Review' },
+      2: { color: 'bg-green-100 text-green-800', text: 'Active' },
+      3: { color: 'bg-red-100 text-red-800', text: 'Inactive' }
+    };
+
+    const badge = badges[status as keyof typeof badges] || badges[1];
+
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
+        {badge.text}
+      </span>
+    );
+  };
+
+  const getActionButtonText = (event: Event) => {
+    const status = event.status ?? (event.isActive ? 2 : 3);
+    
+    switch (status) {
+      case 1: // Pending
+        return 'Approve';
+      case 2: // Active
+        return 'Deactivate';
+      case 3: // Inactive
+        return 'Reactivate';
+      default:
+        return 'Activate';
     }
   };
 
@@ -181,6 +266,9 @@ const AdminEvents: React.FC = () => {
                       Price & Capacity
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Processing Fee
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Bookings
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -246,17 +334,29 @@ const AdminEvents: React.FC = () => {
                           <div className="text-sm text-gray-500">{event.capacity} capacity</div>
                         </div>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          {event.processingFeeEnabled ? (
+                            <>
+                              <div className="text-sm text-gray-900">
+                                {event.processingFeePercentage?.toFixed(2) || 0}% + ${event.processingFeeFixedAmount?.toFixed(2) || 0}
+                              </div>
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Enabled
+                              </span>
+                            </>
+                          ) : (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              Disabled
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {event.reservationsCount}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          event.isActive 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {event.isActive ? 'Active' : 'Inactive'}
-                        </span>
+                        {getStatusBadge(event)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
@@ -268,7 +368,13 @@ const AdminEvents: React.FC = () => {
                                 : 'text-green-600 hover:text-green-900'
                             }`}
                           >
-                            {event.isActive ? 'Deactivate' : 'Activate'}
+                            {getActionButtonText(event)}
+                          </button>
+                          <button
+                            onClick={() => handleEditProcessingFee(event)}
+                            className="text-purple-600 hover:text-purple-900"
+                          >
+                            Configure Fee
                           </button>
                           <button
                             onClick={() => navigate(`/events/${event.id}`)}
@@ -292,6 +398,111 @@ const AdminEvents: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Processing Fee Configuration Modal */}
+      {editingProcessingFee && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-[600px] shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Configure Processing Fee - {editingProcessingFee.title}
+              </h3>
+              <button
+                onClick={() => setEditingProcessingFee(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Enable/Disable Toggle */}
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">
+                  Enable Processing Fee
+                </label>
+                <button
+                  onClick={() => setProcessingFeeForm(prev => ({ ...prev, enabled: !prev.enabled }))}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                    processingFeeForm.enabled ? 'bg-indigo-600' : 'bg-gray-200'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      processingFeeForm.enabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {processingFeeForm.enabled && (
+                <>
+                  {/* Percentage Fee */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Percentage Fee (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={processingFeeForm.percentage}
+                      onChange={(e) => setProcessingFeeForm(prev => ({ ...prev, percentage: parseFloat(e.target.value) || 0 }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                      placeholder="e.g., 2.7"
+                    />
+                  </div>
+
+                  {/* Fixed Fee */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Fixed Fee ($)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={processingFeeForm.fixedAmount}
+                      onChange={(e) => setProcessingFeeForm(prev => ({ ...prev, fixedAmount: parseFloat(e.target.value) || 0 }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                      placeholder="e.g., 0.40"
+                    />
+                  </div>
+
+                  {/* Example Calculation */}
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Example (for $50 ticket):</h4>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <div>Percentage fee ({processingFeeForm.percentage}%): ${calculateProcessingFeeExample().percentageFee}</div>
+                      <div>Fixed fee: ${calculateProcessingFeeExample().fixedFee}</div>
+                      <div className="font-medium">Total processing fee: ${calculateProcessingFeeExample().totalFee}</div>
+                      <div className="font-medium">Customer pays: ${calculateProcessingFeeExample().totalAmount}</div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setEditingProcessingFee(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateProcessingFee}
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

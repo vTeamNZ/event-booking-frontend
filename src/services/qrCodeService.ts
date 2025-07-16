@@ -23,7 +23,7 @@ class QRCodeService {
   async generateETicket(request: QRCodeGenerationRequest): Promise<QRCodeGenerationResponse> {
     try {
       // Make request directly to QR Code Generator API
-      const response = await fetch(`${this.QR_API_BASE_URL}/api/etickets/generate`, {
+      const response = await fetch(`${this.QR_API_BASE_URL}/etickets/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

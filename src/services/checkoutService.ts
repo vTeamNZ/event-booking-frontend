@@ -56,7 +56,7 @@ export const createCheckoutSession = async (
     }
     
     const response = await api.post<CreateCheckoutSessionResponse>(
-      '/api/payment/create-checkout-session', 
+      '/payment/create-checkout-session', 
       requestData
     );
     
@@ -75,7 +75,7 @@ export const createCheckoutSession = async (
 export const verifyCheckoutSession = async (sessionId: string): Promise<CheckoutSessionStatusResponse> => {
   try {
     const response = await api.get<CheckoutSessionStatusResponse>(
-      `/api/payment/verify-session/${sessionId}`
+      `/payment/verify-session/${sessionId}`
     );
     
     console.log('Checkout session verification result:', response.data);

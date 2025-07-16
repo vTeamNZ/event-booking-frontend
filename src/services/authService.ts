@@ -54,7 +54,7 @@ api.interceptors.request.use(
 
 export const authService = {
   async login(data: LoginData): Promise<AuthResponse> {
-    const response = await api.post<AuthResponse>('/api/auth/login', data);
+    const response = await api.post<AuthResponse>('/auth/login', data);
     
     if (response.data.token) {
       localStorage.setItem('authToken', response.data.token);
@@ -65,7 +65,7 @@ export const authService = {
   },
 
   async register(data: RegisterData): Promise<RegisterResponse> {
-    const response = await api.post<RegisterResponse>('/api/auth/register', data);
+    const response = await api.post<RegisterResponse>('/auth/register', data);
     return response.data;
   },
 
@@ -83,7 +83,7 @@ export const authService = {
   },
 
   async getCurrentUserFromAPI() {
-    const response = await api.get('/api/auth/me');
+    const response = await api.get('/auth/me');
     return response.data;
   },
 

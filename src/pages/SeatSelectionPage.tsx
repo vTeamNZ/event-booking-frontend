@@ -43,7 +43,7 @@ const SeatSelectionPage: React.FC = () => {
   const handleAdminSeatToggle = async (seatId: number) => {
     try {
       const result = await adminSeatService.toggleSeatAvailability(seatId);
-      toast.success(`Seat status updated to ${result.newStatus}`);
+      // Reduced notification frequency - visual feedback is primary
       
       // Force refresh of the seating layout component by incrementing the key
       setRefreshKey(prev => prev + 1);
@@ -65,7 +65,7 @@ const SeatSelectionPage: React.FC = () => {
           return;
         }
         
-        const response = await api.get<Event>(`/api/Events/${targetEventId}`);
+        const response = await api.get<Event>(`/Events/${targetEventId}`);
         const eventData = response.data;
         setEvent(eventData);
         

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <system.webServer>
+    <rewrite>
+      <rules>
+        <rule name="ReactRouter" stopProcessing="true">
+          <match url=".*" />
+          <conditions logicalGrouping="MatchAll">
+            <!-- Don't rewrite existing files -->
+            <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="true" />
+            <!-- Don't rewrite existing directories -->
+            <add input="{REQUEST_FILENAME}" matchType="IsDirectory" negate="true" />
+            <!-- Don't rewrite API calls -->
+            <add input="{REQUEST_URI}" pattern="^/api/" negate="true" />
+            <!-- Don't rewrite QR App calls -->
+            <add input="{REQUEST_URI}" pattern="^/qrapp/" negate="true" />
+            <!-- Don't rewrite QR App API calls -->
+            <add input="{REQUEST_URI}" pattern="^/qrapp-api/" negate="true" />
+            <!-- Don't rewrite Events directory calls -->
+            <add input="{REQUEST_URI}" pattern="^/events/" negate="true" />
+          </conditions>
+          <action type="Rewrite" url="/index.html" />
+        </rule>
+      </rules>
+    </rewrite>
+    
+    <defaultDocument>
+      <files>
+        <clear />
+        <add value="index.html" />
+      </files>
+    </defaultDocument>
+
+    <!-- Optional: Set cache headers for static assets -->
+    <staticContent>
+      <clientCache cacheControlMode="UseMaxAge" cacheControlMaxAge="1.00:00:00" />
+    </staticContent>
+
+    <!-- Optional: Custom error handling -->
+    <httpErrors errorMode="Custom" existingResponse="Replace">
+      <remove statusCode="404" subStatusCode="-1" />
+      <error statusCode="404" path="/index.html" responseMode="ExecuteURL" />
+    </httpErrors>
+  </system.webServer>
+</configuration>

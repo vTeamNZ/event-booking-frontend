@@ -3,14 +3,14 @@ import { api } from './api';
 
 export const venueService = {
     async getVenues(): Promise<Venue[]> {
-        const response = await api.get('/api/venues');
+        const response = await api.get('/venues');
         // Process each venue to handle array serialization
         const venues = response.data as any[];
         return venues.map(venue => this.processVenueResponse(venue));
     },
 
     async getVenue(id: number): Promise<Venue> {
-        const response = await api.get(`/api/venues/${id}`);
+        const response = await api.get(`/venues/${id}`);
         return this.processVenueResponse(response.data);
     },
     
@@ -34,7 +34,7 @@ export const venueService = {
             verticalAisleSeats: JSON.stringify(venueData.verticalAisleSeats)
         };
         
-        const response = await api.post('/api/venues', serializedData);
+        const response = await api.post('/venues', serializedData);
         return this.processVenueResponse(response.data);
     },
 
@@ -46,10 +46,10 @@ export const venueService = {
             verticalAisleSeats: JSON.stringify(venueData.verticalAisleSeats)
         };
         
-        await api.put(`/api/venues/${id}`, { id, ...serializedData });
+        await api.put(`/venues/${id}`, { id, ...serializedData });
     },
 
     async deleteVenue(id: number): Promise<void> {
-        await api.delete(`/api/venues/${id}`);
+        await api.delete(`/venues/${id}`);
     }
 };

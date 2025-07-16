@@ -35,12 +35,12 @@ const SeatSelectionView: React.FC<SeatSelectionViewProps> = ({
     if (!seat) return;
 
     if (seat.properties.isBlocked) {
-      onError?.('This seat is not available');
+      // Visual feedback is sufficient - seat appears grayed out
       return;
     }
 
     if (seat.properties.isReserved) {
-      onError?.('This seat is already reserved');
+      // Visual feedback is sufficient - seat appears red
       return;
     }
 

@@ -40,7 +40,7 @@ export const GeneralAdmissionLayout: React.FC<GeneralAdmissionProps> = ({
     const loadTicketTypes = async () => {
       try {
         setLoading(true);
-        const response = await api.get(`/api/tickettypes/event/${eventId}`);
+        const response = await api.get(`/tickettypes/event/${eventId}`);
         // Transform the response to match our expected format
         const ticketTypes = response.data as TicketType[];
         const transformedData: GeneralAdmissionData = {

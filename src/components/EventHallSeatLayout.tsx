@@ -77,7 +77,7 @@ export const EventHallSeatLayout: React.FC<SeatLayoutProps> = ({
         console.log('Making API requests...');
         
         // Get layout data first - this is essential
-        const layoutResponse = await api.get<EventHallLayout>(`/api/seats/event/${eventId}/layout`);
+        const layoutResponse = await api.get<EventHallLayout>(`/seats/event/${eventId}/layout`);
         console.log('Layout response:', layoutResponse.data);
         
         const layoutData = layoutResponse.data;
@@ -217,7 +217,7 @@ export const EventHallSeatLayout: React.FC<SeatLayoutProps> = ({
           row: seat.row,
           number: seat.number
         }]);
-        toast.success(`Seat ${seat.row}-${seat.number} held for 10 minutes`);
+        // Visual feedback through seat color change is sufficient
       } else {
         // Release the seat
         await reservationService.releaseSeats([{
@@ -225,7 +225,7 @@ export const EventHallSeatLayout: React.FC<SeatLayoutProps> = ({
           row: seat.row,
           number: seat.number
         }]);
-        toast.success(`Seat ${seat.row}-${seat.number} released`);
+        // Visual feedback through seat color change is sufficient
       }
       
       // Update reservation status

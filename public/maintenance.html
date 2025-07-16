@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Maintenance - KiwiLanka Events</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        .maintenance-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 3rem;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 2rem;
+            background: #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            font-weight: bold;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #2d3748;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #4a5568;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .maintenance-icon {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .message {
+            background: #f7fafc;
+            border-left: 4px solid #667eea;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 8px;
+            text-align: left;
+        }
+
+        .message h3 {
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .message p {
+            color: #4a5568;
+            line-height: 1.6;
+            margin-bottom: 0.5rem;
+        }
+
+        .eta {
+            background: #e6fffa;
+            border: 1px solid #81e6d9;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .eta strong {
+            color: #234e52;
+        }
+
+        .contact-info {
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+        }
+
+        .contact-info h4 {
+            color: #742a2a;
+            margin-bottom: 0.5rem;
+        }
+
+        .contact-info p {
+            color: #742a2a;
+            font-size: 0.9rem;
+        }
+
+        .social-links {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .social-link {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .social-link:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .progress-bar {
+            background: #e2e8f0;
+            height: 8px;
+            border-radius: 4px;
+            margin: 1.5rem 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            height: 100%;
+            width: 75%;
+            border-radius: 4px;
+            animation: progress 3s ease-in-out infinite;
+        }
+
+        @keyframes progress {
+            0% { width: 75%; }
+            50% { width: 85%; }
+            100% { width: 75%; }
+        }
+
+        .timestamp {
+            font-size: 0.8rem;
+            color: #718096;
+            margin-top: 2rem;
+            font-style: italic;
+        }
+
+        @media (max-width: 640px) {
+            .maintenance-container {
+                margin: 1rem;
+                padding: 2rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="maintenance-container">
+        <div class="logo">KL</div>
+        
+        <div class="maintenance-icon">🔧</div>
+        
+        <h1>We'll Be Right Back!</h1>
+        <p class="subtitle">Our event booking platform is currently undergoing scheduled maintenance to bring you an even better experience.</p>
+        
+        <div class="progress-bar">
+            <div class="progress-fill"></div>
+        </div>
+        
+        <div class="message">
+            <h3>What's happening?</h3>
+            <p>• System updates and performance improvements</p>
+            <p>• Security enhancements</p>
+            <p>• New features being deployed</p>
+            <p>• Database optimization</p>
+        </div>
+        
+        <div class="eta">
+            <strong>Expected completion:</strong> Maintenance typically takes 30-60 minutes
+        </div>
+        
+        <div class="contact-info">
+            <h4>Need immediate assistance?</h4>
+            <p>For urgent inquiries, please contact us at:</p>
+            <p><strong>Email:</strong> support@kiwilanka.co.nz</p>
+            <p><strong>Phone:</strong> +64 (0) 21 XXX XXXX</p>
+        </div>
+        
+        <div class="social-links">
+            <a href="#" class="social-link">Facebook</a>
+            <a href="#" class="social-link">Instagram</a>
+            <a href="#" class="social-link">YouTube</a>
+        </div>
+        
+        <div class="timestamp">
+            <script>
+                document.write('Last updated: ' + new Date().toLocaleString('en-NZ', {
+                    timeZone: 'Pacific/Auckland',
+                    dateStyle: 'medium',
+                    timeStyle: 'short'
+                }));
+            </script>
+        </div>
+    </div>
+
+    <script>
+        // Auto-refresh every 5 minutes to check if maintenance is complete
+        setTimeout(function() {
+            window.location.reload();
+        }, 300000); // 5 minutes
+
+        // Optional: Add a countdown timer
+        function updateCountdown() {
+            const now = new Date();
+            const maintenanceEnd = new Date(now.getTime() + (60 * 60 * 1000)); // 1 hour from now
+            const timeRemaining = maintenanceEnd - now;
+            
+            if (timeRemaining > 0) {
+                const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
+                const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+                
+                // You can add a countdown display here if needed
+                console.log(`Estimated time remaining: ${hours}h ${minutes}m`);
+            }
+        }
+        
+        // Update countdown every minute
+        setInterval(updateCountdown, 60000);
+        updateCountdown();
+    </script>
+</body>
+</html>
