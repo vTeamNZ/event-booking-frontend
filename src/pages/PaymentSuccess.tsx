@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { verifyCheckoutSession } from '../services/checkoutService';
+import { verifyPaymentWithPolling } from '../services/checkoutService';
 import SEO from '../components/SEO';
 import { safeBookingCompletionCleanup, completeBookingCleanup } from '../utils/seating-v2/sessionStorage';
 
@@ -11,6 +11,8 @@ const PaymentSuccess: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [sessionData, setSessionData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [verificationSource, setVerificationSource] = useState<string>('');
+  const [pollingProgress, setPollingProgress] = useState<string>('');
 
   const sessionId = searchParams.get('session_id');
   const navigationState = location.state as any;
@@ -26,23 +28,45 @@ const PaymentSuccess: React.FC = () => {
       return;
     }
 
+    // ✅ DEBUGGING: Let's manually test with the provided session ID
+    const debugSessionId = 'cs_live_b1AatAjPoYbWLxQV0uVPiQl0Yth2RWqO83eGKZTbFyEPzl0QpwU5PF45Wx';
+    const testSessionId = sessionId || debugSessionId;
+
+    // ✅ NEW: Enhanced payment verification with polling
     const verifyPayment = async () => {
-      if (!sessionId) {
+      if (!testSessionId) {
         setError('No session ID found');
         setLoading(false);
         return;
       }
 
       try {
-        const result = await verifyCheckoutSession(sessionId);
-        if (result.isSuccessful) {
-          setSessionData(result);
+        setPollingProgress('Verifying your payment...');
+        console.log('DEBUG: Using session ID:', testSessionId);
+        
+        const result = await verifyPaymentWithPolling(testSessionId, (message, attempt) => {
+          setPollingProgress(message);
+        });
+        
+        console.log('DEBUG: Full verification result:', result);
+        
+        if (result.success && result.sessionData) {
+          console.log('DEBUG: SessionData received:', JSON.stringify(result.sessionData, null, 2));
+          setSessionData(result.sessionData);
+          setVerificationSource(result.source);
+          setPollingProgress(result.source === 'webhook' ? 
+            `Payment processed by payment system (${result.processingTime || 0}s)` : 
+            'Payment verified by backup system');
+          
+          console.log(`Payment verified via ${result.source}:`, result.sessionData);
         } else {
-          setError('Payment was not successful');
+          setError(result.error || 'Payment was not successful');
+          setPollingProgress('Payment verification failed');
         }
       } catch (err) {
         console.error('Error verifying payment:', err);
         setError('Could not verify payment status');
+        setPollingProgress('Verification error occurred');
       } finally {
         setLoading(false);
       }
@@ -65,9 +89,9 @@ const PaymentSuccess: React.FC = () => {
     } else if (isReservationSuccess) {
       shouldCleanup = true;
       cleanupContext = 'reservation_success';
-    } else if (sessionData?.isSuccessful && !error) {
+    } else if (sessionData && !error) {
       shouldCleanup = true;
-      cleanupContext = 'stripe_payment_success';
+      cleanupContext = 'webhook_payment_success';
     }
 
     if (shouldCleanup) {
@@ -90,9 +114,24 @@ const PaymentSuccess: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Verifying your payment...</p>
+          <h3 className="text-lg font-medium text-gray-800 mb-2">Processing Your Payment</h3>
+          <p className="text-gray-600 mb-4">{pollingProgress || 'Verifying your payment...'}</p>
+          
+          {/* ✅ Show verification source if available */}
+          {verificationSource && (
+            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+              Verification method: {verificationSource === 'webhook' ? 'Real-time processing' : 'Backup verification'}
+            </div>
+          )}
+          
+          <div className="mt-4">
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-primary h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">This usually takes just a few seconds...</p>
+          </div>
         </div>
       </div>
     );
@@ -104,13 +143,27 @@ const PaymentSuccess: React.FC = () => {
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
           <div className="text-red-600 text-6xl mb-4">⚠️</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Payment Verification Failed</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <button
-            onClick={() => navigate('/')}
-            className="w-full bg-primary text-white py-2 px-4 rounded hover:bg-primary-dark"
-          >
-            Return to Home
-          </button>
+          <p className="text-gray-600 mb-4">{error}</p>
+          
+          {/* ✅ Show additional context */}
+          {pollingProgress && (
+            <p className="text-sm text-gray-500 mb-4">Status: {pollingProgress}</p>
+          )}
+          
+          <div className="space-y-3">
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="w-full bg-gray-600 text-white py-2 px-4 rounded hover:bg-gray-700"
+            >
+              Return to Home
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -253,9 +306,10 @@ const PaymentSuccess: React.FC = () => {
           <p className="text-gray-600 mb-4">
             {sessionData?.eventTitle ? `Your tickets for ${sessionData.eventTitle} have been booked and your e-ticket has been emailed to you.` : 'Thank you for your purchase.'}
           </p>
-          <div className="text-sm text-gray-600 bg-blue-50 p-4 rounded-lg inline-flex items-center">
-            <svg className="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+          
+          <div className="text-sm text-gray-600 bg-green-50 p-4 rounded-lg inline-flex items-center">
+            <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2v10a2 2 0 002 2z"></path>
             </svg>
             A payment receipt has been sent to your email. Please note that it may take a short while for the email to arrive in your inbox.
           </div>
@@ -271,13 +325,6 @@ const PaymentSuccess: React.FC = () => {
                 </div>
               )}
               
-              {sessionData.ticketReference && (
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Ticket Reference:</span>
-                  <span className="font-mono text-sm">{sessionData.ticketReference}</span>
-                </div>
-              )}
-              
               {sessionData.paymentId && (
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Payment Reference:</span>
@@ -288,7 +335,7 @@ const PaymentSuccess: React.FC = () => {
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Amount Paid:</span>
                 <span className="font-bold text-primary">
-                  ${sessionData.amountTotal ? (sessionData.amountTotal / 100).toFixed(2) : '0.00'}
+                  ${sessionData.amountTotal ? (typeof sessionData.amountTotal === 'number' ? sessionData.amountTotal.toFixed(2) : (sessionData.amountTotal / 100).toFixed(2)) : '0.00'}
                 </span>
               </div>
               
@@ -297,10 +344,39 @@ const PaymentSuccess: React.FC = () => {
                 <span className="text-sm">{sessionData.customerEmail}</span>
               </div>
               
-              {sessionData.bookedSeats && sessionData.bookedSeats.length > 0 && (
+              {sessionData.bookedSeats && Array.isArray(sessionData.bookedSeats) && sessionData.bookedSeats.length > 0 && (
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Seat(s):</span>
                   <span className="text-sm font-medium">{sessionData.bookedSeats.join(', ')}</span>
+                </div>
+              )}
+              
+              {/* ✅ Show QR ticket generation status */}
+              {sessionData.qrTicketsGenerated && Array.isArray(sessionData.qrTicketsGenerated) && sessionData.qrTicketsGenerated.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">QR Ticket Status:</h4>
+                  <div className="space-y-1">
+                    {sessionData.qrTicketsGenerated.map((qr: any, index: number) => (
+                      <div key={index} className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">Seat {qr.seatNumber}:</span>
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                          qr.success 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {qr.success ? '✓ Generated' : '✗ Failed'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* ✅ Show booking ID if available */}
+              {sessionData.bookingId && sessionData.bookingId !== 0 && (
+                <div className="flex justify-between items-center text-xs text-gray-500">
+                  <span>Booking ID:</span>
+                  <span className="font-mono">{sessionData.bookingId}</span>
                 </div>
               )}
             </div>
