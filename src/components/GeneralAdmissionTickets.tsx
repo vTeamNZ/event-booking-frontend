@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Minus, Ticket, Users } from 'lucide-react';
+import { Plus, Minus, Ticket, Users, AlertTriangle } from 'lucide-react';
 import { 
   GeneralTicketSelection, 
   PricingResponse 
 } from '../types/seatSelection';
 import { TicketType } from '../types/ticketTypes';
 import { seatSelectionService } from '../services/seatSelectionService';
+import { ticketAvailabilityService, TicketAvailabilityInfo } from '../services/ticketAvailabilityService';
 import { formatPrice } from '../utils/seatSelection';
 import { cn } from '../utils/seatSelection';
 
@@ -21,16 +22,23 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
 }) => {
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [selections, setSelections] = useState<GeneralTicketSelection[]>([]);
+  const [availability, setAvailability] = useState<Record<number, TicketAvailabilityInfo>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load ticket types
+  // Load ticket types and availability
   useEffect(() => {
     const loadTicketTypes = async () => {
       try {
         setLoading(true);
+        
+        // Load ticket types
         const pricing = await seatSelectionService.getEventPricing(eventId);
         setTicketTypes(pricing.ticketTypes);
+        
+        // Load ticket availability
+        const availabilityData = await ticketAvailabilityService.getEventTicketAvailability(eventId);
+        setAvailability(availabilityData);
         
         // Initialize selections with 0 quantity for each ticket type
         const initialSelections = pricing.ticketTypes.map(ticketType => ({
@@ -56,10 +64,19 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
   }, [selections, onTicketChange]);
 
   const updateQuantity = (ticketTypeId: number, newQuantity: number) => {
+    // Get availability info for this ticket type
+    const availabilityInfo = availability[ticketTypeId];
+    
+    // Calculate maximum allowed quantity
+    let maxAllowed = newQuantity;
+    if (availabilityInfo && availabilityInfo.hasLimit) {
+      maxAllowed = Math.min(newQuantity, availabilityInfo.available);
+    }
+    
     setSelections(prev => 
       prev.map(selection => 
         selection.ticketType.id === ticketTypeId
-          ? { ...selection, quantity: Math.max(0, newQuantity) }
+          ? { ...selection, quantity: Math.max(0, maxAllowed) }
           : selection
       )
     );
@@ -119,6 +136,10 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
         {ticketTypes.map(ticketType => {
           const selection = selections.find(s => s.ticketType.id === ticketType.id);
           const quantity = selection?.quantity || 0;
+          const availabilityInfo = availability[ticketType.id];
+          const isAvailable = !availabilityInfo?.hasLimit || (availabilityInfo.available > 0);
+          const isSoldOut = availabilityInfo?.hasLimit && availabilityInfo.available === 0;
+          const canIncrease = !availabilityInfo?.hasLimit || quantity < availabilityInfo.available;
           
           return (
             <motion.div
@@ -127,6 +148,7 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
               animate={{ opacity: 1, y: 0 }}
               className={cn(
                 'border rounded-lg p-4 transition-all duration-200',
+                isSoldOut ? 'border-red-200 bg-red-50 opacity-75' :
                 quantity > 0 
                   ? 'border-blue-300 bg-blue-50' 
                   : 'border-gray-200 hover:border-gray-300'
@@ -134,13 +156,45 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
             >
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900">{ticketType.type}</h4>
+                  <h4 className={cn(
+                    "font-semibold",
+                    isSoldOut ? "text-red-700" : "text-gray-900"
+                  )}>
+                    {ticketType.type}
+                    {isSoldOut && <span className="ml-2 text-red-600 text-sm">(SOLD OUT)</span>}
+                  </h4>
                   {ticketType.description && (
-                    <p className="text-sm text-gray-600 mt-1">{ticketType.description}</p>
+                    <p className={cn(
+                      "text-sm mt-1",
+                      isSoldOut ? "text-red-600" : "text-gray-600"
+                    )}>{ticketType.description}</p>
+                  )}
+                  
+                  {/* Availability Information */}
+                  {availabilityInfo && availabilityInfo.hasLimit && (
+                    <div className="mt-2 flex items-center gap-2">
+                      {availabilityInfo.available <= 10 && availabilityInfo.available > 0 ? (
+                        <div className="flex items-center text-orange-600 text-sm">
+                          <AlertTriangle size={14} className="mr-1" />
+                          Only {availabilityInfo.available} left!
+                        </div>
+                      ) : availabilityInfo.available > 0 ? (
+                        <div className="text-green-600 text-sm">
+                          {availabilityInfo.available} available
+                        </div>
+                      ) : (
+                        <div className="text-red-600 text-sm font-medium">
+                          Sold out
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
                 <div className="text-right">
-                  <div className="text-lg font-bold text-gray-900">
+                  <div className={cn(
+                    "text-lg font-bold",
+                    isSoldOut ? "text-red-700" : "text-gray-900"
+                  )}>
                     {formatPrice(ticketType.price)}
                   </div>
                   <div className="text-xs text-gray-500">per ticket</div>
@@ -151,7 +205,7 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => updateQuantity(ticketType.id, quantity - 1)}
-                    disabled={quantity === 0}
+                    disabled={quantity === 0 || isSoldOut}
                     className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <Minus size={16} />
@@ -163,7 +217,8 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
                   
                   <button
                     onClick={() => updateQuantity(ticketType.id, quantity + 1)}
-                    className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                    disabled={isSoldOut || !canIncrease}
+                    className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <Plus size={16} />
                   </button>

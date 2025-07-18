@@ -14,6 +14,7 @@ export interface TicketType {
     eventId: number;
     seatRowAssignments?: string; // JSON string storing seat row assignments
     color: string;     // Color for UI representation
+    maxTickets?: number; // Maximum number of tickets available (for General Admission)
 }
 
 // Interface used in CreateEvent and other form components for managing ticket types

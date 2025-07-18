@@ -520,6 +520,7 @@ const CreateEvent: React.FC = () => {
               price: ticketType.price,
               description: ticketType.description,
               color: color,
+              maxTickets: ticketType.maxTickets, // Include max tickets for General Admission events
               seatRows: ticketType.seatRows.map(row => ({
                 rowStart: row.rowStart,
                 rowEnd: row.rowEnd,
@@ -559,6 +560,7 @@ const CreateEvent: React.FC = () => {
                 price: ticketType.price,
                 description: ticketType.description,
                 color: color,
+                maxTickets: ticketType.maxTickets, // Include max tickets for General Admission events
                 seatRows: ticketType.seatRows.map(row => ({
                   rowStart: row.rowStart,
                   rowEnd: row.rowEnd,
