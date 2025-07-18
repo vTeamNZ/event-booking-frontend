@@ -23,9 +23,9 @@ const PaymentFailed: React.FC = () => {
         description="Something went wrong with your payment. Don't worry, your card has not been charged. Please try again or contact support for assistance." 
         keywords={["Payment Failed", "Payment Error", "Retry Payment", "Event Booking Issue"]}
       />
-      <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <div className="bg-gray-800 py-8 px-4 shadow-2xl rounded-xl sm:px-10">
             <div className="text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
                 <svg
@@ -45,7 +45,7 @@ const PaymentFailed: React.FC = () => {
               </div>
               <h2 className="mt-4 text-2xl font-bold text-gray-900">Payment Failed</h2>
               {state?.error && (
-                <p className="mt-2 text-sm text-gray-600">{state.error}</p>
+                <p className="mt-2 text-sm text-gray-300">{state.error}</p>
               )}
               {state?.status && (
                 <p className="mt-2 text-sm text-gray-500">Status: {state.status}</p>

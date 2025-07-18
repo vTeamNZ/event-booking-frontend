@@ -258,7 +258,9 @@ const EventsList: React.FC = () => {
                    (eventStatus === 0 && isOrganizer) || 
                    (eventStatus === 1 && isAdmin);
     
-    if (!canBook) return;
+    if (!canBook) {
+      return;
+    }
     
     // Get the event's seat selection mode, defaulting to GeneralAdmission if not specified
     const seatMode = event.seatSelectionMode ?? 3;
@@ -355,63 +357,71 @@ const EventsList: React.FC = () => {
           selectedCity !== 'all' ? `Events in ${selectedCity}` : ''
         ].filter(Boolean)}
       />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
-        </div>
-      ) : (
+      <div className="min-h-screen bg-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-yellow-500 border-t-transparent"></div>
+          </div>
+        ) : (
         <>
-          {/* Filters Section */}
-          <div className="mb-8 space-y-6">
-            {/* Page Title with Organizer if present */}
-            {organizerSlug && (
-              <div className="border-b pb-4">
-                <div className="flex items-center justify-between">
-                  <h1 className="text-3xl font-bold text-gray-800">
-                    {events.find(e => createOrganizerSlug(e.organizerName || '') === organizerSlug)?.organizerName || 'Events'}
-                  </h1>
-                  <Link 
-                    to="/"
-                    className="text-primary hover:text-red-700 transition-colors flex items-center gap-2"
-                  >
-                    ← All Events
-                  </Link>
+            {/* Filters Section */}
+            <div className="mb-8 space-y-6">
+              {/* Page Title with Organizer if present */}
+              {organizerSlug && (
+                <div className="border-b border-gray-700 pb-4">
+                  <div className="flex items-center justify-between">
+                    <h1 className="text-3xl font-bold text-white">
+                      {events.find(e => createOrganizerSlug(e.organizerName || '') === organizerSlug)?.organizerName || 'Events'}
+                    </h1>
+                    <Link 
+                      to="/"
+                      className="text-yellow-500 hover:text-yellow-400 transition-colors flex items-center gap-2"
+                    >
+                      ← All Events
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            )}            {/* City Filter - Pills Style */}
-            <div className="w-full">
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setSelectedCity('all')}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200
-                    ${selectedCity === 'all'
-                      ? 'bg-primary text-white shadow-md'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                >
-                  All Cities
-                </button>
-                {cities.filter(city => city !== 'all').map((city) => (
+              )}
+              
+              {!organizerSlug && (
+                <div className="text-center mb-8">
+                  <h1 className="text-4xl font-bold text-white mb-4">Discover Amazing Events</h1>
+                  <p className="text-gray-400 text-lg">Find and book tickets for the best events in New Zealand</p>
+                </div>
+              )}
+
+              {/* City Filter - Pills Style */}
+              <div className="w-full">
+                <div className="flex flex-wrap gap-2">
                   <button
-                    key={city}
-                    onClick={() => setSelectedCity(city)}
+                    onClick={() => setSelectedCity('all')}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200
-                      ${selectedCity === city
-                        ? 'bg-primary text-white shadow-md'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ${selectedCity === 'all'
+                        ? 'bg-yellow-600 text-white shadow-md'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600'
                       }`}
                   >
-                    {city}
+                    All Cities
                   </button>
-                ))}
+                  {cities.filter(city => city !== 'all').map((city) => (
+                    <button
+                      key={city}
+                      onClick={() => setSelectedCity(city)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200
+                        ${selectedCity === city
+                          ? 'bg-yellow-600 text-white shadow-md'
+                          : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600'
+                        }`}
+                    >
+                      {city}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          </div>
-
-          {/* Results Count */}
+            </div>          {/* Results Count */}
           <div className="mb-6">
-            <p className="text-gray-600">
+            <p className="text-gray-300">
               Showing {filteredEvents.length} {filteredEvents.length === 1 ? 'event' : 'events'}
               {organizerSlug && ' for this organizer'}
             </p>
@@ -436,8 +446,8 @@ const EventsList: React.FC = () => {
               {filteredEvents.map((event) => (
                 <div
                   key={event.id}
-                  className={`relative bg-white rounded-xl shadow-lg transition-all duration-300 group overflow-hidden
-                    ${event.isActive ? 'hover:shadow-xl' : ''}`}
+                  className={`relative bg-gray-800 rounded-xl shadow-2xl transition-all duration-300 group overflow-hidden
+                    ${event.isActive ? 'hover:shadow-3xl' : ''}`}
                 >
                   {/* Image Container - Clickable */}
                   <div 
@@ -476,10 +486,10 @@ const EventsList: React.FC = () => {
                   <div className="p-5">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">                        <div className="mb-2 flex items-start justify-between">
-                          <h2 className="text-xl font-bold text-gray-800 flex-1">{event.title}</h2>
+                          <h2 className="text-xl font-bold text-white flex-1">{event.title}</h2>
                           {getStatusBadge(event)}
                         </div>
-                        <p className="text-sm text-gray-600 mb-2 line-clamp-3">{event.description}</p>
+                        <p className="text-sm text-gray-300 mb-2 line-clamp-3">{event.description}</p>
                         <p className="text-sm text-gray-500 mb-1" style={{ textIndent: '-1.7em', paddingLeft: '1.7em' }}> 📍 {event.location}</p>
                         <p className="text-sm text-gray-500 mb-1" style={{ textIndent: '-1.2em', paddingLeft: '1.2em' }}> 
                           🕒 {event.date ? new Date(event.date).toLocaleString() : 'No date set'}
@@ -512,7 +522,7 @@ const EventsList: React.FC = () => {
                         {/* Share Button */}
                         <button
                           onClick={(e) => handleShareEvent(event, e)}
-                          className="p-2 text-gray-600 hover:text-gray-700 transition-colors duration-200"
+                          className="p-2 text-gray-300 hover:text-white transition-colors duration-200"
                           aria-label="Share event"
                           title="Share event link"
                         >
@@ -528,10 +538,12 @@ const EventsList: React.FC = () => {
                   </div>
                 </div>
               ))}
-            </div>      )}
+            </div>
+          )}
         </>
       )}
-    </div>
+        </div>
+      </div>
     </>
   );
 };

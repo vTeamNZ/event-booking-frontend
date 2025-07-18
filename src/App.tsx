@@ -35,7 +35,7 @@ import EventPage from './pages/EventPage';
 const App: React.FC = () => {
   return (
     <BookingProvider>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-900">
         {/* Google Analytics Route Tracker */}
         <RouteTracker />
         

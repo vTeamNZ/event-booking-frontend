@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { createEventSlug, slugToSearchTerm } from '../utils/slugUtils';
+import { authService } from '../services/authService';
 
 interface Event {
   id: number;
@@ -65,8 +66,21 @@ const EventPage: React.FC = () => {
           return;
         }
 
-        // Check if event is active/accessible
-        if (!event.isActive || event.status !== 2) {
+        // Check if event is accessible - apply same logic as EventsList
+        const currentUser = authService.getCurrentUser();
+        const isOrganizer = currentUser && currentUser.roles && currentUser.roles.includes('Organizer');
+        const isAdmin = currentUser && currentUser.roles && currentUser.roles.includes('Admin');
+        const eventStatus = event.status ?? (event.isActive ? 2 : 3);
+        
+        // Allow access for:
+        // - Active events (everyone)
+        // - Draft events (organizers for testing)
+        // - Pending events (admins for review)
+        const canAccess = eventStatus === 2 || 
+                         (eventStatus === 0 && isOrganizer) || 
+                         (eventStatus === 1 && isAdmin);
+        
+        if (!canAccess) {
           setError('This event is not currently available for booking.');
           return;
         }
@@ -111,10 +125,10 @@ const EventPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading event...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading event...</p>
         </div>
       </div>
     );
@@ -122,14 +136,14 @@ const EventPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
         <div className="text-center max-w-md mx-auto p-8">
           <div className="text-6xl mb-6">⚠️</div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Event Not Found</h1>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <h1 className="text-2xl font-bold text-white mb-4">Event Not Found</h1>
+          <p className="text-gray-300 mb-6">{error}</p>
           <button
             onClick={() => navigate('/')}
-            className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg transition-colors"
+            className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-3 rounded-lg transition-colors font-semibold"
           >
             Back to Events
           </button>

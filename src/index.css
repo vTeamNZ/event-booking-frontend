@@ -10,6 +10,44 @@
 @tailwind scrollbar;
 @tailwind dark;
 
+/* Dark Cinema Theme CSS Variables */
+:root {
+  --color-background: #111827;
+  --color-primary: #EAB308;
+  --color-primary-dark: #CA8A04;
+  --color-secondary: #6B7280;
+  --color-card: #1F2937;
+  --color-card-light: #374151;
+  --color-text-primary: #F9FAFB;
+  --color-text-secondary: #D1D5DB;
+  --color-text-muted: #9CA3AF;
+  --color-accent: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+}
+
+/* Global Cinema Theme Classes */
+.cinema-theme {
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+}
+
+.cinema-card {
+  background-color: var(--color-card);
+  color: var(--color-text-primary);
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+}
+
+.cinema-button-primary {
+  background-color: var(--color-primary);
+  color: #000;
+  font-weight: 600;
+}
+
+.cinema-button-primary:hover {
+  background-color: var(--color-primary-dark);
+}
+
 /* Seat Picker Styles */
 .seat-picker {
   cursor: pointer;

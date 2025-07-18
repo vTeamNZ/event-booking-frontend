@@ -16,9 +16,9 @@ const PaymentCancelled: React.FC = () => {
         description="Your payment was cancelled. You can try again or browse other events. No charges have been made to your card." 
         keywords={["Payment Cancelled", "Payment Interrupted", "Retry Payment", "Event Booking"]}
       />
-      <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <div className="bg-gray-800 py-8 px-4 shadow-2xl rounded-xl sm:px-10">
             <div className="text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
                 <svg
@@ -37,7 +37,7 @@ const PaymentCancelled: React.FC = () => {
                 </svg>
               </div>
               <h2 className="mt-4 text-2xl font-bold text-gray-900">Payment Cancelled</h2>
-              <p className="mt-2 text-sm text-gray-600">
+              <p className="mt-2 text-sm text-gray-300">
                 Your payment was cancelled. No charges have been made to your card.
               </p>
               <div className="mt-6 space-y-3">
@@ -49,7 +49,7 @@ const PaymentCancelled: React.FC = () => {
                 </button>
                 <button
                   onClick={() => navigate('/')}
-                  className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                  className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md shadow-sm text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
                 >
                   Return to Events
                 </button>

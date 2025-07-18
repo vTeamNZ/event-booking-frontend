@@ -95,118 +95,140 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = () => {
         description="Review your booking details before completing payment."
         keywords={['payment summary', 'booking review', 'event tickets']}
       />
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-900">
         {/* Event Hero Section */}
-        <div className="relative">
-          <EventHero 
-            title={bookingData.eventTitle}
-            imageUrl={(bookingData as any).imageUrl}
-            description="Review your order"
-            className="h-[300px]"
-          />
-          
-          {/* Back Button Overlay */}
-          <div className="absolute top-4 left-4 z-20">
-            <button
-              onClick={() => navigate(-1)}
-              className="text-white/80 hover:text-white bg-black/30 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-all"
-            >
-              ← Back
-            </button>
-          </div>
-        </div>
+        <EventHero 
+          title={bookingData.eventTitle}
+          imageUrl={(bookingData as any).imageUrl}
+          description="Review your order"
+          className="mb-8"
+        />
 
         {/* Main Content */}
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            {/* Ticket/Seat Details */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                {bookingData.bookingType === 'seats' ? 'Selected Seats' : 'Selected Tickets'}
-              </h3>
-              
-              {bookingData.bookingType === 'seats' && bookingData.selectedSeats && (
-                <div className="space-y-2">
-                  {bookingData.selectedSeats.map((seat, index) => (
-                    <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
-                      <span>Seat {seat.row}{seat.number}</span>
-                      <span className="font-medium">${formatPrice(seat.price)}</span>
-                    </div>
-                  ))}
-                  <div className="flex justify-between items-center py-2 font-medium">
-                    <span>Seats Subtotal:</span>
-                    <span>${formatPrice(ticketSubtotal)}</span>
-                  </div>
-                </div>
-              )}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+          
+          {/* Header Section */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">Order Summary</h1>
+            <p className="text-gray-400">Review your booking details before payment</p>
+          </div>
 
-              {bookingData.bookingType === 'tickets' && bookingData.selectedTickets && (
-                <div className="space-y-2">
-                  {bookingData.selectedTickets.map((ticket, index) => (
-                    <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
-                      <div>
-                        <div className="font-medium">{ticket.name}</div>
-                        <div className="text-sm text-gray-600">
-                          {ticket.quantity} × ${formatPrice(ticket.price)}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* Order Details Panel */}
+            <div className="lg:col-span-2">
+              <div className="bg-gray-800 rounded-xl shadow-2xl overflow-hidden">
+                
+                {/* Ticket/Seat Details */}
+                <div className="p-6 border-b border-gray-700">
+                  <h3 className="text-xl font-semibold text-white mb-4">
+                    {bookingData.bookingType === 'seats' ? 'Selected Seats' : 'Selected Tickets'}
+                  </h3>
+                  
+                  {bookingData.bookingType === 'seats' && bookingData.selectedSeats && (
+                    <div className="space-y-3">
+                      {bookingData.selectedSeats.map((seat, index) => (
+                        <div key={index} className="flex justify-between items-center py-3 px-4 bg-gray-750 rounded-lg">
+                          <span className="text-gray-300">Seat {seat.row}{seat.number}</span>
+                          <span className="text-yellow-500 font-semibold">${formatPrice(seat.price)}</span>
                         </div>
-                      </div>
-                      <span className="font-medium">${formatPrice(ticket.price * ticket.quantity)}</span>
+                      ))}
                     </div>
-                  ))}
-                  <div className="flex justify-between items-center py-2 font-medium">
-                    <span>Tickets Subtotal:</span>
-                    <span>${formatPrice(ticketSubtotal)}</span>
-                  </div>
-                </div>
-              )}
-            </div>
+                  )}
 
-            {/* Food Items */}
-            {bookingData.selectedFoodItems && bookingData.selectedFoodItems.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">Food Items</h3>
-                <div className="space-y-2">
-                  {bookingData.selectedFoodItems.map((item, index) => (
-                    <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
-                      <div>
-                        <div className="font-medium">{item.name}</div>
-                        <div className="text-sm text-gray-600">
-                          {item.quantity} × ${formatPrice(item.price)}
+                  {bookingData.bookingType === 'tickets' && bookingData.selectedTickets && (
+                    <div className="space-y-3">
+                      {bookingData.selectedTickets.map((ticket, index) => (
+                        <div key={index} className="p-4 bg-gray-750 rounded-lg">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <div className="text-white font-medium">{ticket.name}</div>
+                              <div className="text-gray-400 text-sm">
+                                {ticket.quantity} × ${formatPrice(ticket.price)}
+                              </div>
+                            </div>
+                            <span className="text-yellow-500 font-semibold">${formatPrice(ticket.price * ticket.quantity)}</span>
+                          </div>
                         </div>
-                      </div>
-                      <span className="font-medium">${formatPrice(item.price * item.quantity)}</span>
+                      ))}
                     </div>
-                  ))}
-                  <div className="flex justify-between items-center py-2 font-medium">
-                    <span>Food Subtotal:</span>
-                    <span>${formatPrice(foodSubtotal)}</span>
-                  </div>
+                  )}
                 </div>
-              </div>
-            )}
 
-            {/* Total */}
-            <div className="border-t pt-4 mb-6">
-              <div className="flex justify-between items-center text-2xl font-bold text-gray-800">
-                <span>Total Amount:</span>
-                <span>${formatPrice(grandTotal)}</span>
+                {/* Food Items */}
+                {bookingData.selectedFoodItems && bookingData.selectedFoodItems.length > 0 && (
+                  <div className="p-6 border-b border-gray-700">
+                    <h3 className="text-xl font-semibold text-white mb-4">Food & Beverages</h3>
+                    <div className="space-y-3">
+                      {bookingData.selectedFoodItems.map((item, index) => (
+                        <div key={index} className="p-4 bg-gray-750 rounded-lg">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <div className="text-white font-medium">{item.name}</div>
+                              <div className="text-gray-400 text-sm">
+                                {item.quantity} × ${formatPrice(item.price)}
+                              </div>
+                            </div>
+                            <span className="text-yellow-500 font-semibold">${formatPrice(item.price * item.quantity)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex justify-between space-x-4">
-              <button
-                onClick={() => navigate(-1)}
-                className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Back
-              </button>
-              <button
-                onClick={handleProceedToPayment}
-                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Proceed to Payment
-              </button>
+            {/* Payment Summary Panel */}
+            <div className="lg:col-span-1">
+              <div className="bg-gray-800 rounded-xl shadow-2xl overflow-hidden sticky top-4">
+                <div className="p-6 border-b border-gray-700">
+                  <h3 className="text-xl font-semibold text-white">Payment Summary</h3>
+                </div>
+
+                <div className="p-6">
+                  {/* Price Breakdown */}
+                  <div className="space-y-4">
+                    <div className="flex justify-between text-gray-400">
+                      <span>
+                        {bookingData.bookingType === 'seats' ? 'Seats' : 'Tickets'}
+                      </span>
+                      <span>${formatPrice(ticketSubtotal)}</span>
+                    </div>
+                    
+                    {bookingData.selectedFoodItems && bookingData.selectedFoodItems.length > 0 && (
+                      <div className="flex justify-between text-gray-400">
+                        <span>Food & Beverages</span>
+                        <span>${formatPrice(foodSubtotal)}</span>
+                      </div>
+                    )}
+                    
+                    <div className="border-t border-gray-600 pt-4">
+                      <div className="flex justify-between text-2xl font-bold text-white">
+                        <span>Total</span>
+                        <span className="text-yellow-500">${formatPrice(grandTotal)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="mt-8 space-y-3">
+                    <button
+                      onClick={handleProceedToPayment}
+                      className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+                    >
+                      Proceed to Payment
+                    </button>
+                    
+                    <button
+                      onClick={() => navigate(-1)}
+                      className="w-full bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200"
+                    >
+                      Back
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

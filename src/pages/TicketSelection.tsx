@@ -231,15 +231,15 @@ const TicketSelection: React.FC = () => {
   // If we know the event is not active, show the message
   if (isActive === false) {
     return (
-      <div className="max-w-3xl mx-auto mt-20 p-8 bg-white rounded-xl shadow-lg text-center">
+      <div className="max-w-3xl mx-auto mt-20 p-8 bg-gray-800 rounded-xl shadow-2xl text-center">
         <div className="text-6xl mb-6">⚠️</div>
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">This Event Has Ended</h1>
-        <p className="text-gray-600 mb-8">
+        <h1 className="text-2xl font-bold text-white mb-4">This Event Has Ended</h1>
+        <p className="text-gray-300 mb-8">
           Sorry, this event is no longer available for booking. You will be redirected to the events page in a few seconds.
         </p>
         <button
           onClick={() => navigate('/')}
-          className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
+          className="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-black rounded-lg transition-colors duration-200 font-semibold"
         >
           Return to Events
         </button>
@@ -275,51 +275,37 @@ const TicketSelection: React.FC = () => {
           date={event?.date || state?.eventDate}
           location={event?.location || state?.eventLocation}
           description={event?.description || state?.eventDescription}
-          price={event?.price || state?.eventPrice}
           className="mb-8"
         />
       )}
       
-      <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8">
-        <div className="border-b pb-4 mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Choose Your Tickets</h1>
-          {state?.venue && (
-            <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <h3 className="font-medium text-blue-900 mb-2">📍 Venue Information</h3>
-              <div className="space-y-1 text-sm text-blue-800">
-                <p><span className="font-medium">Name:</span> {state.venue.name}</p>
-                <p><span className="font-medium">Address:</span> {state.venue.address}, {state.venue.city}</p>
-                <p><span className="font-medium">Layout:</span> {state.venue.layoutType}</p>
-                <p><span className="font-medium">Capacity:</span> {state.venue.capacity} people</p>
-                {state.venue.description && (
-                  <p><span className="font-medium">About:</span> {state.venue.description}</p>
-                )}
-              </div>
-            </div>
-          )}
+      <div className="max-w-3xl mx-auto bg-gray-800 rounded-xl shadow-2xl p-8">
+        <div className="border-b border-gray-700 pb-4 mb-6">
+          <h1 className="text-3xl font-bold text-white mb-2">Choose Your Tickets</h1>
         </div>
 
         {loading ? (
           <div className="text-center py-8">
-            <div className="text-gray-600">Loading ticket types...</div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+            <div className="text-gray-300">Loading ticket types...</div>
           </div>
         ) : error ? (
           <div className="text-center py-8">
-            <div className="text-red-600">{error}</div>
+            <div className="text-red-400">{error}</div>
           </div>
         ) : (
           <div className="space-y-4">
             {ticketTypes.map((ticket) => (
               <div 
                 key={ticket.id} 
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                className="flex items-center justify-between p-4 bg-gray-750 rounded-lg hover:bg-gray-700 transition-colors duration-200"
               >
                 <div className="flex-1">
                   <div className="flex items-baseline">
-                    <span className="text-lg font-semibold text-gray-800 capitalize">{ticket.name}</span>
-                    <span className="ml-2 text-sm text-gray-500">ticket</span>
+                    <span className="text-lg font-semibold text-white capitalize">{ticket.name}</span>
+                    <span className="ml-2 text-sm text-gray-400">ticket</span>
                   </div>
-                  <div className="text-gray-600 font-medium">
+                  <div className="text-yellow-500 font-medium">
                     ${ticket.price.toFixed(2)}
                   </div>
                 </div>
@@ -327,17 +313,17 @@ const TicketSelection: React.FC = () => {
                 <div className="flex items-center space-x-3">
                   <button 
                     onClick={() => handleQtyChange(ticket.id, -1)}
-                    className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors duration-200"
+                    className="w-10 h-10 rounded-full bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-gray-300 hover:text-white transition-colors duration-200"
                     disabled={quantities[ticket.id] === 0}
                   >
                     -
                   </button>
-                  <span className="w-8 text-center font-semibold text-gray-800">
+                  <span className="w-8 text-center font-semibold text-white">
                     {quantities[ticket.id] || 0}
                   </span>
                   <button 
                     onClick={() => handleQtyChange(ticket.id, 1)}
-                    className="w-10 h-10 rounded-full bg-primary text-white hover:bg-red-600 flex items-center justify-center transition-colors duration-200"
+                    className="w-10 h-10 rounded-full bg-yellow-600 hover:bg-yellow-700 text-white flex items-center justify-center transition-colors duration-200"
                   >
                     +
                   </button>
@@ -347,16 +333,16 @@ const TicketSelection: React.FC = () => {
           </div>
         )}
 
-        <div className="mt-8 pt-6 border-t">
+        <div className="mt-8 pt-6 border-t border-gray-700">
           <div className="flex items-center justify-between mb-6">
-            <span className="text-gray-600 font-medium">Total Amount</span>
-            <span className="text-2xl font-bold text-gray-800">${total.toFixed(2)}</span>
+            <span className="text-gray-300 font-medium">Total Amount</span>
+            <span className="text-2xl font-bold text-white">${total.toFixed(2)}</span>
           </div>
 
           <div className="flex justify-between space-x-4">
             <button
               onClick={() => navigate(-1)}
-              className="px-6 py-3 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors duration-200 flex items-center"
+              className="px-6 py-3 rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors duration-200 flex items-center"
             >
               <span className="mr-2">←</span> Back
             </button>
@@ -366,8 +352,8 @@ const TicketSelection: React.FC = () => {
               onClick={proceed}
               className={`flex-1 px-6 py-3 rounded-lg ${
                 total === 0 
-                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed' 
-                  : 'bg-primary text-white hover:bg-red-600'
+                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+                  : 'bg-yellow-600 hover:bg-yellow-700 text-black font-semibold'
               } transition-colors duration-200 flex items-center justify-center`}
             >
               Next

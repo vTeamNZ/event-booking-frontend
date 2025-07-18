@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FoodItem, getFoodItemsForEvent } from '../services/foodItemService';
 import { BookingData } from '../types/booking';
 import SEO from '../components/SEO';
@@ -33,7 +33,6 @@ interface EnhancedLocationState extends BookingData {
 const FoodSelection: React.FC = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
-  const { eventTitle } = useParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
@@ -221,170 +220,184 @@ const FoodSelection: React.FC = () => {
         description="Book Food With Your Ticket. Enhance your event experience with delicious food options. Pay online securely with Stripe."
         keywords={['Book Food With Your Ticket', 'Enjoy Food + Entertainment', 'Pay Securely With Stripe']}
       />
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-900">
         {/* Event Hero Section */}
-        <div className="relative">
-          <EventHero 
-            title={locationState?.eventTitle || 'Event Food Selection'}
-            imageUrl={locationState?.imageUrl}
-            description="Select food and beverages for your event"
-            className="h-[300px]"
-          />
-          
-          {/* Back Button Overlay */}
-          <div className="absolute top-4 left-4 z-20">
-            <button
-              onClick={() => navigate(-1)}
-              className="text-white/80 hover:text-white bg-black/30 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-all"
-            >
-              ← Back
-            </button>
-          </div>
-        </div>
+        <EventHero 
+          title={locationState?.eventTitle || 'Event Food Selection'}
+          imageUrl={locationState?.imageUrl}
+          description="Select food and beverages for your event"
+          className="mb-8"
+        />
 
-        {/* Main Content */}
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <div className="border-b pb-4 mb-6">
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">Add Food Items</h1>
-              <p className="text-sm text-gray-500">Optional - Select any food items you'd like to add to your order</p>
-              
-              {/* Booking Summary */}
-              {locationState && (
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                  <h3 className="font-semibold text-gray-800 mb-1">Your Selection:</h3>
-                  {locationState.bookingType === 'seats' && locationState.selectedSeats && (
-                    <p className="text-sm text-gray-600">
-                      Seats: {locationState.selectedSeats.map(seat => `${seat.row}${seat.number}`).join(', ')}
-                    </p>
-                  )}
-                  {locationState.bookingType === 'tickets' && locationState.selectedTickets && (
-                    <div className="text-sm text-gray-600">
-                      {locationState.selectedTickets.map(ticket => (
-                        <p key={ticket.ticketTypeId}>
-                          {ticket.name}: {ticket.quantity} × ${formatPrice(ticket.price)}
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                  {locationState.ticketDetails && !locationState.bookingType && (
-                    <div className="text-sm text-gray-600">
-                      {locationState.ticketDetails.map((ticket, index) => (
-                        <p key={index}>
-                          {ticket.type}: {ticket.quantity} × ${formatPrice(ticket.unitPrice)}
-                        </p>
-                      ))}
-                    </div>
-                  )}
+        {/* Main Content with Dark Cinema Theme */}
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+          
+          {/* Header Section */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">Add Food & Beverages</h1>
+            <p className="text-gray-400">Enhance your event experience with delicious food options</p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* Food Selection Panel */}
+            <div className="lg:col-span-2">
+              <div className="bg-gray-800 rounded-xl shadow-2xl overflow-hidden">
+                <div className="p-6 border-b border-gray-700">
+                  <h2 className="text-xl font-semibold text-white">Available Items</h2>
+                  <p className="text-gray-400 text-sm mt-1">Select items to add to your order</p>
                 </div>
-              )}
+
+                {loading ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+                    <div className="text-gray-400">Loading food items...</div>
+                  </div>
+                ) : error ? (
+                  <div className="text-center py-12">
+                    <div className="text-red-400">{error}</div>
+                  </div>
+                ) : foodItems.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-gray-400 mb-4">No food items available for this event</div>
+                    <button
+                      onClick={proceed}
+                      className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded-lg transition-colors"
+                    >
+                      Continue Without Food
+                    </button>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-700">
+                    {foodItems.map((item) => (
+                      <div key={item.id} className="p-6 hover:bg-gray-750 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-medium text-white">{item.name}</h3>
+                            {item.description && (
+                              <p className="text-gray-400 text-sm mt-1">{item.description}</p>
+                            )}
+                            <div className="text-yellow-500 font-semibold text-lg mt-2">
+                              ${formatPrice(item.price)}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-4 ml-6">
+                            <button 
+                              onClick={() => handleQtyChange(item.id, -1)}
+                              className="w-10 h-10 rounded-full bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-gray-300 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={quantities[item.id] === 0 || item.price === 0}
+                            >
+                              −
+                            </button>
+                            <span className="w-8 text-center font-semibold text-white text-lg">
+                              {quantities[item.id] || 0}
+                            </span>
+                            <button 
+                              onClick={() => handleQtyChange(item.id, 1)}
+                              className="w-10 h-10 rounded-full bg-yellow-600 hover:bg-yellow-700 flex items-center justify-center text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={item.price === 0}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {loading ? (
-              <div className="text-center py-8">
-                <div className="text-gray-600">Loading food items...</div>
-              </div>
-            ) : error ? (
-              <div className="text-center py-8">
-                <div className="text-red-600">{error}</div>
-              </div>
-            ) : foodItems.length === 0 ? (
-              <div className="text-center py-8 px-4">
-                <div className="mb-4">
-                  <svg className="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
-                  </svg>
+            {/* Order Summary Panel */}
+            <div className="lg:col-span-1">
+              <div className="bg-gray-800 rounded-xl shadow-2xl overflow-hidden sticky top-4">
+                <div className="p-6 border-b border-gray-700">
+                  <h3 className="text-xl font-semibold text-white">Order Summary</h3>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">No Food Items Available</h3>
-                <p className="text-gray-600 max-w-md mx-auto">
-                  There are no pre-order food options available for this event. You can proceed to payment for your ticket, or food and beverages may be available for purchase at the venue.
-                </p>
-                <div className="mt-6">
-                  <button
-                    onClick={proceed}
-                    className="px-6 py-3 rounded-lg bg-primary text-white hover:bg-red-600 transition-colors duration-200"
-                  >
-                    Continue to Payment
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {foodItems.map((item) => (
-                  <div 
-                    key={item.id} 
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-baseline">
-                        <span className="text-lg font-semibold text-gray-800">{item.name}</span>
+
+                <div className="p-6">
+                  {/* Event Info */}
+                  {locationState && (
+                    <div className="mb-6 p-4 bg-gray-750 rounded-lg border border-gray-600">
+                      <h4 className="text-white font-medium mb-2">{locationState.eventTitle}</h4>
+                      <p className="text-gray-400 text-sm">
+                        {locationState.bookingType === 'seats' ? 'Reserved Seating' : 'General Admission'}
+                      </p>
+                      
+                      {/* Show selected seats or tickets */}
+                      {locationState.bookingType === 'seats' && locationState.selectedSeats && (
+                        <div className="mt-3 pt-3 border-t border-gray-600">
+                          <p className="text-gray-400 text-sm">Selected Seats:</p>
+                          <p className="text-white font-mono">
+                            {locationState.selectedSeats.map(seat => `${seat.row}${seat.number}`).join(', ')}
+                          </p>
+                        </div>
+                      )}
+
+                      {locationState.selectedTickets && (
+                        <div className="mt-3 pt-3 border-t border-gray-600">
+                          <p className="text-gray-400 text-sm">Tickets:</p>
+                          {locationState.selectedTickets.map((ticket, index) => (
+                            <div key={index} className="flex justify-between text-white text-sm">
+                              <span>{ticket.quantity}x {ticket.name || ticket.type}</span>
+                              <span>${formatPrice(ticket.price)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Food Items Summary */}
+                  {selectedFoodItems.length > 0 && (
+                    <div className="mb-6 p-4 bg-gray-750 rounded-lg border border-gray-600">
+                      <h4 className="text-white font-medium mb-3">Food & Beverages</h4>
+                      {selectedFoodItems.map((item, index) => (
+                        <div key={index} className="flex justify-between text-sm mb-2">
+                          <span className="text-gray-300">{item.quantity}x {item.name}</span>
+                          <span className="text-white">${formatPrice(item.price)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Price Breakdown */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-gray-400">
+                      <span>Tickets</span>
+                      <span>${formatPrice(ticketTotal)}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-400">
+                      <span>Food & Beverages</span>
+                      <span>${formatPrice(foodTotal)}</span>
+                    </div>
+                    <div className="border-t border-gray-600 pt-3">
+                      <div className="flex justify-between text-xl font-bold text-white">
+                        <span>Total</span>
+                        <span className="text-yellow-500">${formatPrice(grandTotal)}</span>
                       </div>
-                      <div className="text-sm text-gray-600 mt-1">{item.description}</div>
-                      <div className="text-gray-600 font-medium mt-2">
-                        ${formatPrice(item.price)}
-                      </div>
-                    </div>              <div className="flex items-center space-x-3">
-                      <button 
-                        onClick={() => handleQtyChange(item.id, -1)}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-200 ${
-                          item.price === 0 
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                            : 'bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-gray-800'
-                        }`}
-                        disabled={quantities[item.id] === 0 || item.price === 0}
-                      >
-                        -
-                      </button>
-                      <span className="w-8 text-center font-semibold text-gray-800">
-                        {quantities[item.id] || 0}
-                      </span>
-                      <button 
-                        onClick={() => handleQtyChange(item.id, 1)}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-200 ${
-                          item.price === 0 
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                            : 'bg-primary text-white hover:bg-red-600'
-                        }`}
-                        disabled={item.price === 0}
-                      >
-                        +
-                      </button>
                     </div>
                   </div>
-                ))}
+
+                  {/* Action Buttons */}
+                  <div className="mt-8 space-y-3">
+                    <button
+                      onClick={proceed}
+                      className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+                    >
+                      Continue to Payment
+                    </button>
+                    
+                    <button
+                      onClick={() => navigate(-1)}
+                      className="w-full bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200"
+                    >
+                      Back
+                    </button>
+                  </div>
+                </div>
               </div>
-            )}
-
-            <div className="mt-8 pt-6 border-t">
-              <div className="space-y-2 mb-6">
-                <div className="flex items-center justify-between text-gray-600">
-                  <span>Ticket Total</span>
-                  <span>${formatPrice(ticketTotal)}</span>
-                </div>
-                <div className="flex items-center justify-between text-gray-600">
-                  <span>Food Total</span>
-                  <span>${formatPrice(foodTotal)}</span>
-                </div>
-                <div className="flex items-center justify-between text-xl font-bold text-gray-800 pt-2 border-t">
-                  <span>Grand Total</span>
-                  <span>${formatPrice(grandTotal)}</span>
-                </div>
-              </div>
-
-              <div className="flex justify-between space-x-4">
-                <button
-                  onClick={() => navigate(-1)}
-                  className="px-6 py-3 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors duration-200 flex items-center"
-                >
-                  <span className="mr-2">←</span> Back
-                </button>
-
-                <button
-                  onClick={proceed}
-                  className="flex-1 px-6 py-3 rounded-lg bg-primary text-white hover:bg-red-600 transition-colors duration-200 flex items-center justify-center"
-                >
-                  Proceed to Payment
-                </button>        </div>
             </div>
           </div>
         </div>

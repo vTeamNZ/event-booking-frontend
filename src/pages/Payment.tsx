@@ -195,16 +195,16 @@ const Payment: React.FC = () => {
     : amount;
   if (!state || !eventId || !eventTitle) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-lg shadow-md">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Invalid Payment State</h2>
-          <p className="text-gray-600 mb-6">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="bg-gray-800 p-8 rounded-lg shadow-2xl">
+          <h2 className="text-2xl font-bold text-yellow-500 mb-4">Invalid Payment State</h2>
+          <p className="text-gray-300 mb-6">
             We couldn't process your payment because some required information is missing.
             Please try again from the event booking page.
           </p>
           <button
             onClick={() => navigate('/')}
-            className="w-full bg-primary text-white py-2 px-4 rounded hover:bg-primary-dark transition-colors"
+            className="w-full bg-yellow-500 hover:bg-yellow-600 text-black py-2 px-4 rounded transition-colors font-semibold"
           >
             Return to Events
           </button>
@@ -482,217 +482,235 @@ const Payment: React.FC = () => {
         title={`Checkout - ${eventTitle}`}
         description="Complete your booking securely with Stripe payment integration."
       />
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-900">
         {/* Event Hero Section */}
-        <div className="relative">
-          <EventHero 
-            title={eventTitle}
-            imageUrl={(state as any)?.imageUrl}
-            description="Complete your booking"
-            className="h-[300px]"
-          />
-          
-          {/* Back Button Overlay */}
-          <div className="absolute top-4 left-4 z-20">
-            <button
-              onClick={() => navigate(-1)}
-              className="text-white/80 hover:text-white bg-black/30 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-all"
-            >
-              ← Back
-            </button>
-          </div>
-        </div>
+        <EventHero 
+          title={eventTitle}
+          imageUrl={(state as any)?.imageUrl}
+          description="Complete your booking"
+          className="mb-8"
+        />
 
         {/* Main Content */}
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-xl shadow-lg p-8">
-            <div className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Payment Details</h2>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+          
+          {/* Header Section */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">Complete Payment</h1>
+            <p className="text-gray-400">Secure checkout with Stripe</p>
+          </div>
 
-              {/* Order Summary */}
-              <div className="border-t border-gray-200 pt-6 mb-8">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Order Summary</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* Payment Form Panel */}
+            <div className="lg:col-span-2">
+              <div className="bg-gray-800 rounded-xl shadow-2xl overflow-hidden">
                 
-                {/* Tickets Summary */}
-                {ticketDetails.length > 0 && (
-                  <div className="mb-6">
-                    <h4 className="font-medium text-gray-700 mb-2">Tickets</h4>
-                    {ticketDetails.map((ticket, idx) => (
-                      <div key={idx} className="flex justify-between text-sm text-gray-600 mb-1">
-                        <span>{ticket.quantity}x {ticket.type} Ticket</span>
-                        <span>${ticket.price.toFixed(2)}</span>
+                {/* Customer Details Form */}
+                <form onSubmit={handleSubmit} className="p-6">
+                  <div className="mb-8">
+                    <h2 className="text-xl font-semibold text-white mb-6">Customer Information</h2>
+                    
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                      <div>
+                        <label htmlFor="firstName" className="block text-sm font-medium text-gray-300 mb-2">
+                          First Name *
+                        </label>
+                        <input
+                          type="text"
+                          id="firstName"
+                          name="firstName"
+                          required
+                          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                          placeholder="Enter first name"
+                        />
                       </div>
-                    ))}
-                    <div className="flex justify-between font-medium text-gray-800 border-t pt-2">
-                      <span>Tickets Total:</span>
-                      <span>${ticketDetails.reduce((total, item) => total + item.price, 0).toFixed(2)}</span>
+                      <div>
+                        <label htmlFor="lastName" className="block text-sm font-medium text-gray-300 mb-2">
+                          Last Name *
+                        </label>
+                        <input
+                          type="text"
+                          id="lastName"
+                          name="lastName"
+                          required
+                          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                          placeholder="Enter last name"
+                        />
+                      </div>
                     </div>
-                  </div>
-                )}
-
-                {/* Food Summary */}
-                {selectedFoods.length > 0 && (
-                  <div className="mb-6">
-                    <h4 className="font-medium text-gray-700 mb-2">Food Items</h4>
-                    {selectedFoods.map((item, idx) => {
-                      const itemTotal = item.quantity * item.price;
-                      return (
-                        <div key={idx} className="flex justify-between text-sm text-gray-600 mb-1">
-                          <span>{item.quantity}x {item.name}</span>
-                          <span>${itemTotal.toFixed(2)}</span>
-                        </div>
-                      );
-                    })}
-                    <div className="flex justify-between font-medium text-gray-800 border-t pt-2">
-                      <span>Food Total:</span>
-                      <span>${selectedFoods.reduce((total, item) => total + (item.quantity * item.price), 0).toFixed(2)}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Grand Total */}
-                <div className="border-t border-gray-200 pt-4">
-                  <div className="flex justify-between text-base font-medium text-gray-800 mb-2">
-                    <span>Subtotal</span>
-                    <span>${amount.toFixed(2)}</span>
-                  </div>
-                  
-                  {/* Processing Fee */}
-                  {processingFee && processingFee.processingFeeAmount > 0 && (
-                    <div className="flex justify-between text-sm text-gray-600 mb-2">
-                      <span>{processingFee.description}</span>
-                      <span>${processingFee.processingFeeAmount.toFixed(2)}</span>
-                    </div>
-                  )}
-                  
-                  {loadingProcessingFee && (
-                    <div className="flex justify-between text-sm text-gray-500 mb-2">
-                      <span>Calculating processing fee...</span>
-                      <span>-</span>
-                    </div>
-                  )}
-                  
-                  <div className="flex justify-between text-lg font-bold text-gray-900 border-t pt-2">
-                    <span>Total Amount</span>
-                    <span className="text-primary">
-                      ${processingFee ? processingFee.totalAmount.toFixed(2) : amount.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Customer Details Form */}
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Customer Information</h3>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                      <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-                        First Name *
+                    
+                    <div className="mt-6">
+                      <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+                        Email Address *
                       </label>
                       <input
-                        type="text"
-                        id="firstName"
-                        name="firstName"
+                        type="email"
+                        id="email"
+                        name="email"
                         required
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                        className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                        placeholder="Enter email address"
                       />
                     </div>
-                    <div>
-                      <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-                        Last Name *
+                    
+                    <div className="mt-6">
+                      <label htmlFor="mobile" className="block text-sm font-medium text-gray-300 mb-2">
+                        Mobile Number
                       </label>
                       <input
-                        type="text"
-                        id="lastName"
-                        name="lastName"
-                        required
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                        type="tel"
+                        id="mobile"
+                        name="mobile"
+                        className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                        placeholder="Enter mobile number (optional)"
                       />
                     </div>
                   </div>
-                  <div className="mt-4">
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      required
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                    />
-                  </div>
-                  <div className="mt-4">
-                    <label htmlFor="mobile" className="block text-sm font-medium text-gray-700">
-                      Mobile Number
-                    </label>
-                    <input
-                      type="tel"
-                      id="mobile"
-                      name="mobile"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                    />
-                  </div>
-                </div>
 
-                {error && (
-                  <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md">
-                    {error}
-                  </div>
-                )}
+                  {error && (
+                    <div className="mb-6 text-red-400 text-sm bg-red-900/20 border border-red-500/20 p-4 rounded-lg">
+                      {error}
+                    </div>
+                  )}
 
-                <div className="border-t border-gray-200 pt-6">
-                  {isAuthenticated && isOrganizer() ? (
-                    <div className="flex flex-col space-y-4">
+                  {/* Action Buttons */}
+                  <div className="border-t border-gray-700 pt-6">
+                    {isAuthenticated && isOrganizer() ? (
+                      <div className="space-y-4">
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors duration-200 ${
+                            loading 
+                              ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                              : 'bg-yellow-600 hover:bg-yellow-700 text-white'
+                          }`}
+                        >
+                          {loading ? 'Processing...' : `Pay $${finalAmount.toFixed(2)}`}
+                        </button>
+                        
+                        <button
+                          type="button"
+                          disabled={loading}
+                          onClick={() => {
+                            const form = document.querySelector('form') as HTMLFormElement;
+                            const formData = new FormData(form);
+                            const customerDetails = {
+                              firstName: formData.get('firstName') as string,
+                              lastName: formData.get('lastName') as string,
+                              email: formData.get('email') as string,
+                              mobile: formData.get('mobile') as string
+                            };
+                            handleGenerateQRTickets(customerDetails);
+                          }}
+                          className="w-full py-3 px-6 border border-green-500 rounded-lg font-semibold text-green-400 hover:text-white hover:bg-green-600 transition-colors duration-200"
+                        >
+                          {loading ? 'Generating...' : 'Generate QR Tickets (Organizer Only)'}
+                        </button>
+                        
+                        <p className="text-xs text-gray-400 text-center">
+                          As an organizer, you can generate QR tickets directly using your details.
+                        </p>
+                      </div>
+                    ) : (
                       <button
                         type="submit"
                         disabled={loading}
-                        className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+                        className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors duration-200 ${
                           loading 
-                            ? 'bg-gray-400 cursor-not-allowed' 
-                            : 'bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary'
+                            ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                            : 'bg-yellow-600 hover:bg-yellow-700 text-white'
                         }`}
                       >
-                        {loading ? 'Processing...' : `Pay $${finalAmount.toFixed(2)}`}
+                        {loading ? 'Creating Checkout...' : `Pay $${finalAmount.toFixed(2)}`}
                       </button>
-                      <button
-                        type="button"
-                        disabled={loading}
-                        onClick={() => {
-                          const form = document.querySelector('form') as HTMLFormElement;
-                          const formData = new FormData(form);
-                          const customerDetails = {
-                            firstName: formData.get('firstName') as string,
-                            lastName: formData.get('lastName') as string,
-                            email: formData.get('email') as string,
-                            mobile: formData.get('mobile') as string
-                          };
-                          handleGenerateQRTickets(customerDetails);
-                        }}
-                        className="w-full flex justify-center py-3 px-4 border border-green-500 rounded-md shadow-sm text-sm font-medium text-white bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                      >
-                        {loading ? 'Generating...' : 'Generate QR Tickets (Organizer Only)'}
-                      </button>
-                      <p className="text-xs text-gray-500 text-center mt-2">
-                        As an organizer, you can generate QR tickets directly using your details.
-                      </p>
-                    </div>
-                  ) : (
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                        loading 
-                          ? 'bg-gray-400 cursor-not-allowed' 
-                          : 'bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary'
-                      }`}
-                    >
-                      {loading ? 'Creating Checkout...' : `Pay $${finalAmount.toFixed(2)}`}
-                    </button>
-                  )}
+                    )}
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            {/* Order Summary Panel */}
+            <div className="lg:col-span-1">
+              <div className="bg-gray-800 rounded-xl shadow-2xl overflow-hidden sticky top-4">
+                <div className="p-6 border-b border-gray-700">
+                  <h3 className="text-xl font-semibold text-white">Order Summary</h3>
                 </div>
-              </form>
+
+                <div className="p-6">
+                  {/* Tickets Summary */}
+                  {ticketDetails.length > 0 && (
+                    <div className="mb-6 p-4 bg-gray-750 rounded-lg border border-gray-600">
+                      <h4 className="text-white font-medium mb-3">Tickets</h4>
+                      {ticketDetails.map((ticket, idx) => (
+                        <div key={idx} className="flex justify-between text-sm mb-2">
+                          <span className="text-gray-300">{ticket.quantity}x {ticket.type}</span>
+                          <span className="text-white">${ticket.price.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Food Summary */}
+                  {selectedFoods.length > 0 && (
+                    <div className="mb-6 p-4 bg-gray-750 rounded-lg border border-gray-600">
+                      <h4 className="text-white font-medium mb-3">Food & Beverages</h4>
+                      {selectedFoods.map((item, idx) => {
+                        const itemTotal = item.quantity * item.price;
+                        return (
+                          <div key={idx} className="flex justify-between text-sm mb-2">
+                            <span className="text-gray-300">{item.quantity}x {item.name}</span>
+                            <span className="text-white">${itemTotal.toFixed(2)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Price Breakdown */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-gray-400">
+                      <span>Subtotal</span>
+                      <span>${amount.toFixed(2)}</span>
+                    </div>
+                    
+                    {/* Processing Fee */}
+                    {processingFee && processingFee.processingFeeAmount > 0 && (
+                      <div className="flex justify-between text-gray-400 text-sm">
+                        <span>{processingFee.description}</span>
+                        <span>${processingFee.processingFeeAmount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    
+                    {loadingProcessingFee && (
+                      <div className="flex justify-between text-gray-500 text-sm">
+                        <span>Calculating processing fee...</span>
+                        <span>-</span>
+                      </div>
+                    )}
+                    
+                    <div className="border-t border-gray-600 pt-3">
+                      <div className="flex justify-between text-xl font-bold text-white">
+                        <span>Total Amount</span>
+                        <span className="text-yellow-500">
+                          ${processingFee ? processingFee.totalAmount.toFixed(2) : amount.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Back Button */}
+                  <div className="mt-8">
+                    <button
+                      onClick={() => navigate(-1)}
+                      className="w-full bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200"
+                    >
+                      Back
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

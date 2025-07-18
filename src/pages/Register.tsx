@@ -97,13 +97,13 @@ const Register: React.FC = () => {
         description="Create your KiwiLanka Events account to book tickets or organize events." 
         keywords={["Register", "Sign Up", "Event Booking Account", "Organizer Registration"]}
       />
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           <div>
             <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
               Create your account
             </h2>
-            <p className="mt-2 text-center text-sm text-gray-600">
+            <p className="mt-2 text-center text-sm text-gray-300">
               Or{' '}
               <Link to="/login" className="font-medium text-primary hover:text-red-500">
                 sign in to your existing account
@@ -114,7 +114,7 @@ const Register: React.FC = () => {
             <div className="space-y-4">
               {/* Role Selection */}
               <div>
-                <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="role" className="block text-sm font-medium text-gray-300">
                   Account Type
                 </label>
                 <select
@@ -135,7 +135,7 @@ const Register: React.FC = () => {
 
               {/* Full Name */}
               <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="fullName" className="block text-sm font-medium text-gray-300">
                   Full Name
                 </label>
                 <input
@@ -156,7 +156,7 @@ const Register: React.FC = () => {
 
               {/* Email */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-300">
                   Email Address
                 </label>
                 <input
@@ -179,7 +179,7 @@ const Register: React.FC = () => {
               {isOrganizer && (
                 <>
                   <div>
-                    <label htmlFor="organizationName" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="organizationName" className="block text-sm font-medium text-gray-300">
                       Organization Name *
                     </label>
                     <input
@@ -198,7 +198,7 @@ const Register: React.FC = () => {
                   </div>
 
                   <div>
-                    <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-300">
                       Phone Number
                     </label>
                     <input
@@ -217,7 +217,7 @@ const Register: React.FC = () => {
                   </div>
 
                   <div>
-                    <label htmlFor="website" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="website" className="block text-sm font-medium text-gray-300">
                       Website
                     </label>
                     <input
@@ -239,7 +239,7 @@ const Register: React.FC = () => {
 
               {/* Password */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-300">
                   Password
                 </label>
                 <input
@@ -260,7 +260,7 @@ const Register: React.FC = () => {
 
               {/* Confirm Password */}
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300">
                   Confirm Password
                 </label>
                 <input

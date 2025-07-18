@@ -56,5 +56,6 @@ export const navigateToEvent = (
   state?: any
 ) => {
   const slug = createEventSlug(title);
-  navigate(`/${slug}`, state ? { state } : undefined);
+  const path = `/${slug}`;
+  navigate(path, state ? { state } : undefined);
 };

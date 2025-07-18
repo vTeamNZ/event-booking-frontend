@@ -113,11 +113,11 @@ const PaymentSuccess: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <h3 className="text-lg font-medium text-gray-800 mb-2">Processing Your Payment</h3>
-          <p className="text-gray-600 mb-4">{pollingProgress || 'Verifying your payment...'}</p>
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="bg-gray-800 rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+          <h3 className="text-lg font-medium text-white mb-2">Processing Your Payment</h3>
+          <p className="text-gray-400 mb-4">{pollingProgress || 'Verifying your payment...'}</p>
           
           {/* ✅ Show verification source if available */}
           {verificationSource && (
@@ -139,11 +139,11 @@ const PaymentSuccess: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-          <div className="text-red-600 text-6xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Payment Verification Failed</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="bg-gray-800 rounded-lg shadow-2xl p-8 max-w-md w-full text-center">
+          <div className="text-yellow-500 text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-white mb-4">Payment Verification Failed</h2>
+          <p className="text-gray-300 mb-4">{error}</p>
           
           {/* ✅ Show additional context */}
           {pollingProgress && (
@@ -183,19 +183,19 @@ const PaymentSuccess: React.FC = () => {
           description="QR tickets have been generated successfully. You can now use these tickets for event entry."
           keywords={['QR Tickets', 'Event Tickets', 'Organizer Access']}
         />
-        <div className="max-w-2xl mx-auto mt-20 p-8 bg-white rounded-xl shadow-lg text-center">
+        <div className="max-w-2xl mx-auto mt-20 p-8 bg-gray-800 rounded-xl shadow-2xl text-center">
           <div className="mb-6">
-            <div className="w-16 h-16 bg-green-100 rounded-full mx-auto flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 bg-green-900 rounded-full mx-auto flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">QR Tickets Generated!</h1>
-            <p className="text-gray-600 mb-4">
+            <h1 className="text-3xl font-bold text-white mb-2">QR Tickets Generated!</h1>
+            <p className="text-gray-300 mb-4">
               Your QR tickets for {eventTitle} have been generated successfully as an organizer.
             </p>
-            <div className="text-sm text-gray-600 bg-green-50 p-4 rounded-lg inline-flex items-center">
-              <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="text-sm text-gray-300 bg-green-900 p-4 rounded-lg inline-flex items-center">
+              <svg className="w-5 h-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
               QR tickets have been saved to the system and can be accessed for event entry.
@@ -203,12 +203,12 @@ const PaymentSuccess: React.FC = () => {
           </div>
 
           {qrResults.length > 0 && (
-            <div className="bg-gray-50 rounded-lg p-6 mb-6">
-              <h3 className="text-lg font-medium text-gray-800 mb-4">Generated Tickets</h3>
+            <div className="bg-gray-750 rounded-lg p-6 mb-6">
+              <h3 className="text-lg font-medium text-white mb-4">Generated Tickets</h3>
               <div className="space-y-2">
                 {qrResults.map((qrResult: any, index: number) => (
-                  <div key={index} className="flex justify-between items-center p-3 bg-white rounded border">
-                    <span className="text-gray-600">Seat {qrResult.seatNo}:</span>
+                  <div key={index} className="flex justify-between items-center p-3 bg-gray-700 rounded border border-gray-600">
+                    <span className="text-gray-300">Seat {qrResult.seatNo}:</span>
                     <div className="text-right">
                       <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                         qrResult.result.isDuplicate 

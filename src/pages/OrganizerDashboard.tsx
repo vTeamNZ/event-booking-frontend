@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import SEO from '../components/SEO';
 import toast from 'react-hot-toast';
 import { api } from '../services/api';
+import { createEventSlug } from '../utils/slugUtils';
 
 interface OrganizerProfile {
   id: number;
@@ -201,9 +202,9 @@ const OrganizerDashboard: React.FC = () => {
         description="Manage your events, view analytics, and organize bookings from your organizer dashboard." 
         keywords={["Organizer Dashboard", "Event Management", "Event Analytics"]}
       />
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-900">
         {/* Header */}
-        <div className="bg-white shadow">
+        <div className="bg-gray-800 shadow border-b border-gray-700">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-6">
               <div>
@@ -234,12 +235,12 @@ const OrganizerDashboard: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Profile Card */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Profile Information</h3>
+              <div className="bg-gray-800 rounded-lg shadow-2xl p-6">
+                <h3 className="text-lg font-medium text-white mb-4">Profile Information</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Name</label>
-                    <p className="text-sm text-gray-900">{organizer.name}</p>
+                    <label className="block text-sm font-medium text-gray-300">Name</label>
+                    <p className="text-sm text-white">{organizer.name}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Email</label>
@@ -349,7 +350,7 @@ const OrganizerDashboard: React.FC = () => {
                             </div>
                             <div className="flex flex-col items-end space-y-2">
                               <Link
-                                to={`/event/${event.title}/tickets`}
+                                to={`/event/${createEventSlug(event.title)}/tickets`}
                                 className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center"
                               >
                                 🎫 Test Full Booking Process

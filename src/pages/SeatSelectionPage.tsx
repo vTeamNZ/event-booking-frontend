@@ -243,10 +243,10 @@ const SeatSelectionPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading event details...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading event details...</p>
         </div>
       </div>
     );
@@ -254,13 +254,13 @@ const SeatSelectionPage: React.FC = () => {
 
   if (error || !event || isActive === false) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-red-600 text-6xl mb-4">⚠️</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          <div className="text-yellow-500 text-6xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold text-white mb-4">
             {isActive === false ? 'Event No Longer Available' : 'Error'}
           </h1>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-300 mb-6">
             {error || 'This event is no longer available for booking.'}
           </p>
           <button
@@ -282,7 +282,7 @@ const SeatSelectionPage: React.FC = () => {
         image={event.imageUrl}
       />
       
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-900">
         {/* Event Hero Section */}
         <div className="relative">
           <EventHero 
@@ -291,7 +291,6 @@ const SeatSelectionPage: React.FC = () => {
             date={event.date}
             location={event.location}
             description={event.description}
-            price={event.price}
           />
           
           {/* Back Button Overlay */}
@@ -317,9 +316,13 @@ const SeatSelectionPage: React.FC = () => {
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {state?.eventId ? (
-            <div className="bg-white rounded-xl shadow-xl p-6">
+            <div className="bg-gray-800 rounded-xl shadow-2xl p-6">
               <div className="max-w-4xl mx-auto">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-6">Select Your Seats</h2>
+                {/* Event Details Section */}
+                <div className="mb-6">
+                  <h2 className="text-2xl font-semibold text-gray-900 mb-2">Select Your Seats</h2>
+                </div>
+                
                 <SeatingLayoutV2 
                   key={refreshKey}
                   eventId={state.eventId}
@@ -340,7 +343,7 @@ const SeatSelectionPage: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <div className="bg-white border-t">
+        <div className="bg-gray-800 border-t border-gray-700">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="text-center text-gray-500 text-sm">
               Need help? Contact our support team at support@example.com
