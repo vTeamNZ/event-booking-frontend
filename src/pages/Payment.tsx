@@ -197,14 +197,14 @@ const Payment: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="bg-gray-800 p-8 rounded-lg shadow-2xl">
-          <h2 className="text-2xl font-bold text-yellow-500 mb-4">Invalid Payment State</h2>
+          <h2 className="text-2xl font-bold text-warning mb-4">Invalid Payment State</h2>
           <p className="text-gray-300 mb-6">
             We couldn't process your payment because some required information is missing.
             Please try again from the event booking page.
           </p>
           <button
             onClick={() => navigate('/')}
-            className="w-full bg-yellow-500 hover:bg-yellow-600 text-black py-2 px-4 rounded transition-colors font-semibold"
+            className="w-full bg-primary hover:bg-primary-dark text-black py-2 px-4 rounded transition-colors font-semibold"
           >
             Return to Events
           </button>
@@ -569,7 +569,7 @@ const Payment: React.FC = () => {
                   </div>
 
                   {error && (
-                    <div className="mb-6 text-red-400 text-sm bg-red-900/20 border border-red-500/20 p-4 rounded-lg">
+                    <div className="mb-6 text-error text-sm bg-error/20 border border-error/20 p-4 rounded-lg">
                       {error}
                     </div>
                   )}
@@ -584,7 +584,7 @@ const Payment: React.FC = () => {
                           className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors duration-200 ${
                             loading 
                               ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
-                              : 'bg-yellow-600 hover:bg-yellow-700 text-white'
+                              : 'bg-primary hover:bg-primary-dark text-black'
                           }`}
                         >
                           {loading ? 'Processing...' : `Pay $${finalAmount.toFixed(2)}`}
@@ -604,7 +604,7 @@ const Payment: React.FC = () => {
                             };
                             handleGenerateQRTickets(customerDetails);
                           }}
-                          className="w-full py-3 px-6 border border-green-500 rounded-lg font-semibold text-green-400 hover:text-white hover:bg-green-600 transition-colors duration-200"
+                          className="w-full py-3 px-6 border border-success rounded-lg font-semibold text-success hover:text-black hover:bg-success transition-colors duration-200"
                         >
                           {loading ? 'Generating...' : 'Generate QR Tickets (Organizer Only)'}
                         </button>
@@ -620,7 +620,7 @@ const Payment: React.FC = () => {
                         className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors duration-200 ${
                           loading 
                             ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
-                            : 'bg-yellow-600 hover:bg-yellow-700 text-white'
+                            : 'bg-primary hover:bg-primary-dark text-black'
                         }`}
                       >
                         {loading ? 'Creating Checkout...' : `Pay $${finalAmount.toFixed(2)}`}
@@ -693,7 +693,7 @@ const Payment: React.FC = () => {
                     <div className="border-t border-gray-600 pt-3">
                       <div className="flex justify-between text-xl font-bold text-white">
                         <span>Total Amount</span>
-                        <span className="text-yellow-500">
+                        <span className="text-primary">
                           ${processingFee ? processingFee.totalAmount.toFixed(2) : amount.toFixed(2)}
                         </span>
                       </div>

@@ -239,7 +239,7 @@ const TicketSelection: React.FC = () => {
         </p>
         <button
           onClick={() => navigate('/')}
-          className="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-black rounded-lg transition-colors duration-200 font-semibold"
+          className="px-6 py-3 bg-primary hover:bg-primary-dark text-black rounded-lg transition-colors duration-200 font-semibold"
         >
           Return to Events
         </button>
@@ -291,7 +291,7 @@ const TicketSelection: React.FC = () => {
           </div>
         ) : error ? (
           <div className="text-center py-8">
-            <div className="text-red-400">{error}</div>
+            <div className="text-error">{error}</div>
           </div>
         ) : (
           <div className="space-y-4">
@@ -305,7 +305,7 @@ const TicketSelection: React.FC = () => {
                     <span className="text-lg font-semibold text-white capitalize">{ticket.name}</span>
                     <span className="ml-2 text-sm text-gray-400">ticket</span>
                   </div>
-                  <div className="text-yellow-500 font-medium">
+                  <div className="text-primary font-medium">
                     ${ticket.price.toFixed(2)}
                   </div>
                 </div>
@@ -323,7 +323,7 @@ const TicketSelection: React.FC = () => {
                   </span>
                   <button 
                     onClick={() => handleQtyChange(ticket.id, 1)}
-                    className="w-10 h-10 rounded-full bg-yellow-600 hover:bg-yellow-700 text-white flex items-center justify-center transition-colors duration-200"
+                    className="w-10 h-10 rounded-full bg-primary hover:bg-primary-dark text-black flex items-center justify-center transition-colors duration-200"
                   >
                     +
                   </button>
@@ -353,7 +353,7 @@ const TicketSelection: React.FC = () => {
               className={`flex-1 px-6 py-3 rounded-lg ${
                 total === 0 
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
-                  : 'bg-yellow-600 hover:bg-yellow-700 text-black font-semibold'
+                  : 'bg-primary hover:bg-primary-dark text-black font-semibold'
               } transition-colors duration-200 flex items-center justify-center`}
             >
               Next

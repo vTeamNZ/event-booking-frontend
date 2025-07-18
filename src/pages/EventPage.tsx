@@ -143,7 +143,7 @@ const EventPage: React.FC = () => {
           <p className="text-gray-300 mb-6">{error}</p>
           <button
             onClick={() => navigate('/')}
-            className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-3 rounded-lg transition-colors font-semibold"
+            className="bg-primary hover:bg-primary-dark text-black px-6 py-3 rounded-lg transition-colors font-semibold"
           >
             Back to Events
           </button>

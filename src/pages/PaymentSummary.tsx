@@ -75,7 +75,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = () => {
           <p>No booking data found. Please start over.</p>
           <button
             onClick={() => navigate('/events')}
-            className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="mt-4 px-6 py-2 bg-primary text-black rounded-lg hover:bg-primary-dark"
           >
             Back to Events
           </button>
@@ -130,7 +130,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = () => {
                       {bookingData.selectedSeats.map((seat, index) => (
                         <div key={index} className="flex justify-between items-center py-3 px-4 bg-gray-750 rounded-lg">
                           <span className="text-gray-300">Seat {seat.row}{seat.number}</span>
-                          <span className="text-yellow-500 font-semibold">${formatPrice(seat.price)}</span>
+                          <span className="text-primary font-semibold">${formatPrice(seat.price)}</span>
                         </div>
                       ))}
                     </div>
@@ -147,7 +147,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = () => {
                                 {ticket.quantity} × ${formatPrice(ticket.price)}
                               </div>
                             </div>
-                            <span className="text-yellow-500 font-semibold">${formatPrice(ticket.price * ticket.quantity)}</span>
+                            <span className="text-primary font-semibold">${formatPrice(ticket.price * ticket.quantity)}</span>
                           </div>
                         </div>
                       ))}
@@ -169,7 +169,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = () => {
                                 {item.quantity} × ${formatPrice(item.price)}
                               </div>
                             </div>
-                            <span className="text-yellow-500 font-semibold">${formatPrice(item.price * item.quantity)}</span>
+                            <span className="text-primary font-semibold">${formatPrice(item.price * item.quantity)}</span>
                           </div>
                         </div>
                       ))}
@@ -206,7 +206,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = () => {
                     <div className="border-t border-gray-600 pt-4">
                       <div className="flex justify-between text-2xl font-bold text-white">
                         <span>Total</span>
-                        <span className="text-yellow-500">${formatPrice(grandTotal)}</span>
+                        <span className="text-primary">${formatPrice(grandTotal)}</span>
                       </div>
                     </div>
                   </div>
@@ -215,7 +215,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = () => {
                   <div className="mt-8 space-y-3">
                     <button
                       onClick={handleProceedToPayment}
-                      className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+                      className="w-full bg-primary hover:bg-primary-dark text-black font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
                     >
                       Proceed to Payment
                     </button>

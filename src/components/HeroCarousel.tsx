@@ -219,7 +219,7 @@ const HeroCarousel: React.FC = () => {
                   if (isOrganizer && eventStatus === 0) {
                     return (
                       <div className="absolute top-2 right-2 z-10">
-                        <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                        <span className="bg-info text-black text-xs px-2 py-1 rounded-full">
                           🧪 TEST
                         </span>
                       </div>

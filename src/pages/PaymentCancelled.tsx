@@ -20,9 +20,9 @@ const PaymentCancelled: React.FC = () => {
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
           <div className="bg-gray-800 py-8 px-4 shadow-2xl rounded-xl sm:px-10">
             <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-warning/20">
                 <svg
-                  className="h-6 w-6 text-yellow-600"
+                  className="h-6 w-6 text-warning"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"

@@ -29,7 +29,7 @@ const PaymentFailed: React.FC = () => {
             <div className="text-center">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
                 <svg
-                  className="h-6 w-6 text-red-600"
+                  className="h-6 w-6 text-error"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -53,7 +53,7 @@ const PaymentFailed: React.FC = () => {
               <div className="mt-6 space-y-3">
                 <button
                   onClick={handleRetryPayment}
-                  className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-black bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                 >
                   Try Payment Again
                 </button>

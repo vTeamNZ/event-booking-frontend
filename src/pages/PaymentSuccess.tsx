@@ -141,7 +141,7 @@ const PaymentSuccess: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="bg-gray-800 rounded-lg shadow-2xl p-8 max-w-md w-full text-center">
-          <div className="text-yellow-500 text-6xl mb-4">⚠️</div>
+          <div className="text-warning text-6xl mb-4">⚠️</div>
           <h2 className="text-2xl font-bold text-white mb-4">Payment Verification Failed</h2>
           <p className="text-gray-300 mb-4">{error}</p>
           
@@ -153,7 +153,7 @@ const PaymentSuccess: React.FC = () => {
           <div className="space-y-3">
             <button
               onClick={() => window.location.reload()}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+              className="w-full bg-primary text-black py-2 px-4 rounded hover:bg-primary-dark"
             >
               Try Again
             </button>
@@ -185,8 +185,8 @@ const PaymentSuccess: React.FC = () => {
         />
         <div className="max-w-2xl mx-auto mt-20 p-8 bg-gray-800 rounded-xl shadow-2xl text-center">
           <div className="mb-6">
-            <div className="w-16 h-16 bg-green-900 rounded-full mx-auto flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 bg-success/20 rounded-full mx-auto flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
             </div>
@@ -194,8 +194,8 @@ const PaymentSuccess: React.FC = () => {
             <p className="text-gray-300 mb-4">
               Your QR tickets for {eventTitle} have been generated successfully as an organizer.
             </p>
-            <div className="text-sm text-gray-300 bg-green-900 p-4 rounded-lg inline-flex items-center">
-              <svg className="w-5 h-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="text-sm text-gray-300 bg-success/20 p-4 rounded-lg inline-flex items-center">
+              <svg className="w-5 h-5 text-success mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
               QR tickets have been saved to the system and can be accessed for event entry.
@@ -212,8 +212,8 @@ const PaymentSuccess: React.FC = () => {
                     <div className="text-right">
                       <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                         qrResult.result.isDuplicate 
-                          ? 'bg-yellow-100 text-yellow-800' 
-                          : 'bg-green-100 text-green-800'
+                          ? 'bg-warning/20 text-warning' 
+                          : 'bg-success/20 text-success'
                       }`}>
                         {qrResult.result.isDuplicate ? 'Already Existed' : 'Generated'}
                       </span>
@@ -256,8 +256,8 @@ const PaymentSuccess: React.FC = () => {
         />
         <div className="max-w-2xl mx-auto mt-20 p-8 bg-white rounded-xl shadow-lg text-center">
           <div className="mb-6">
-            <div className="w-16 h-16 bg-purple-100 rounded-full mx-auto flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 bg-primary/20 rounded-full mx-auto flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
             </div>
@@ -266,8 +266,8 @@ const PaymentSuccess: React.FC = () => {
               Your tickets for {eventTitle} have been reserved without payment as an organizer.
             </p>
             {reservationId && (
-              <div className="text-sm text-gray-600 bg-purple-50 p-4 rounded-lg inline-flex items-center">
-                <svg className="w-5 h-5 text-purple-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="text-sm text-gray-600 bg-primary/20 p-4 rounded-lg inline-flex items-center">
+                <svg className="w-5 h-5 text-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
                 Reservation ID: {reservationId}
@@ -297,8 +297,8 @@ const PaymentSuccess: React.FC = () => {
       />
       <div className="max-w-2xl mx-auto mt-20 p-8 bg-white rounded-xl shadow-lg text-center">
         <div className="mb-6">
-          <div className="w-16 h-16 bg-green-100 rounded-full mx-auto flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-16 h-16 bg-success/20 rounded-full mx-auto flex items-center justify-center mb-4">
+            <svg className="w-8 h-8 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
             </svg>
           </div>
@@ -307,8 +307,8 @@ const PaymentSuccess: React.FC = () => {
             {sessionData?.eventTitle ? `Your tickets for ${sessionData.eventTitle} have been booked and your e-ticket has been emailed to you.` : 'Thank you for your purchase.'}
           </p>
           
-          <div className="text-sm text-gray-600 bg-green-50 p-4 rounded-lg inline-flex items-center">
-            <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="text-sm text-gray-600 bg-success/20 p-4 rounded-lg inline-flex items-center">
+            <svg className="w-5 h-5 text-success mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2v10a2 2 0 002 2z"></path>
             </svg>
             A payment receipt has been sent to your email. Please note that it may take a short while for the email to arrive in your inbox.
@@ -361,8 +361,8 @@ const PaymentSuccess: React.FC = () => {
                         <span className="text-gray-600">Seat {qr.seatNumber}:</span>
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                           qr.success 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
+                            ? 'bg-success/20 text-success' 
+                            : 'bg-error/20 text-error'
                         }`}>
                           {qr.success ? '✓ Generated' : '✗ Failed'}
                         </span>

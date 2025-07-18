@@ -317,10 +317,10 @@ const EventsList: React.FC = () => {
     const eventStatus = event.status ?? (event.isActive ? 2 : 3);
     
     const statusConfig = {
-      0: { color: 'bg-gray-100 text-gray-800', text: '📝 Draft - Test Ready', testLabel: 'Test Booking' },
-      1: { color: 'bg-yellow-100 text-yellow-800', text: '⏳ Pending Review', testLabel: 'Review & Test' },
-      2: { color: 'bg-green-100 text-green-800', text: '✅ Active', testLabel: '' },
-      3: { color: 'bg-red-100 text-red-800', text: '❌ Inactive', testLabel: '' }
+      0: { color: 'bg-gray-200 text-gray-800', text: '📝 Draft - Test Ready', testLabel: 'Test Booking' },
+      1: { color: 'bg-warning/20 text-warning', text: '⏳ Pending Review', testLabel: 'Review & Test' },
+      2: { color: 'bg-success/20 text-success', text: '✅ Active', testLabel: '' },
+      3: { color: 'bg-error/20 text-error', text: '❌ Inactive', testLabel: '' }
     };
     
     const config = statusConfig[eventStatus as keyof typeof statusConfig] || statusConfig[2];
@@ -331,7 +331,7 @@ const EventsList: React.FC = () => {
           {config.text}
         </span>
         {(eventStatus === 0 || eventStatus === 1) && config.testLabel && (
-          <span className="text-xs text-blue-600 font-medium">
+          <span className="text-xs text-info font-medium">
             👆 {config.testLabel}
           </span>
         )}
@@ -376,7 +376,7 @@ const EventsList: React.FC = () => {
                     </h1>
                     <Link 
                       to="/"
-                      className="text-yellow-500 hover:text-yellow-400 transition-colors flex items-center gap-2"
+                      className="text-primary hover:text-primary-dark transition-colors flex items-center gap-2"
                     >
                       ← All Events
                     </Link>
@@ -398,7 +398,7 @@ const EventsList: React.FC = () => {
                     onClick={() => setSelectedCity('all')}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200
                       ${selectedCity === 'all'
-                        ? 'bg-yellow-600 text-white shadow-md'
+                        ? 'bg-primary text-black shadow-md'
                         : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600'
                       }`}
                   >
@@ -410,7 +410,7 @@ const EventsList: React.FC = () => {
                       onClick={() => setSelectedCity(city)}
                       className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200
                         ${selectedCity === city
-                          ? 'bg-yellow-600 text-white shadow-md'
+                          ? 'bg-primary text-black shadow-md'
                           : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600'
                         }`}
                     >
@@ -436,7 +436,7 @@ const EventsList: React.FC = () => {
                 onClick={() => {
                   setSelectedCity('all');
                 }}
-                className="mt-4 text-primary hover:text-red-700 font-medium"
+                className="mt-4 text-primary hover:text-primary-dark font-medium"
               >
                 Clear all filters
               </button>
@@ -475,7 +475,7 @@ const EventsList: React.FC = () => {
                     {/* Hover overlay for active events */}
                     {event.isActive && (
                       <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center">
-                        <span className="bg-primary text-white font-semibold px-6 py-3 rounded-full shadow-lg hover:bg-red-700 transition-all duration-300 text-lg">
+                        <span className="bg-primary text-black font-semibold px-6 py-3 rounded-full shadow-lg hover:bg-primary-dark transition-all duration-300 text-lg">
                           🎫 BUY TICKETS
                         </span>
                       </div>
@@ -500,7 +500,7 @@ const EventsList: React.FC = () => {
                       </div>                      <div className="flex flex-col gap-2">                        {event.facebookUrl && event.facebookUrl !== 'null' && (
                           <button
                             onClick={(e) => handleSocialClick(event.facebookUrl!, e)}
-                            className="p-2 text-blue-600 hover:text-blue-700 transition-colors duration-200"
+                            className="p-2 text-info hover:text-info/80 transition-colors duration-200"
                             aria-label="Visit Facebook page"
                           >
                             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -510,7 +510,7 @@ const EventsList: React.FC = () => {
                         )}                        {event.youtubeUrl && event.youtubeUrl !== 'null' && (
                           <button
                             onClick={(e) => handleSocialClick(event.youtubeUrl!, e)}
-                            className="p-2 text-red-600 hover:text-red-700 transition-colors duration-200"
+                            className="p-2 text-error hover:text-error/80 transition-colors duration-200"
                             aria-label="Visit YouTube channel"
                           >
                             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">

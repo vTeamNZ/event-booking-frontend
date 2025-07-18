@@ -105,7 +105,7 @@ const Register: React.FC = () => {
             </h2>
             <p className="mt-2 text-center text-sm text-gray-300">
               Or{' '}
-              <Link to="/login" className="font-medium text-primary hover:text-red-500">
+              <Link to="/login" className="font-medium text-primary hover:text-primary-dark">
                 sign in to your existing account
               </Link>
             </p>
@@ -129,7 +129,7 @@ const Register: React.FC = () => {
                   <option value="Organizer">Event Organizer</option>
                 </select>
                 {formik.touched.role && formik.errors.role && (
-                  <div className="text-red-500 text-sm mt-1">{formik.errors.role}</div>
+                  <div className="text-error text-sm mt-1">{formik.errors.role}</div>
                 )}
               </div>
 
@@ -150,7 +150,7 @@ const Register: React.FC = () => {
                   value={formik.values.fullName}
                 />
                 {formik.touched.fullName && formik.errors.fullName && (
-                  <div className="text-red-500 text-sm mt-1">{formik.errors.fullName}</div>
+                  <div className="text-error text-sm mt-1">{formik.errors.fullName}</div>
                 )}
               </div>
 
@@ -171,7 +171,7 @@ const Register: React.FC = () => {
                   value={formik.values.email}
                 />
                 {formik.touched.email && formik.errors.email && (
-                  <div className="text-red-500 text-sm mt-1">{formik.errors.email}</div>
+                  <div className="text-error text-sm mt-1">{formik.errors.email}</div>
                 )}
               </div>
 
@@ -193,7 +193,7 @@ const Register: React.FC = () => {
                       value={formik.values.organizationName}
                     />
                     {formik.touched.organizationName && formik.errors.organizationName && (
-                      <div className="text-red-500 text-sm mt-1">{formik.errors.organizationName}</div>
+                      <div className="text-error text-sm mt-1">{formik.errors.organizationName}</div>
                     )}
                   </div>
 
@@ -212,7 +212,7 @@ const Register: React.FC = () => {
                       value={formik.values.phoneNumber}
                     />
                     {formik.touched.phoneNumber && formik.errors.phoneNumber && (
-                      <div className="text-red-500 text-sm mt-1">{formik.errors.phoneNumber}</div>
+                      <div className="text-error text-sm mt-1">{formik.errors.phoneNumber}</div>
                     )}
                   </div>
 
@@ -231,7 +231,7 @@ const Register: React.FC = () => {
                       value={formik.values.website}
                     />
                     {formik.touched.website && formik.errors.website && (
-                      <div className="text-red-500 text-sm mt-1">{formik.errors.website}</div>
+                      <div className="text-error text-sm mt-1">{formik.errors.website}</div>
                     )}
                   </div>
                 </>
@@ -254,7 +254,7 @@ const Register: React.FC = () => {
                   value={formik.values.password}
                 />
                 {formik.touched.password && formik.errors.password && (
-                  <div className="text-red-500 text-sm mt-1">{formik.errors.password}</div>
+                  <div className="text-error text-sm mt-1">{formik.errors.password}</div>
                 )}
               </div>
 
@@ -275,13 +275,13 @@ const Register: React.FC = () => {
                   value={formik.values.confirmPassword}
                 />
                 {formik.touched.confirmPassword && formik.errors.confirmPassword && (
-                  <div className="text-red-500 text-sm mt-1">{formik.errors.confirmPassword}</div>
+                  <div className="text-error text-sm mt-1">{formik.errors.confirmPassword}</div>
                 )}
               </div>
             </div>
 
             {formik.status && (
-              <div className="text-red-500 text-sm text-center">
+              <div className="text-error text-sm text-center">
                 {typeof formik.status === 'string' ? formik.status : 'An error occurred during registration'}
               </div>
             )}
@@ -290,7 +290,7 @@ const Register: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-black bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Creating Account...' : 'Create Account'}
               </button>

@@ -74,7 +74,7 @@ const Login: React.FC = () => {
                   value={formik.values.email}
                 />
                 {formik.touched.email && formik.errors.email && (
-                  <div className="text-red-500 text-sm">{formik.errors.email}</div>
+                  <div className="text-error text-sm">{formik.errors.email}</div>
                 )}
               </div>
               <div>
@@ -93,20 +93,20 @@ const Login: React.FC = () => {
                   value={formik.values.password}
                 />
                 {formik.touched.password && formik.errors.password && (
-                  <div className="text-red-500 text-sm">{formik.errors.password}</div>
+                  <div className="text-error text-sm">{formik.errors.password}</div>
                 )}
               </div>
             </div>
 
             {formik.status && (
-              <div className="text-red-500 text-sm text-center">{formik.status}</div>
+              <div className="text-error text-sm text-center">{formik.status}</div>
             )}
 
             <div>
               <button
                 type="submit"
                 disabled={formik.isSubmitting}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-black bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
               >
                 {formik.isSubmitting ? 'Signing in...' : 'Sign in'}
               </button>

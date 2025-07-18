@@ -17,6 +17,8 @@ theme: {
       accent: '#10B981',          // Green for success states
       warning: '#F59E0B',         // Amber for warnings
       error: '#EF4444',           // Red for errors
+      success: '#10B981',         // Green for success states
+      info: '#3B82F6',            // Blue for info states
       gray: {
         750: '#374151',           // Between gray-700 and gray-800
       }

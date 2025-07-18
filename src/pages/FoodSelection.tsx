@@ -255,14 +255,14 @@ const FoodSelection: React.FC = () => {
                   </div>
                 ) : error ? (
                   <div className="text-center py-12">
-                    <div className="text-red-400">{error}</div>
+                    <div className="text-error">{error}</div>
                   </div>
                 ) : foodItems.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="text-gray-400 mb-4">No food items available for this event</div>
                     <button
                       onClick={proceed}
-                      className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded-lg transition-colors"
+                      className="bg-primary hover:bg-primary-dark text-black px-6 py-2 rounded-lg transition-colors"
                     >
                       Continue Without Food
                     </button>
@@ -277,7 +277,7 @@ const FoodSelection: React.FC = () => {
                             {item.description && (
                               <p className="text-gray-400 text-sm mt-1">{item.description}</p>
                             )}
-                            <div className="text-yellow-500 font-semibold text-lg mt-2">
+                            <div className="text-primary font-semibold text-lg mt-2">
                               ${formatPrice(item.price)}
                             </div>
                           </div>
@@ -295,7 +295,7 @@ const FoodSelection: React.FC = () => {
                             </span>
                             <button 
                               onClick={() => handleQtyChange(item.id, 1)}
-                              className="w-10 h-10 rounded-full bg-yellow-600 hover:bg-yellow-700 flex items-center justify-center text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-10 h-10 rounded-full bg-primary hover:bg-primary-dark flex items-center justify-center text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               disabled={item.price === 0}
                             >
                               +
@@ -375,7 +375,7 @@ const FoodSelection: React.FC = () => {
                     <div className="border-t border-gray-600 pt-3">
                       <div className="flex justify-between text-xl font-bold text-white">
                         <span>Total</span>
-                        <span className="text-yellow-500">${formatPrice(grandTotal)}</span>
+                        <span className="text-primary">${formatPrice(grandTotal)}</span>
                       </div>
                     </div>
                   </div>
@@ -384,7 +384,7 @@ const FoodSelection: React.FC = () => {
                   <div className="mt-8 space-y-3">
                     <button
                       onClick={proceed}
-                      className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+                      className="w-full bg-primary hover:bg-primary-dark text-black font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
                     >
                       Continue to Payment
                     </button>

@@ -256,7 +256,7 @@ const SeatSelectionPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-yellow-500 text-6xl mb-4">⚠️</div>
+          <div className="text-warning text-6xl mb-4">⚠️</div>
           <h1 className="text-2xl font-bold text-white mb-4">
             {isActive === false ? 'Event No Longer Available' : 'Error'}
           </h1>
@@ -265,7 +265,7 @@ const SeatSelectionPage: React.FC = () => {
           </p>
           <button
             onClick={() => navigate('/')}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+            className="bg-primary text-black px-6 py-3 rounded-lg hover:bg-primary-dark transition-colors"
           >
             Return to Events
           </button>
@@ -306,7 +306,7 @@ const SeatSelectionPage: React.FC = () => {
           {/* Admin Mode Indicator */}
           {isAdmin() && (
             <div className="absolute bottom-4 left-4 z-20">
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/20 text-primary">
                 🔧 Admin Mode: Click red × to make seats unavailable, green ✓ to make available
               </span>
             </div>
@@ -336,7 +336,7 @@ const SeatSelectionPage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="bg-red-100 text-red-700 p-4 rounded-lg">
+            <div className="bg-error/20 text-error p-4 rounded-lg">
               Missing eventId in state. Please return to the events page and try again.
             </div>
           )}

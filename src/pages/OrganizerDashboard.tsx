@@ -51,9 +51,9 @@ const OrganizerDashboard: React.FC = () => {
     
     const badges = {
       0: { color: 'bg-gray-100 text-gray-800', text: 'Draft' },
-      1: { color: 'bg-yellow-100 text-yellow-800', text: 'Pending Review' },
-      2: { color: 'bg-green-100 text-green-800', text: 'Active' },
-      3: { color: 'bg-red-100 text-red-800', text: 'Inactive' }
+      1: { color: 'bg-warning/20 text-warning', text: 'Pending Review' },
+      2: { color: 'bg-success/20 text-success', text: 'Active' },
+      3: { color: 'bg-error/20 text-error', text: 'Inactive' }
     };
 
     const badge = badges[status as keyof typeof badges] || badges[0];
@@ -98,7 +98,7 @@ const OrganizerDashboard: React.FC = () => {
         return (
           <button
             onClick={handleSubmitForReview}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm font-medium"
+            className="bg-info hover:bg-info/80 text-black px-3 py-1 rounded-md text-sm font-medium"
           >
             Submit for Review
           </button>
@@ -181,7 +181,7 @@ const OrganizerDashboard: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-600 mb-4">{error || 'Failed to load dashboard'}</p>
+          <p className="text-error mb-4">{error || 'Failed to load dashboard'}</p>
           <button 
             onClick={() => window.location.reload()} 
             className="px-4 py-2 bg-primary text-white rounded hover:bg-red-700"
@@ -213,7 +213,7 @@ const OrganizerDashboard: React.FC = () => {
               </div>
               <div className="flex items-center space-x-4">
                 {!organizer.isVerified && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-warning/20 text-warning">
                     Pending Verification
                   </span>
                 )}
@@ -265,7 +265,7 @@ const OrganizerDashboard: React.FC = () => {
                         href={organizer.website} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-sm text-primary hover:text-red-600"
+                        className="text-sm text-primary hover:text-error"
                       >
                         {organizer.website}
                       </a>
@@ -281,8 +281,8 @@ const OrganizerDashboard: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700">Status</label>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       organizer.isVerified 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
+                        ? 'bg-success/20 text-success' 
+                        : 'bg-warning/20 text-warning'
                     }`}>
                       {organizer.isVerified ? 'Verified' : 'Pending Verification'}
                     </span>
@@ -311,13 +311,13 @@ const OrganizerDashboard: React.FC = () => {
                 </div>
                 <div className="bg-white rounded-lg shadow p-6">
                   <div className="text-center">
-                    <p className="text-3xl font-bold text-green-600">0</p>
+                    <p className="text-3xl font-bold text-success">0</p>
                     <p className="text-sm text-gray-600">Total Bookings</p>
                   </div>
                 </div>
                 <div className="bg-white rounded-lg shadow p-6">
                   <div className="text-center">
-                    <p className="text-3xl font-bold text-blue-600">$0</p>
+                    <p className="text-3xl font-bold text-primary">$0</p>
                     <p className="text-sm text-gray-600">Total Revenue</p>
                   </div>
                 </div>
@@ -325,12 +325,12 @@ const OrganizerDashboard: React.FC = () => {
 
               {/* Test Your Draft Events Section */}
               {events.filter(event => (event.status ?? (event.isActive ? 2 : 3)) === 0).length > 0 && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg shadow overflow-hidden mb-6">
-                  <div className="px-6 py-4 border-b border-blue-200 bg-blue-100">
-                    <h3 className="text-lg font-medium text-blue-900">🧪 Test Your Draft Events</h3>
-                    <p className="text-sm text-blue-700 mt-1">Test the complete booking process for your draft events before submitting for approval.</p>
+                <div className="bg-info/10 border border-info/20 rounded-lg shadow overflow-hidden mb-6">
+                  <div className="px-6 py-4 border-b border-info/20 bg-info/20">
+                    <h3 className="text-lg font-medium text-info">🧪 Test Your Draft Events</h3>
+                    <p className="text-sm text-info/80 mt-1">Test the complete booking process for your draft events before submitting for approval.</p>
                   </div>
-                  <div className="divide-y divide-blue-200">
+                  <div className="divide-y divide-info/20">
                     {events
                       .filter(event => (event.status ?? (event.isActive ? 2 : 3)) === 0)
                       .map((event) => (
@@ -351,20 +351,20 @@ const OrganizerDashboard: React.FC = () => {
                             <div className="flex flex-col items-end space-y-2">
                               <Link
                                 to={`/event/${createEventSlug(event.title)}/tickets`}
-                                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center"
+                                className="bg-success hover:bg-success/80 text-black px-4 py-2 rounded-md text-sm font-medium flex items-center"
                               >
                                 🎫 Test Full Booking Process
                               </Link>
                               <div className="flex items-center space-x-2">
                                 <Link
                                   to={`/event/${event.id}/preview`}
-                                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm font-medium"
+                                  className="bg-info hover:bg-info/80 text-black px-3 py-1 rounded-md text-sm font-medium"
                                 >
                                   Preview
                                 </Link>
                                 <Link
                                   to={`/event/${event.id}/manage-food`}
-                                  className="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded-md text-sm font-medium"
+                                  className="bg-primary hover:bg-primary-dark text-black px-3 py-1 rounded-md text-sm font-medium"
                                 >
                                   Manage Food
                                 </Link>
@@ -406,7 +406,7 @@ const OrganizerDashboard: React.FC = () => {
                             <div className="flex items-center space-x-2">
                               <Link
                                 to={`/event/${event.id}/manage-food`}
-                                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md text-sm font-medium"
+                                className="bg-success hover:bg-success/80 text-black px-3 py-1 rounded-md text-sm font-medium"
                               >
                                 Manage Food
                               </Link>
