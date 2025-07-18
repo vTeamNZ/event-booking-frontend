@@ -8,10 +8,17 @@ import { BookingData } from '../types/booking';
 import SEO from '../components/SEO';
 import EventStructuredData from '../components/SEO/EventStructuredData';
 import { toast } from 'react-hot-toast';
+import { createEventSlug, slugToSearchTerm } from '../utils/slugUtils';
+import EventHero from '../components/EventHero';
 
 interface Event {
   id: number;
+  title: string;
+  description: string;
   date: string;
+  location: string;
+  price: number | null;
+  imageUrl?: string | null;
   isActive?: boolean;
   seatSelectionMode?: number;
   venueId?: number | null;
@@ -59,36 +66,75 @@ const TicketSelection: React.FC = () => {
 
   // Handle event loading and initialization
   useEffect(() => {
-    if (!state?.eventId) {
-      navigate('/');
-      return;
-    }
-    
-    api.get<Event>(`/Events/${state.eventId}`)
-      .then(response => {
-        const event = response.data;
-        setEvent(event);
+    const loadEvent = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        let eventData: Event;
+        
+        // If we have state from navigation, use it
+        if (state?.eventId) {
+          const response = await api.get<Event>(`/Events/${state.eventId}`);
+          eventData = response.data;
+        } 
+        // Otherwise, try to load by title
+        else if (eventTitle) {
+          const searchTerm = slugToSearchTerm(eventTitle);
+          const response = await api.get<Event>(`/Events/by-title/${encodeURIComponent(searchTerm)}`);
+          eventData = response.data;
+          
+          // Verify the slug matches and redirect if needed
+          const expectedSlug = createEventSlug(eventData.title);
+          if (expectedSlug !== eventTitle) {
+            navigate(`/event/${expectedSlug}/tickets`, { 
+              state: {
+                eventId: eventData.id,
+                eventTitle: eventData.title,
+                eventPrice: eventData.price,
+                eventDate: eventData.date,
+                eventLocation: eventData.location,
+                eventDescription: eventData.description,
+                seatSelectionMode: eventData.seatSelectionMode,
+              },
+              replace: true 
+            });
+            return;
+          }
+        } 
+        else {
+          navigate('/');
+          return;
+        }
+        
+        setEvent(eventData);
+        
         // Check if event is today or in the future (same logic as backend)
         const today = new Date();
-        const eventDay = new Date(event.date);
+        const eventDay = new Date(eventData.date);
         today.setHours(0, 0, 0, 0);
         eventDay.setHours(0, 0, 0, 0);
         const active = eventDay >= today;
         setIsActive(active);
         
-        if (event.seatSelectionMode) {
-          setEventSeatSelectionMode(event.seatSelectionMode);
+        if (eventData.seatSelectionMode) {
+          setEventSeatSelectionMode(eventData.seatSelectionMode);
         }
         
         if (!active) {
           setTimeout(() => navigate('/'), 5000);
         }
-      })
-      .catch(error => {
+        
+      } catch (error) {
         console.error('Error fetching event:', error);
         setIsActive(false);
-      });
-  }, [state?.eventId, navigate]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadEvent();
+  }, [state?.eventId, eventTitle, navigate]);
 
   // Handle loading ticket types
   useEffect(() => {
@@ -220,28 +266,37 @@ const TicketSelection: React.FC = () => {
           organizer: state.organizerName
         }} />
       )}
-      <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8 mt-6">
+      
+      {/* Event Hero Section */}
+      {(event || state) && (
+        <EventHero 
+          title={(event?.title || state?.eventTitle) || 'Event'}
+          imageUrl={event?.imageUrl || (state as any)?.imageUrl}
+          date={event?.date || state?.eventDate}
+          location={event?.location || state?.eventLocation}
+          description={event?.description || state?.eventDescription}
+          price={event?.price || state?.eventPrice}
+          className="mb-8"
+        />
+      )}
+      
+      <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8">
         <div className="border-b pb-4 mb-6">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">Choose Your Tickets</h1>
-          <h2 className="text-xl text-gray-600 mb-2">{state?.eventTitle}</h2>
-          <div className="space-y-1 text-sm text-gray-600">
-            <p>📍 {state?.eventLocation}</p>
-            <p>🕒 {state?.eventDate ? new Date(state.eventDate).toLocaleString() : 'Date not specified'}</p>
-            {state?.venue && (
-              <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <h3 className="font-medium text-blue-900 mb-2">📍 Venue Information</h3>
-                <div className="space-y-1 text-sm text-blue-800">
-                  <p><span className="font-medium">Name:</span> {state.venue.name}</p>
-                  <p><span className="font-medium">Address:</span> {state.venue.address}, {state.venue.city}</p>
-                  <p><span className="font-medium">Layout:</span> {state.venue.layoutType}</p>
-                  <p><span className="font-medium">Capacity:</span> {state.venue.capacity} people</p>
-                  {state.venue.description && (
-                    <p><span className="font-medium">About:</span> {state.venue.description}</p>
-                  )}
-                </div>
+          {state?.venue && (
+            <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <h3 className="font-medium text-blue-900 mb-2">📍 Venue Information</h3>
+              <div className="space-y-1 text-sm text-blue-800">
+                <p><span className="font-medium">Name:</span> {state.venue.name}</p>
+                <p><span className="font-medium">Address:</span> {state.venue.address}, {state.venue.city}</p>
+                <p><span className="font-medium">Layout:</span> {state.venue.layoutType}</p>
+                <p><span className="font-medium">Capacity:</span> {state.venue.capacity} people</p>
+                {state.venue.description && (
+                  <p><span className="font-medium">About:</span> {state.venue.description}</p>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {loading ? (

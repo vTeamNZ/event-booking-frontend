@@ -11,6 +11,8 @@ import { BookingData } from '../types/booking';
 import { BookingFlowHelper } from '../utils/bookingFlowHelpers';
 import { BookingNavigator } from '../utils/BookingNavigator';
 import SEO from '../components/SEO';
+import { createEventSlug, slugToSearchTerm } from '../utils/slugUtils';
+import EventHero from '../components/EventHero';
 
 interface Event {
   id: number;
@@ -18,6 +20,7 @@ interface Event {
   date: string;
   location: string;
   description: string;
+  price: number | null;
   imageUrl?: string;
   isActive?: boolean;
   seatSelectionMode?: number;
@@ -55,18 +58,46 @@ const SeatSelectionPage: React.FC = () => {
 
   useEffect(() => {
     const fetchEvent = async () => {
-      // Get eventId from state or from URL params
-      const targetEventId = state?.eventId || eventTitle;
       try {
         setLoading(true);
-        if (!targetEventId) {
+        setError(null);
+        
+        let eventData: Event;
+        
+        // If we have state from navigation, use it
+        if (state?.eventId) {
+          const response = await api.get<Event>(`/Events/${state.eventId}`);
+          eventData = response.data;
+        } 
+        // Otherwise, try to load by title
+        else if (eventTitle) {
+          const searchTerm = slugToSearchTerm(eventTitle);
+          const response = await api.get<Event>(`/Events/by-title/${encodeURIComponent(searchTerm)}`);
+          eventData = response.data;
+          
+          // Verify the slug matches and redirect if needed
+          const expectedSlug = createEventSlug(eventData.title);
+          if (expectedSlug !== eventTitle) {
+            navigate(`/event/${expectedSlug}/seats`, { 
+              state: {
+                eventId: eventData.id,
+                eventTitle: eventData.title,
+                eventPrice: eventData.price,
+                eventDate: eventData.date,
+                eventLocation: eventData.location,
+                eventDescription: eventData.description,
+                seatSelectionMode: eventData.seatSelectionMode,
+              },
+              replace: true 
+            });
+            return;
+          }
+        } 
+        else {
           setError('Event ID not found. Please check the URL.');
-          setLoading(false);
           return;
         }
         
-        const response = await api.get<Event>(`/Events/${targetEventId}`);
-        const eventData = response.data;
         setEvent(eventData);
         
         const active = new Date(eventData.date) > new Date();
@@ -88,7 +119,7 @@ const SeatSelectionPage: React.FC = () => {
     };
 
     fetchEvent();
-  }, [state?.eventId, eventTitle]);
+  }, [state?.eventId, eventTitle, navigate]);
 
   const handleSelectionComplete = (selectionState: SeatingSelectionState) => {
     // For backward compatibility - convert to old format
@@ -252,60 +283,39 @@ const SeatSelectionPage: React.FC = () => {
       />
       
       <div className="min-h-screen bg-gray-50">
-        {/* Hero Section */}
+        {/* Event Hero Section */}
         <div className="relative">
-          {/* Event Image */}
-          <div className="relative h-[400px] w-full overflow-hidden">
-            <div 
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ 
-                backgroundImage: `url('${event.imageUrl || '/events/fallback.jpg'}')`,
-                filter: 'brightness(0.7)'
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-black/70" />
+          <EventHero 
+            title={event.title}
+            imageUrl={event.imageUrl}
+            date={event.date}
+            location={event.location}
+            description={event.description}
+            price={event.price}
+          />
+          
+          {/* Back Button Overlay */}
+          <div className="absolute top-4 left-4 z-20">
+            <button
+              onClick={() => navigate(-1)}
+              className="text-white/80 hover:text-white bg-black/30 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-all"
+            >
+              ← Back
+            </button>
           </div>
-
-          {/* Event Details Overlay */}
-          <div className="absolute inset-0 flex items-center">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full text-white">
-              <button
-                onClick={() => navigate(-1)}
-                className="text-white/80 hover:text-white mb-6 flex items-center gap-2 transition-colors"
-              >
-                ← Back
-              </button>
-              <h1 className="text-4xl font-bold mb-4">{event.title}</h1>
-              <div className="flex flex-wrap items-center gap-6 text-lg">
-                <span className="flex items-center gap-2">
-                  <span className="text-white/80">📅</span>
-                  {new Date(event.date).toLocaleDateString('en-NZ', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </span>
-                <span className="flex items-center gap-2">
-                  <span className="text-white/80">📍</span>
-                  {event.location}
-                </span>
-              </div>
-              {isAdmin() && (
-                <div className="mt-4">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
-                    🔧 Admin Mode: Click red × to make seats unavailable, green ✓ to make available
-                  </span>
-                </div>
-              )}
+          
+          {/* Admin Mode Indicator */}
+          {isAdmin() && (
+            <div className="absolute bottom-4 left-4 z-20">
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                🔧 Admin Mode: Click red × to make seats unavailable, green ✓ to make available
+              </span>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-10 pb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {state?.eventId ? (
             <div className="bg-white rounded-xl shadow-xl p-6">
               <div className="max-w-4xl mx-auto">

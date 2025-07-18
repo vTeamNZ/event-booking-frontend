@@ -7,6 +7,7 @@ import 'swiper/css/pagination';
 import 'swiper/css/effect-coverflow';
 import { api } from '../services/api';
 import { authService } from '../services/authService';
+import { navigateToEvent } from '../utils/slugUtils';
 
 interface Event {
   id: number;
@@ -191,35 +192,20 @@ const HeroCarousel: React.FC = () => {
                   return;
                 }
                 
-                // Create URL-friendly slug
-                const eventSlug = event.title
-                  .toLowerCase()
-                  .replace(/\s+/g, '-')
-                  .replace(/[^\w\-]+/g, '')
-                  .replace(/\-\-+/g, '-')
-                  .trim();
-
                 // Get the event's seat selection mode, defaulting to GeneralAdmission if not specified
                 const seatMode = event.seatSelectionMode ?? 3;
                 
-                // For allocated seating events, always go to seat selection first
-                // For general admission, go to ticket selection
-                const route = seatMode === 1 
-                  ? `/event/${eventSlug}/seats` 
-                  : `/event/${eventSlug}/tickets`;
-                
-                navigate(route, {
-                  state: {
-                    eventId: event.id,
-                    eventTitle: event.title,
-                    eventPrice: event.price,
-                    eventDate: event.date,
-                    eventLocation: event.location,
-                    eventDescription: event.description,
-                    organizerName: event.organizerName,
-                    seatSelectionMode: seatMode,
-                    venue: event.venue
-                  },
+                // Use centralized navigation
+                navigateToEvent(event.title, navigate, {
+                  eventId: event.id,
+                  eventTitle: event.title,
+                  eventPrice: event.price,
+                  eventDate: event.date,
+                  eventLocation: event.location,
+                  eventDescription: event.description,
+                  organizerName: event.organizerName,
+                  seatSelectionMode: seatMode,
+                  venue: event.venue
                 });
               }}
             >

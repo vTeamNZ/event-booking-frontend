@@ -10,6 +10,7 @@ import { qrCodeService, QRCodeGenerationRequest } from '../services/qrCodeServic
 import { seatSelectionService } from '../services/seatSelectionService';
 import { completeBookingCleanup } from '../utils/seating-v2/sessionStorage';
 import { processingFeeService, ProcessingFeeCalculation } from '../services/processingFeeService';
+import EventHero from '../components/EventHero';
 
 interface LegacyPaymentLocationState {
   amount: number;
@@ -482,37 +483,28 @@ const Payment: React.FC = () => {
         description="Complete your booking securely with Stripe payment integration."
       />
       <div className="min-h-screen bg-gray-50">
-        {/* Hero Section */}
+        {/* Event Hero Section */}
         <div className="relative">
-          {/* Event Image */}
-          <div className="relative h-[300px] w-full overflow-hidden">
-            <div 
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ 
-                backgroundImage: `url('${(state as any)?.imageUrl || '/events/fallback.jpg'}')`,
-                filter: 'brightness(0.7)'
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-black/70" />
-          </div>
-
-          {/* Event Details Overlay */}
-          <div className="absolute inset-0 flex items-center">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full text-white">
-              <button
-                onClick={() => navigate(-1)}
-                className="text-white/80 hover:text-white mb-6 flex items-center gap-2 transition-colors"
-              >
-                ← Back
-              </button>
-              <h1 className="text-3xl font-bold mb-2">{eventTitle}</h1>
-              <p className="text-lg text-white/90">Complete your booking</p>
-            </div>
+          <EventHero 
+            title={eventTitle}
+            imageUrl={(state as any)?.imageUrl}
+            description="Complete your booking"
+            className="h-[300px]"
+          />
+          
+          {/* Back Button Overlay */}
+          <div className="absolute top-4 left-4 z-20">
+            <button
+              onClick={() => navigate(-1)}
+              className="text-white/80 hover:text-white bg-black/30 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-all"
+            >
+              ← Back
+            </button>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="max-w-3xl mx-auto -mt-10 relative z-10 px-4 sm:px-6 lg:px-8 pb-12">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-white rounded-xl shadow-lg p-8">
             <div className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-6">Payment Details</h2>

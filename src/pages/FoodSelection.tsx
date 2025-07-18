@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { FoodItem, getFoodItemsForEvent } from '../services/foodItemService';
 import { BookingData } from '../types/booking';
 import SEO from '../components/SEO';
+import EventHero from '../components/EventHero';
 
 interface LocationState {
   eventId: number;
@@ -221,41 +222,31 @@ const FoodSelection: React.FC = () => {
         keywords={['Book Food With Your Ticket', 'Enjoy Food + Entertainment', 'Pay Securely With Stripe']}
       />
       <div className="min-h-screen bg-gray-50">
-        {/* Hero Section */}
+        {/* Event Hero Section */}
         <div className="relative">
-          {/* Event Image */}
-          <div className="relative h-[300px] w-full overflow-hidden">
-            <div 
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ 
-                backgroundImage: `url('${locationState?.imageUrl || '/events/fallback.jpg'}')`,
-                filter: 'brightness(0.7)'
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-black/70" />
-          </div>
-
-          {/* Event Details Overlay */}
-          <div className="absolute inset-0 flex items-center">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full text-white">
-              <button
-                onClick={() => navigate(-1)}
-                className="text-white/80 hover:text-white mb-6 flex items-center gap-2 transition-colors"
-              >
-                ← Back
-              </button>
-              <h1 className="text-3xl font-bold mb-2">{locationState?.eventTitle}</h1>
-              <p className="text-lg text-white/90">Select food and beverages for your event</p>
-            </div>
+          <EventHero 
+            title={locationState?.eventTitle || 'Event Food Selection'}
+            imageUrl={locationState?.imageUrl}
+            description="Select food and beverages for your event"
+            className="h-[300px]"
+          />
+          
+          {/* Back Button Overlay */}
+          <div className="absolute top-4 left-4 z-20">
+            <button
+              onClick={() => navigate(-1)}
+              className="text-white/80 hover:text-white bg-black/30 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-all"
+            >
+              ← Back
+            </button>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="max-w-3xl mx-auto -mt-10 relative z-10 px-4 sm:px-6 lg:px-8 pb-12">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-white rounded-xl shadow-lg p-8">
             <div className="border-b pb-4 mb-6">
               <h1 className="text-3xl font-bold text-gray-800 mb-2">Add Food Items</h1>
-              <h2 className="text-xl text-gray-600 mb-2">{locationState?.eventTitle}</h2>
               <p className="text-sm text-gray-500">Optional - Select any food items you'd like to add to your order</p>
               
               {/* Booking Summary */}

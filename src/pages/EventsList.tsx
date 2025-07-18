@@ -5,6 +5,8 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { authService } from '../services/authService';
 import SEO from '../components/SEO';
+import { createEventSlug, createOrganizerSlug, navigateToEvent } from '../utils/slugUtils';
+import toast from 'react-hot-toast';
 
 interface Organizer {
   id: number;
@@ -53,16 +55,6 @@ interface Event extends Omit<EventFromAPI, 'seatSelectionMode'> {
   seatSelectionMode?: 1 | 3; // Only EventHall or GeneralAdmission
 }
 
-// Helper function to create URL-friendly slug
-const createSlug = (name: string) => {
-  return name
-    .toLowerCase()
-    .replace(/\s+/g, '-')     // Replace spaces with -
-    .replace(/[^\w\-]+/g, '') // Remove all non-word chars
-    .replace(/\-\-+/g, '-')   // Replace multiple - with single -
-    .trim();                  // Trim - from start and end
-};
-
 const EventsList: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedCity, setSelectedCity] = useState<string>('all');
@@ -106,7 +98,7 @@ const EventsList: React.FC = () => {
               city,
               facebookUrl: null,
               youtubeUrl: null,
-              organizerSlug: createSlug(currentUser.fullName || 'my-events')
+              organizerSlug: createOrganizerSlug(currentUser.fullName || 'my-events')
             };
           });
         } else {
@@ -156,7 +148,7 @@ const EventsList: React.FC = () => {
               city,
               facebookUrl: organizer?.facebookUrl || null,
               youtubeUrl: organizer?.youtubeUrl || null,
-              organizerSlug: createSlug(organizerName)
+              organizerSlug: createOrganizerSlug(organizerName)
             };
             
             // Debug event social media URLs
@@ -203,7 +195,7 @@ const EventsList: React.FC = () => {
     const isAdmin = currentUser && currentUser.roles && currentUser.roles.includes('Admin');
     
     const filtered = events.filter(event => {
-      const matchesOrganizer = !organizerSlug || createSlug(event.organizerName || '') === organizerSlug;
+      const matchesOrganizer = !organizerSlug || createOrganizerSlug(event.organizerName || '') === organizerSlug;
       const matchesCity = selectedCity === 'all' || event.city === selectedCity;
       
       // Get event status (default to Active if not specified)
@@ -251,14 +243,6 @@ const EventsList: React.FC = () => {
       return isUpcomingA ? -1 : 1;
     });
   }, [events, organizerSlug, selectedCity]);
-  const createUrlSlug = (title: string) => {
-    return title
-      .toLowerCase()
-      .replace(/\s+/g, '-')     // Replace spaces with -
-      .replace(/[^\w\-]+/g, '') // Remove all non-word chars
-      .replace(/\-\-+/g, '-')   // Replace multiple - with single -
-      .trim();                  // Trim - from start and end
-  };
   
   const handleEventClick = (event: Event) => {
     const currentUser = authService.getCurrentUser();
@@ -276,35 +260,47 @@ const EventsList: React.FC = () => {
     
     if (!canBook) return;
     
-    const eventSlug = createUrlSlug(event.title);
-    
     // Get the event's seat selection mode, defaulting to GeneralAdmission if not specified
     const seatMode = event.seatSelectionMode ?? 3;
     
-    // For allocated seating events, always go to seat selection first
-    // For general admission, go to ticket selection
-    const route = seatMode === 1 
-      ? `/event/${eventSlug}/seats` 
-      : `/event/${eventSlug}/tickets`;
-    
-    navigate(route, {
-      state: {
-        eventId: event.id,
-        eventTitle: event.title,
-        eventPrice: event.price,
-        eventDate: event.date,
-        eventLocation: event.location,
-        eventDescription: event.description,
-        organizerName: event.organizerName,
-        seatSelectionMode: seatMode,
-        venue: event.venue
-      },
+    // Use centralized navigation
+    navigateToEvent(event.title, navigate, {
+      eventId: event.id,
+      eventTitle: event.title,
+      eventPrice: event.price,
+      eventDate: event.date,
+      eventLocation: event.location,
+      eventDescription: event.description,
+      organizerName: event.organizerName,
+      seatSelectionMode: seatMode,
+      venue: event.venue
     });
   };
 
   const handleSocialClick = (url: string, e: React.MouseEvent) => {
     e.stopPropagation();
     window.open(url, '_blank');
+  };
+
+  const handleShareEvent = (event: Event, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const eventSlug = createEventSlug(event.title);
+    const directUrl = `${window.location.origin}/${eventSlug}`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: event.title,
+        text: `Check out this event: ${event.title}`,
+        url: directUrl,
+      }).catch(console.error);
+    } else {
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(directUrl).then(() => {
+        toast.success('Event link copied to clipboard!');
+      }).catch(() => {
+        toast.error('Failed to copy link');
+      });
+    }
   };
 
   // Helper function to get status badge
@@ -345,11 +341,11 @@ const EventsList: React.FC = () => {
     <>
       <SEO 
         title={organizerSlug 
-          ? `${events.find(e => createSlug(e.organizerName || '') === organizerSlug)?.organizerName || 'Events'}`
+          ? `${events.find(e => createOrganizerSlug(e.organizerName || '') === organizerSlug)?.organizerName || 'Events'}`
           : "Browse Local Events Now"
         }
         description={organizerSlug
-          ? `Book tickets for events organized by ${events.find(e => createSlug(e.organizerName || '') === organizerSlug)?.organizerName}. Simple and secure ticket booking with optional food ordering.`
+          ? `Book tickets for events organized by ${events.find(e => createOrganizerSlug(e.organizerName || '') === organizerSlug)?.organizerName}. Simple and secure ticket booking with optional food ordering.`
           : "KiwiLanka brings you the best events from Christchurch to Auckland. Find your next event today."
         }
         keywords={[
@@ -373,7 +369,7 @@ const EventsList: React.FC = () => {
               <div className="border-b pb-4">
                 <div className="flex items-center justify-between">
                   <h1 className="text-3xl font-bold text-gray-800">
-                    {events.find(e => createSlug(e.organizerName || '') === organizerSlug)?.organizerName || 'Events'}
+                    {events.find(e => createOrganizerSlug(e.organizerName || '') === organizerSlug)?.organizerName || 'Events'}
                   </h1>
                   <Link 
                     to="/"
@@ -512,6 +508,18 @@ const EventsList: React.FC = () => {
                             </svg>
                           </button>
                         )}
+                        
+                        {/* Share Button */}
+                        <button
+                          onClick={(e) => handleShareEvent(event, e)}
+                          className="p-2 text-gray-600 hover:text-gray-700 transition-colors duration-200"
+                          aria-label="Share event"
+                          title="Share event link"
+                        >
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
 

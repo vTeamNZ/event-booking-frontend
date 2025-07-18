@@ -1,8 +1,9 @@
 import React from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import HeroCarousel from './components/HeroCarousel';
+import ConditionalCarousel from './components/ConditionalCarousel';
 import AnimatedHeader from './components/AnimatedHeader';
+import ConditionalMain from './components/ConditionalMain';
 import { PrivateRoute } from './components/PrivateRoute';
 import { BookingProvider } from './contexts/BookingContext';
 import RouteTracker from './components/RouteTracker';
@@ -29,6 +30,7 @@ import AdminUsers from './pages/AdminUsers';
 import { VenueManagement } from './pages/VenueManagement';
 import SeatingDemo from './components/SeatingDemo';
 import ManageFoodItems from './pages/ManageFoodItems';
+import EventPage from './pages/EventPage';
 
 const App: React.FC = () => {
   return (
@@ -44,8 +46,8 @@ const App: React.FC = () => {
         <div className="bg-red-900 h-1 w-full" />
         {/* Page Content */}
         <AnimatedHeader />
-        <HeroCarousel />      
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <ConditionalCarousel />      
+        <ConditionalMain>
           <Routes>
             <Route path="/" element={<EventsList />} />
             <Route path="/event/:eventTitle/tickets" element={<TicketSelection />} />
@@ -62,6 +64,9 @@ const App: React.FC = () => {
             <Route path="/payment-failed" element={<PaymentFailed />} />
             <Route path="/payment-cancelled" element={<PaymentCancelled />} />
           <Route path="/contact" element={<Contact />} />
+          
+          {/* Direct Event Access Route - Must be before protected routes */}
+          <Route path="/:eventTitle" element={<EventPage />} />
           
           {/* Organizer Routes */}
           <Route path="/organizer/dashboard" element={
@@ -115,7 +120,7 @@ const App: React.FC = () => {
               } 
             />
         </Routes>
-      </main>
+        </ConditionalMain>
     </div>
     </BookingProvider>
   );
