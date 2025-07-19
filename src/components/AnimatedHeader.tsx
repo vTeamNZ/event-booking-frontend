@@ -53,6 +53,9 @@ const AnimatedHeader: React.FC = () => {
       <div className="flex items-center space-x-4 text-white text-sm justify-center">
         {isAuthenticated ? (
           <>
+            <Link to="/my-bookings" className="hover:underline hover:opacity-100 opacity-80 transition">
+              My Bookings
+            </Link>
             {currentUser?.roles?.includes('Admin') && (
               <Link to="/admin" className="hover:underline hover:opacity-100 opacity-80 transition">
                 Admin

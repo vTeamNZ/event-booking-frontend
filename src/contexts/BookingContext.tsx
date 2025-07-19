@@ -9,6 +9,7 @@ interface BookingState {
 
 type BookingAction =
   | { type: 'SET_BOOKING_DATA'; payload: BookingData }
+  | { type: 'SET_EVENT_DETAILS'; payload: BookingData['eventDetails'] }
   | { type: 'UPDATE_SEATS'; payload: BookingData['selectedSeats'] }
   | { type: 'UPDATE_TICKETS'; payload: BookingData['selectedTickets'] }
   | { type: 'UPDATE_FOOD_ITEMS'; payload: BookingData['selectedFoodItems'] }
@@ -58,6 +59,14 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           ...state,
           bookingData: action.payload,
           error: null,
+        };
+      case 'SET_EVENT_DETAILS':
+        return {
+          ...state,
+          bookingData: state.bookingData ? {
+            ...state.bookingData,
+            eventDetails: action.payload,
+          } : null,
         };
       case 'UPDATE_SEATS':
         return {
@@ -127,4 +136,57 @@ export const useBooking = () => {
     throw new Error('useBooking must be used within a BookingProvider');
   }
   return context;
+};
+
+// Custom hook to fetch and set event details
+export const useEventDetails = () => {
+  const { state, dispatch } = useBooking();
+
+  const fetchEventDetails = async (eventId: number) => {
+    if (state.bookingData?.eventDetails?.organizationName) {
+      // Already have details for this event
+      return;
+    }
+
+    dispatch({ type: 'SET_LOADING', payload: true });
+    
+    try {
+      const response = await fetch(`/api/events/${eventId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch event details');
+      }
+      
+      const eventData = await response.json();
+      
+      const eventDetails = {
+        description: eventData.description,
+        date: eventData.date,
+        location: eventData.location,
+        imageUrl: eventData.imageUrl,
+        organizerName: eventData.organizer?.name || 'Event Organizer',
+        organizationName: eventData.organizer?.organizationName || eventData.organizer?.name || 'KiwiLanka Events'
+      };
+
+      dispatch({ type: 'SET_EVENT_DETAILS', payload: eventDetails });
+    } catch (error) {
+      console.error('Error fetching event details:', error);
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to load event details' });
+      
+      // Set fallback details
+      const fallbackDetails = {
+        organizerName: 'Event Organizer',
+        organizationName: 'KiwiLanka Events',
+        imageUrl: undefined
+      };
+      dispatch({ type: 'SET_EVENT_DETAILS', payload: fallbackDetails });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  return {
+    fetchEventDetails,
+    eventDetails: state.bookingData?.eventDetails,
+    loading: state.loading
+  };
 };

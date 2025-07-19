@@ -6,7 +6,7 @@ import { adminSeatService } from '../services/adminSeatService';
 import { useAuth } from '../hooks/useAuth';
 import { SeatSelectionState } from '../types/seatSelection';
 import { SeatingLayoutV2, SeatingSelectionState } from '../components/seating-v2';
-import { useBooking } from '../contexts/BookingContext';
+import { useBooking, useEventDetails } from '../contexts/BookingContext';
 import { BookingData } from '../types/booking';
 import { BookingFlowHelper } from '../utils/bookingFlowHelpers';
 import { BookingNavigator } from '../utils/BookingNavigator';
@@ -30,6 +30,7 @@ const SeatSelectionPage: React.FC = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
   const { eventTitle } = useParams();
+  const { fetchEventDetails, eventDetails } = useEventDetails();
   const [event, setEvent] = useState<Event | null>(null);
   const [isActive, setIsActive] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
@@ -120,6 +121,13 @@ const SeatSelectionPage: React.FC = () => {
 
     fetchEvent();
   }, [state?.eventId, eventTitle, navigate]);
+
+  // Fetch event details for organizer information
+  useEffect(() => {
+    if (event?.id) {
+      fetchEventDetails(event.id);
+    }
+  }, [event?.id, fetchEventDetails]);
 
   const handleSelectionComplete = (selectionState: SeatingSelectionState) => {
     // For backward compatibility - convert to old format
@@ -287,10 +295,11 @@ const SeatSelectionPage: React.FC = () => {
         <div className="relative">
           <EventHero 
             title={event.title}
-            imageUrl={event.imageUrl}
+            imageUrl={eventDetails?.imageUrl || event.imageUrl}
             date={event.date}
             location={event.location}
             description={event.description}
+            organizerName={eventDetails?.organizationName}
           />
           
           {/* Back Button Overlay */}

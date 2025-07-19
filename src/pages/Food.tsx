@@ -97,7 +97,16 @@ const FoodSelection: React.FC = () => {
                 <div className="flex-1">
                   <h3 className="text-xl font-semibold text-gray-800 mb-2">{item.name}</h3>
                   <p className="text-gray-600 text-sm mb-2">{item.description}</p>
-                  <p className="text-primary font-bold">${item.price.toFixed(2)}</p>
+                  {item.price === 0 ? (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-green-600 font-bold">Included</span>
+                      <span className="bg-green-100 text-green-600 px-2 py-1 rounded-full text-xs border border-green-300">
+                        Complimentary
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-primary font-bold">${item.price.toFixed(2)}</p>
+                  )}
                 </div>
                 
                 <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
@@ -112,7 +121,13 @@ const FoodSelection: React.FC = () => {
                     <span className="w-8 text-center font-semibold">{item.quantity}</span>
                     <button
                       onClick={() => handleQtyChange(idx, 1)}
-                      className="w-8 h-8 rounded-full bg-primary text-white hover:bg-red-600 flex items-center justify-center transition-colors duration-200"
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200 ${
+                        item.price === 0 
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                          : 'bg-primary text-white hover:bg-red-600'
+                      }`}
+                      disabled={item.price === 0}
+                      title={item.price === 0 ? 'This item is included with your ticket' : 'Add item'}
                     >
                       +
                     </button>

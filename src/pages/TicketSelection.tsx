@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { TicketType, TicketTypeDisplay, getTicketTypesForEvent } from '../services/ticketTypeService';
-import { useBooking } from '../contexts/BookingContext';
+import { ticketAvailabilityService, TicketAvailabilityInfo } from '../services/ticketAvailabilityService';
+import { useBooking, useEventDetails } from '../contexts/BookingContext';
 import { BookingNavigator } from '../utils/BookingNavigator';
 import { BookingData } from '../types/booking';
 import SEO from '../components/SEO';
@@ -53,10 +54,12 @@ const TicketSelection: React.FC = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
   const { eventTitle } = useParams();
+  const { fetchEventDetails, eventDetails } = useEventDetails();
   const [isActive, setIsActive] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [ticketTypes, setTicketTypes] = useState<TicketTypeDisplay[]>([]);
+  const [availability, setAvailability] = useState<Record<number, TicketAvailabilityInfo>>({});
   const [quantities, setQuantities] = useState<Record<number, number>>({});
   const [eventSeatSelectionMode, setEventSeatSelectionMode] = useState<number>(SEAT_SELECTION_MODE.GENERAL_ADMISSION);
   const [event, setEvent] = useState<Event | null>(null);
@@ -136,29 +139,44 @@ const TicketSelection: React.FC = () => {
     loadEvent();
   }, [state?.eventId, eventTitle, navigate]);
 
-  // Handle loading ticket types
+  // Fetch event details for organizer information
   useEffect(() => {
-    const fetchTicketTypes = async () => {
+    if (event?.id) {
+      fetchEventDetails(event.id);
+    }
+  }, [event?.id, fetchEventDetails]);
+
+  // Handle loading ticket types and availability
+  useEffect(() => {
+    const fetchTicketTypesAndAvailability = async () => {
       if (!state?.eventId) return;
       try {
         setLoading(true);
-        const types = await getTicketTypesForEvent(state.eventId);
+        
+        // Fetch ticket types and availability
+        const [types, availabilityData] = await Promise.all([
+          getTicketTypesForEvent(state.eventId),
+          ticketAvailabilityService.getEventTicketAvailability(state.eventId)
+        ]);
+        
         setTicketTypes(types || []);
+        setAvailability(availabilityData || {});
         setQuantities((types || []).reduce((acc, ticket) => {
           acc[ticket.id] = 0;
           return acc;
         }, {} as Record<number, number>));
         setError(null);
       } catch (err) {
-        console.error('Error fetching ticket types:', err);
-        setError('Failed to load ticket types. Please try again later.');
+        console.error('Error fetching ticket data:', err);
+        setError('Failed to load ticket information. Please try again later.');
         setTicketTypes([]);
+        setAvailability({});
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTicketTypes();
+    fetchTicketTypesAndAvailability();
   }, [state?.eventId]);
 
   // Update selected tickets whenever quantities change
@@ -194,9 +212,30 @@ const TicketSelection: React.FC = () => {
   }, [quantities, ticketTypes, event, dispatch, state?.eventTitle]);
 
   const handleQtyChange = (ticketId: number, delta: number) => {
+    const currentQty = quantities[ticketId] || 0;
+    const newQty = Math.max(0, currentQty + delta);
+    
+    // Check availability if increasing quantity and availability data exists
+    if (delta > 0) {
+      const ticketAvailability = availability[ticketId];
+      
+      if (ticketAvailability?.hasLimit) {
+        const maxAvailable = ticketAvailability.available;
+        
+        if (newQty > maxAvailable) {
+          if (maxAvailable === 0) {
+            toast.error('This ticket type is sold out');
+          } else {
+            toast.error(`Only ${maxAvailable} tickets available for this type`);
+          }
+          return;
+        }
+      }
+    }
+    
     setQuantities(prev => ({
       ...prev,
-      [ticketId]: Math.max(0, (prev[ticketId] || 0) + delta),
+      [ticketId]: newQty,
     }));
   };
 
@@ -271,10 +310,11 @@ const TicketSelection: React.FC = () => {
       {(event || state) && (
         <EventHero 
           title={(event?.title || state?.eventTitle) || 'Event'}
-          imageUrl={event?.imageUrl || (state as any)?.imageUrl}
+          imageUrl={eventDetails?.imageUrl || event?.imageUrl || (state as any)?.imageUrl}
           date={event?.date || state?.eventDate}
           location={event?.location || state?.eventLocation}
           description={event?.description || state?.eventDescription}
+          organizerName={eventDetails?.organizationName}
           className="mb-8"
         />
       )}
@@ -295,41 +335,74 @@ const TicketSelection: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {ticketTypes.map((ticket) => (
-              <div 
-                key={ticket.id} 
-                className="flex items-center justify-between p-4 bg-gray-750 rounded-lg hover:bg-gray-700 transition-colors duration-200"
-              >
-                <div className="flex-1">
-                  <div className="flex items-baseline">
-                    <span className="text-lg font-semibold text-white capitalize">{ticket.name}</span>
-                    <span className="ml-2 text-sm text-gray-400">ticket</span>
+            {ticketTypes.map((ticket) => {
+              const ticketAvailability = availability[ticket.id];
+              const currentQty = quantities[ticket.id] || 0;
+              const isAtLimit = ticketAvailability?.hasLimit && currentQty >= ticketAvailability.available;
+              const isSoldOut = ticketAvailability?.hasLimit && ticketAvailability.available === 0;
+              
+              return (
+                <div 
+                  key={ticket.id} 
+                  className={`flex items-center justify-between p-4 bg-gray-750 rounded-lg transition-colors duration-200 ${
+                    isSoldOut ? 'opacity-50' : 'hover:bg-gray-700'
+                  }`}
+                >
+                  <div className="flex-1">
+                    <div className="flex items-baseline">
+                      <span className="text-lg font-semibold text-white capitalize">{ticket.name}</span>
+                      <span className="ml-2 text-sm text-gray-400">ticket</span>
+                      {isSoldOut && (
+                        <span className="ml-2 px-2 py-1 text-xs bg-red-600 text-white rounded">SOLD OUT</span>
+                      )}
+                    </div>
+                    <div className="text-primary font-medium">
+                      ${ticket.price.toFixed(2)}
+                    </div>
+                    {/* Available tickets display */}
+                    {ticketAvailability && (
+                      <div className="text-sm text-gray-400 mt-1">
+                        {ticketAvailability.hasLimit ? (
+                          isSoldOut ? (
+                            <span className="text-red-400">No tickets available</span>
+                          ) : (
+                            <span>
+                              {ticketAvailability.available} ticket{ticketAvailability.available !== 1 ? 's' : ''} available
+                            </span>
+                          )
+                        ) : (
+                          <span className="text-green-400">Unlimited availability</span>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div className="text-primary font-medium">
-                    ${ticket.price.toFixed(2)}
-                  </div>
-                </div>
 
-                <div className="flex items-center space-x-3">
-                  <button 
-                    onClick={() => handleQtyChange(ticket.id, -1)}
-                    className="w-10 h-10 rounded-full bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-gray-300 hover:text-white transition-colors duration-200"
-                    disabled={quantities[ticket.id] === 0}
-                  >
-                    -
-                  </button>
-                  <span className="w-8 text-center font-semibold text-white">
-                    {quantities[ticket.id] || 0}
-                  </span>
-                  <button 
-                    onClick={() => handleQtyChange(ticket.id, 1)}
-                    className="w-10 h-10 rounded-full bg-primary hover:bg-primary-dark text-black flex items-center justify-center transition-colors duration-200"
-                  >
-                    +
-                  </button>
+                  <div className="flex items-center space-x-3">
+                    <button 
+                      onClick={() => handleQtyChange(ticket.id, -1)}
+                      className="w-10 h-10 rounded-full bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-gray-300 hover:text-white transition-colors duration-200"
+                      disabled={currentQty === 0}
+                    >
+                      -
+                    </button>
+                    <span className="w-8 text-center font-semibold text-white">
+                      {currentQty}
+                    </span>
+                    <button 
+                      onClick={() => handleQtyChange(ticket.id, 1)}
+                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-200 ${
+                        isSoldOut || isAtLimit
+                          ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                          : 'bg-primary hover:bg-primary-dark text-black'
+                      }`}
+                      disabled={isSoldOut || isAtLimit}
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

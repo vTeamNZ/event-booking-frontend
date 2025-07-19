@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { BookingData } from '../types/booking';
+import { useEventDetails } from '../contexts/BookingContext';
 import SEO from '../components/SEO';
 import EventHero from '../components/EventHero';
 
@@ -9,7 +10,15 @@ interface PaymentSummaryProps {}
 const PaymentSummary: React.FC<PaymentSummaryProps> = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
+  const { fetchEventDetails, eventDetails } = useEventDetails();
   const bookingData = state as BookingData;
+
+  // Fetch event details for organizer information
+  useEffect(() => {
+    if (bookingData?.eventId) {
+      fetchEventDetails(bookingData.eventId);
+    }
+  }, [bookingData?.eventId, fetchEventDetails]);
 
   const formatPrice = (price: number | undefined): string => {
     if (typeof price !== 'number') return '0.00';
@@ -99,8 +108,9 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = () => {
         {/* Event Hero Section */}
         <EventHero 
           title={bookingData.eventTitle}
-          imageUrl={(bookingData as any).imageUrl}
+          imageUrl={eventDetails?.imageUrl || (bookingData as any).imageUrl}
           description="Review your order"
+          organizerName={eventDetails?.organizationName}
           className="mb-8"
         />
 

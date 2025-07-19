@@ -9,7 +9,7 @@ import { BookingProvider } from './contexts/BookingContext';
 import RouteTracker from './components/RouteTracker';
 import EventsList from './pages/EventsList';
 import About from './pages/About';
-import FoodSelection from './pages/FoodSelection';
+import FoodSelectionEnhanced from './pages/FoodSelectionEnhanced';
 import PaymentSummary from './pages/PaymentSummary';
 import Payment from './pages/Payment';
 import PaymentSuccess from './pages/PaymentSuccess';
@@ -31,6 +31,8 @@ import { VenueManagement } from './pages/VenueManagement';
 import SeatingDemo from './components/SeatingDemo';
 import ManageFoodItems from './pages/ManageFoodItems';
 import EventPage from './pages/EventPage';
+import MyBookings from './pages/MyBookings';
+import BookingDetail from './pages/BookingDetail';
 
 const App: React.FC = () => {
   return (
@@ -52,8 +54,8 @@ const App: React.FC = () => {
             <Route path="/" element={<EventsList />} />
             <Route path="/event/:eventTitle/tickets" element={<TicketSelection />} />
             <Route path="/event/:eventTitle/seats" element={<SeatSelectionPage />} />
-            <Route path="/event/:eventTitle/food" element={<FoodSelection />} />
-            <Route path="/food-selection" element={<FoodSelection />} />
+            <Route path="/event/:eventTitle/food" element={<FoodSelectionEnhanced />} />
+            <Route path="/food-selection" element={<FoodSelectionEnhanced />} />
             <Route path="/payment-summary" element={<PaymentSummary />} />
             <Route path="/about" element={<About />} />
             <Route path="/login" element={<Login />} />
@@ -63,7 +65,19 @@ const App: React.FC = () => {
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/payment-failed" element={<PaymentFailed />} />
             <Route path="/payment-cancelled" element={<PaymentCancelled />} />
-          <Route path="/contact" element={<Contact />} />
+            <Route path="/contact" element={<Contact />} />
+            
+            {/* Booking Management Routes */}
+            <Route path="/my-bookings" element={
+              <PrivateRoute>
+                <MyBookings />
+              </PrivateRoute>
+            } />
+            <Route path="/booking/:id" element={
+              <PrivateRoute>
+                <BookingDetail />
+              </PrivateRoute>
+            } />
           
           {/* Direct Event Access Route - Must be before protected routes */}
           <Route path="/:eventTitle" element={<EventPage />} />

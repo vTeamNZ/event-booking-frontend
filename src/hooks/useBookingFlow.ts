@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useBooking } from '../contexts/BookingContext';
 import { BookingData } from '../types/booking';
+import { BookingService } from '../services/bookingService';
 
 export const useBookingFlow = (eventId: number) => {
   const { state, dispatch } = useBooking();
@@ -49,21 +50,46 @@ export const useBookingFlow = (eventId: number) => {
     
     setIsProcessing(true);
     try {
-      // API call to create booking would go here
-      const response = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(state.bookingData),
-      });
+      // Transform booking data to CreateBookingRequest format
+      const bookingRequest = {
+        eventId: state.bookingData.eventId,
+        totalAmount: state.bookingData.totalAmount,
+        lineItems: [
+          // Add tickets as line items
+          ...(state.bookingData.selectedTickets?.map(ticket => ({
+            type: 'Ticket' as const,
+            ticketTypeId: ticket.ticketTypeId,
+            seatId: null,
+            quantity: ticket.quantity,
+            unitPrice: ticket.price,
+            totalPrice: ticket.price * ticket.quantity,
+            description: ticket.name
+          })) || []),
+          // Add seats as line items (creating a unique seat ID from row+number)
+          ...(state.bookingData.selectedSeats?.map(seat => ({
+            type: 'Seat' as const,
+            ticketTypeId: seat.ticketTypeId,
+            seatId: null, // We'll need to map this properly based on actual seat ID
+            quantity: 1,
+            unitPrice: seat.price,
+            totalPrice: seat.price,
+            description: seat.seatNumber
+          })) || []),
+          // Add food items as individual line items (one per seat/ticket selection)
+          ...(state.bookingData.selectedFoodItems?.map(food => ({
+            type: 'Food' as const,
+            foodItemId: food.foodItemId,
+            quantity: food.quantity,
+            unitPrice: food.price,
+            totalPrice: food.totalPrice || (food.price * food.quantity),
+            description: `${food.name}${food.seatTicketId ? ` (${food.seatTicketId})` : ''}`,
+            seatAssociation: food.seatTicketId || null // NEW: Track seat/ticket association
+          })) || [])
+        ]
+      };
 
-      if (!response.ok) {
-        throw new Error('Failed to create booking');
-      }
-
-      const data = await response.json();
-      return data;
+      const result = await BookingService.createBooking(bookingRequest);
+      return result;
     } catch (error) {
       dispatch({ 
         type: 'SET_ERROR', 

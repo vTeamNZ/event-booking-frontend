@@ -66,10 +66,24 @@ const EventPage: React.FC = () => {
           return;
         }
 
-        // Note: Access control is now handled by the API based on event status and user role
-        // Draft events are only accessible by their organizers
-        // Pending events are only accessible by admins
-        // Active events are accessible by everyone
+        // Check if event is accessible - apply same logic as EventsList
+        const currentUser = authService.getCurrentUser();
+        const isOrganizer = currentUser && currentUser.roles && currentUser.roles.includes('Organizer');
+        const isAdmin = currentUser && currentUser.roles && currentUser.roles.includes('Admin');
+        const eventStatus = event.status ?? (event.isActive ? 2 : 3);
+        
+        // Allow access for:
+        // - Active events (everyone)
+        // - Draft events (organizers for testing)
+        // - Pending events (admins for review)
+        const canAccess = eventStatus === 2 || 
+                         (eventStatus === 0 && isOrganizer) || 
+                         (eventStatus === 1 && isAdmin);
+        
+        if (!canAccess) {
+          setError('This event is not currently available for booking.');
+          return;
+        }
 
         // Determine the appropriate route based on seat selection mode
         const seatMode = event.seatSelectionMode ?? 3;

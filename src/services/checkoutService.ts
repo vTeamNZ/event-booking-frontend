@@ -10,6 +10,8 @@ interface FoodLineItem {
   name: string;
   quantity: number;
   unitPrice: number;
+  seatTicketId?: string;  // Optional for backward compatibility
+  seatTicketType?: string; // Optional for backward compatibility
 }
 
 interface CreateCheckoutSessionRequest {

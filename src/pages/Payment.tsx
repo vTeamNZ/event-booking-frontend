@@ -10,6 +10,7 @@ import { qrCodeService, QRCodeGenerationRequest } from '../services/qrCodeServic
 import { seatSelectionService } from '../services/seatSelectionService';
 import { completeBookingCleanup } from '../utils/seating-v2/sessionStorage';
 import { processingFeeService, ProcessingFeeCalculation } from '../services/processingFeeService';
+import { useEventDetails } from '../contexts/BookingContext';
 import EventHero from '../components/EventHero';
 
 interface LegacyPaymentLocationState {
@@ -26,6 +27,8 @@ interface LegacyPaymentLocationState {
     name: string;
     quantity: number;
     price: number;
+    seatTicketId?: string; // Optional seat/ticket association
+    seatTicketType?: string; // Optional association type
   }>;
 }
 
@@ -39,6 +42,7 @@ interface CustomerDetails {
 const Payment: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { fetchEventDetails, eventDetails } = useEventDetails();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user, isAuthenticated, isOrganizer } = useAuth();
@@ -101,6 +105,8 @@ const Payment: React.FC = () => {
       name: food.name,
       quantity: food.quantity,
       price: food.price, // This is unit price, not the total price for this food item
+      seatTicketId: food.seatTicketId, // Preserve seat/ticket association
+      seatTicketType: food.seatTicketType // Preserve association type
     })) ?? [];
   } else {
     // Legacy format
@@ -189,6 +195,13 @@ const Payment: React.FC = () => {
     calculateProcessingFees();
   }, [eventId, amount]);
 
+  // Fetch event details for organizer information
+  useEffect(() => {
+    if (eventId) {
+      fetchEventDetails(eventId);
+    }
+  }, [eventId, fetchEventDetails]);
+
   // Calculate final amount to use throughout the component
   const finalAmount = processingFee && processingFee.processingFeeAmount > 0 
     ? processingFee.totalAmount 
@@ -255,6 +268,8 @@ const Payment: React.FC = () => {
         name: food.name,
         quantity: food.quantity,
         unitPrice: food.price, // food.price is already the unit price
+        seatTicketId: food.seatTicketId, // Include seat/ticket association
+        seatTicketType: food.seatTicketType // Include association type
       })) || [];
 
       // Get selected seat numbers if this is a seat booking
@@ -486,8 +501,9 @@ const Payment: React.FC = () => {
         {/* Event Hero Section */}
         <EventHero 
           title={eventTitle}
-          imageUrl={(state as any)?.imageUrl}
+          imageUrl={eventDetails?.imageUrl || (state as any)?.imageUrl}
           description="Complete your booking"
+          organizerName={eventDetails?.organizationName}
           className="mb-8"
         />
 

@@ -169,26 +169,6 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
                       isSoldOut ? "text-red-600" : "text-gray-600"
                     )}>{ticketType.description}</p>
                   )}
-                  
-                  {/* Availability Information */}
-                  {availabilityInfo && availabilityInfo.hasLimit && (
-                    <div className="mt-2 flex items-center gap-2">
-                      {availabilityInfo.available <= 10 && availabilityInfo.available > 0 ? (
-                        <div className="flex items-center text-orange-600 text-sm">
-                          <AlertTriangle size={14} className="mr-1" />
-                          Only {availabilityInfo.available} left!
-                        </div>
-                      ) : availabilityInfo.available > 0 ? (
-                        <div className="text-green-600 text-sm">
-                          {availabilityInfo.available} available
-                        </div>
-                      ) : (
-                        <div className="text-red-600 text-sm font-medium">
-                          Sold out
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
                 <div className="text-right">
                   <div className={cn(

@@ -4,6 +4,15 @@ export interface BookingData {
   bookingType: 'seats' | 'tickets';
   totalAmount: number;
   imageUrl?: string;
+  // Event details for consistent display across pages
+  eventDetails?: {
+    description?: string;
+    date?: string;
+    location?: string;
+    imageUrl?: string;
+    organizerName?: string;
+    organizationName?: string;
+  };
   selectedSeats?: Array<{
     row: string;
     number: number;
@@ -23,6 +32,9 @@ export interface BookingData {
     quantity: number;
     price: number;
     name: string;
+    totalPrice?: number;
+    seatTicketId?: string; // NEW: Associate with specific seat/ticket
+    seatTicketType?: 'seat' | 'ticket'; // NEW: Type of association
   }>;
 }
 

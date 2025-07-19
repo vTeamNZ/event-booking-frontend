@@ -6,6 +6,7 @@ interface EventHeroProps {
   date?: string | null;
   location?: string;
   description?: string;
+  organizerName?: string;
   className?: string;
 }
 
@@ -15,6 +16,7 @@ const EventHero: React.FC<EventHeroProps> = ({
   date, 
   location, 
   description,
+  organizerName,
   className = "" 
 }) => {
   const fallbackImage = '/events/fallback.jpg';
@@ -37,7 +39,9 @@ const EventHero: React.FC<EventHeroProps> = ({
         {/* Minimal branding in corner */}
         <div className="absolute bottom-4 right-4 z-10">
           <div className="bg-white/10 backdrop-blur-sm rounded-lg px-3 py-1">
-            <span className="text-white text-sm font-medium opacity-80">KiwiLanka Events</span>
+            <span className="text-white text-sm font-medium opacity-80">
+              {organizerName || 'KiwiLanka Events'}
+            </span>
           </div>
         </div>
       </div>

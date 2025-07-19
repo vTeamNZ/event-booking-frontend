@@ -11,6 +11,7 @@ import { seatSelectionService } from '../services/seatSelectionService';
 import { Venue } from '../types/seatSelection';
 import { TicketTypeData, SeatRowAssignment } from '../types/ticketTypes';
 import { getTicketTypeName, getTicketTypeColor } from '../utils/ticketTypeUtils';
+import { createEventSlug } from '../utils/slugUtils';
 import VenueLayoutPreview from '../components/VenueLayoutPreview';
 import TicketTypeManager from '../components/TicketTypeManager';
 import HelpTooltip from '../components/HelpTooltip';
@@ -29,6 +30,14 @@ interface EventFormValues {
 const EventCreateSchema = Yup.object().shape({
   title: Yup.string()
     .min(3, 'Title must be at least 3 characters')
+    .max(100, 'Title cannot exceed 100 characters')
+    .matches(
+      /^[a-zA-Z0-9\s]+$/,
+      'Title can only contain letters, numbers, and spaces'
+    )
+    .test('no-multiple-spaces', 'Multiple consecutive spaces are not allowed', value => 
+      value ? !/\s{2,}/.test(value) : true
+    )
     .required('Event title is required'),
   description: Yup.string()
     .min(10, 'Description must be at least 10 characters')
@@ -651,6 +660,14 @@ const CreateEvent: React.FC = () => {
               />
               {formik.touched.title && formik.errors.title && (
                 <p className="mt-1 text-sm text-red-600">{formik.errors.title}</p>
+              )}
+              {formik.values.title && !formik.errors.title && (
+                <div className="mt-2 p-2 bg-gray-50 rounded-md">
+                  <p className="text-xs text-gray-600 mb-1">URL Preview:</p>
+                  <p className="text-sm text-blue-600 font-mono">
+                    /{createEventSlug(formik.values.title)}
+                  </p>
+                </div>
               )}
             </div>
 
