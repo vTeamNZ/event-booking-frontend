@@ -293,26 +293,12 @@ const FoodSelectionEnhanced: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900">
-        {/* Event Hero Section */}
-        <EventHero 
-          title={locationState?.eventTitle || 'Food Selection'}
-          imageUrl={eventDetails?.imageUrl || (locationState as any)?.imageUrl}
-          description="Loading food options..."
-          organizerName={eventDetails?.organizationName}
-          className="mb-8"
-        />
-
-        {/* Loading Content */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-          <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black rounded-xl shadow-2xl p-8 border border-yellow-500/20">
-            <div className="animate-pulse space-y-4">
-              <div className="h-8 bg-gray-700 rounded w-1/3"></div>
-              <div className="space-y-3">
-                <div className="h-6 bg-gray-700 rounded"></div>
-                <div className="h-6 bg-gray-700 rounded w-2/3"></div>
-              </div>
-            </div>
+      <div className="max-w-6xl mx-auto bg-gradient-to-br from-gray-900 via-gray-800 to-black rounded-xl shadow-2xl p-8 mt-6 border border-yellow-500/20">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-700 rounded w-1/3"></div>
+          <div className="space-y-3">
+            <div className="h-6 bg-gray-700 rounded"></div>
+            <div className="h-6 bg-gray-700 rounded w-2/3"></div>
           </div>
         </div>
       </div>
@@ -321,30 +307,16 @@ const FoodSelectionEnhanced: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-900">
-        {/* Event Hero Section */}
-        <EventHero 
-          title={locationState?.eventTitle || 'Food Selection'}
-          imageUrl={eventDetails?.imageUrl || (locationState as any)?.imageUrl}
-          description="Error loading food options"
-          organizerName={eventDetails?.organizationName}
-          className="mb-8"
-        />
-
-        {/* Error Content */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-          <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black rounded-xl shadow-2xl p-8 border border-yellow-500/20">
-            <div className="text-center text-red-400">
-              <p className="text-lg font-semibold mb-2">Error Loading Food Options</p>
-              <p>{error}</p>
-              <button
-                onClick={() => navigate(-1)}
-                className="mt-4 px-6 py-2 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 border border-gray-500"
-              >
-                Go Back
-              </button>
-            </div>
-          </div>
+      <div className="max-w-6xl mx-auto bg-gradient-to-br from-gray-900 via-gray-800 to-black rounded-xl shadow-2xl p-8 mt-6 border border-yellow-500/20">
+        <div className="text-center text-red-400">
+          <p className="text-lg font-semibold mb-2">Error Loading Food Options</p>
+          <p>{error}</p>
+          <button
+            onClick={() => navigate(-1)}
+            className="mt-4 px-6 py-2 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 border border-gray-500"
+          >
+            Go Back
+          </button>
         </div>
       </div>
     );
@@ -360,67 +332,53 @@ const FoodSelectionEnhanced: React.FC = () => {
           keywords={["Food Selection", "Per-Seat Food", "Event Catering", "Individual Food Orders"]}
         />
         
-        <div className="min-h-screen bg-gray-900">
-          {/* Event Hero Section */}
-          <EventHero 
-            title={locationState?.eventTitle || 'Food Selection'}
-            imageUrl={eventDetails?.imageUrl || (locationState as any)?.imageUrl}
-            description="No food options available for this event"
-            organizerName={eventDetails?.organizationName}
-            className="mb-8"
-          />
+        <div className="max-w-6xl mx-auto bg-gradient-to-br from-gray-900 via-gray-800 to-black rounded-xl shadow-2xl p-8 mt-6 border border-yellow-500/20">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-yellow-400 mb-2">Food & Beverage Selection</h1>
+            <h2 className="text-xl text-gray-300 mb-4">{locationState?.eventTitle}</h2>
+          </div>
 
-          {/* Main Content */}
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-            <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black rounded-xl shadow-2xl p-8 border border-yellow-500/20">
-              {/* Header */}
-              <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold text-yellow-400 mb-2">Food & Beverage Selection</h1>
-                <h2 className="text-xl text-gray-300 mb-4">{locationState?.eventTitle}</h2>
-              </div>
-
-              {/* No Food Available Message */}
-              <div className="bg-gradient-to-r from-gray-800 to-gray-700 rounded-lg p-8 text-center border border-gray-600">
-                <div className="text-6xl mb-4">🍿</div>
-                <h3 className="text-2xl font-bold text-yellow-400 mb-4">No Food & Beverages Available</h3>
-                <p className="text-gray-300 text-lg mb-6">
-                  The organizer hasn't provided any food or beverage options for this event.
-                </p>
-                <p className="text-gray-400 mb-8">
-                  You can proceed directly to payment for your {seatTicketItems[0]?.type === 'seat' ? 'seats' : 'tickets'}.
-                </p>
-                
-                {/* Total Summary */}
-                <div className="bg-gray-900 rounded-lg p-6 mb-6 border border-gray-600">
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-gray-300">
-                      <span>Tickets Total ({seatTicketItems.length} {seatTicketItems[0]?.type === 'seat' ? 'seats' : 'tickets'})</span>
-                      <span>${ticketTotal.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-xl font-bold text-yellow-400 pt-3 border-t border-gray-600">
-                      <span>Total</span>
-                      <span>${ticketTotal.toFixed(2)}</span>
-                    </div>
-                  </div>
+          {/* No Food Available Message */}
+          <div className="bg-gradient-to-r from-gray-800 to-gray-700 rounded-lg p-8 text-center border border-gray-600">
+            <div className="text-6xl mb-4">🍿</div>
+            <h3 className="text-2xl font-bold text-yellow-400 mb-4">No Food & Beverages Available</h3>
+            <p className="text-gray-300 text-lg mb-6">
+              The organizer hasn't provided any food or beverage options for this event.
+            </p>
+            <p className="text-gray-400 mb-8">
+              You can proceed directly to payment for your {seatTicketItems[0]?.type === 'seat' ? 'seats' : 'tickets'}.
+            </p>
+            
+            {/* Total Summary */}
+            <div className="bg-gray-900 rounded-lg p-6 mb-6 border border-gray-600">
+              <div className="space-y-3">
+                <div className="flex justify-between text-gray-300">
+                  <span>Tickets Total ({seatTicketItems.length} {seatTicketItems[0]?.type === 'seat' ? 'seats' : 'tickets'})</span>
+                  <span>${ticketTotal.toFixed(2)}</span>
                 </div>
-
-                {/* Navigation */}
-                <div className="flex justify-between space-x-4">
-                  <button
-                    onClick={() => navigate(-1)}
-                    className="px-8 py-3 rounded-lg bg-gray-700 text-gray-200 hover:bg-gray-600 transition-colors duration-200 flex items-center font-medium border border-gray-500"
-                  >
-                    <span className="mr-2">←</span> Back
-                  </button>
-
-                  <button
-                    onClick={proceed}
-                    className="flex-1 px-8 py-3 rounded-lg bg-gradient-to-r from-yellow-600 to-yellow-500 text-black hover:from-yellow-500 hover:to-yellow-400 transition-all duration-200 flex items-center justify-center font-bold shadow-lg"
-                  >
-                    Continue to Payment <span className="ml-2">→</span>
-                  </button>
+                <div className="flex justify-between text-xl font-bold text-yellow-400 pt-3 border-t border-gray-600">
+                  <span>Total</span>
+                  <span>${ticketTotal.toFixed(2)}</span>
                 </div>
               </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex justify-between space-x-4">
+              <button
+                onClick={() => navigate(-1)}
+                className="px-8 py-3 rounded-lg bg-gray-700 text-gray-200 hover:bg-gray-600 transition-colors duration-200 flex items-center font-medium border border-gray-500"
+              >
+                <span className="mr-2">←</span> Back
+              </button>
+
+              <button
+                onClick={proceed}
+                className="flex-1 px-8 py-3 rounded-lg bg-gradient-to-r from-yellow-600 to-yellow-500 text-black hover:from-yellow-500 hover:to-yellow-400 transition-all duration-200 flex items-center justify-center font-bold shadow-lg"
+              >
+                Continue to Payment <span className="ml-2">→</span>
+              </button>
             </div>
           </div>
         </div>
@@ -513,16 +471,7 @@ const FoodSelectionEnhanced: React.FC = () => {
                     <div>
                       <h4 className="font-semibold text-gray-200">{food.name}</h4>
                       <p className="text-sm text-gray-400">{food.description}</p>
-                      {food.price === 0 ? (
-                        <div className="flex items-center space-x-2">
-                          <span className="text-green-400 font-bold">Included</span>
-                          <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs border border-green-500/30">
-                            Complimentary
-                          </span>
-                        </div>
-                      ) : (
-                        <p className="text-yellow-400 font-bold">${food.price.toFixed(2)}</p>
-                      )}
+                      <p className="text-yellow-400 font-bold">${food.price.toFixed(2)}</p>
                     </div>
                     <div className="flex items-center space-x-2">
                       <button
@@ -537,13 +486,7 @@ const FoodSelectionEnhanced: React.FC = () => {
                       </span>
                       <button
                         onClick={() => handleGlobalFoodChange(food.id, 1)}
-                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                          food.price === 0 
-                            ? 'bg-gray-500 text-gray-400 cursor-not-allowed' 
-                            : 'bg-yellow-600 text-black hover:bg-yellow-500'
-                        }`}
-                        disabled={food.price === 0}
-                        title={food.price === 0 ? 'This item is included with your ticket' : 'Add item'}
+                        className="w-8 h-8 rounded-full bg-yellow-600 text-black hover:bg-yellow-500 flex items-center justify-center"
                       >
                         +
                       </button>
@@ -625,16 +568,7 @@ const FoodSelectionEnhanced: React.FC = () => {
                               <div className="flex-1">
                                 <h4 className="font-semibold text-gray-200">{food.name}</h4>
                                 <p className="text-sm text-gray-400 mb-2">{food.description}</p>
-                                {food.price === 0 ? (
-                                  <div className="flex items-center space-x-2">
-                                    <span className="text-green-400 font-bold">Included</span>
-                                    <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs border border-green-500/30">
-                                      Complimentary
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <p className="text-yellow-400 font-bold">${food.price.toFixed(2)} each</p>
-                                )}
+                                <p className="text-yellow-400 font-bold">${food.price.toFixed(2)} each</p>
                               </div>
                             </div>
                             
@@ -650,13 +584,7 @@ const FoodSelectionEnhanced: React.FC = () => {
                                 <span className="w-8 text-center font-semibold text-gray-200">{quantity}</span>
                                 <button
                                   onClick={() => handleFoodChange(item.id, food.id, 1)}
-                                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                    food.price === 0 
-                                      ? 'bg-gray-500 text-gray-400 cursor-not-allowed' 
-                                      : 'bg-yellow-600 text-black hover:bg-yellow-500'
-                                  }`}
-                                  disabled={food.price === 0}
-                                  title={food.price === 0 ? 'This item is included with your ticket' : 'Add item'}
+                                  className="w-8 h-8 rounded-full bg-yellow-600 text-black hover:bg-yellow-500 flex items-center justify-center"
                                 >
                                   +
                                 </button>
