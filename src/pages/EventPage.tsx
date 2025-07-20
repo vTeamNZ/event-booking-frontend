@@ -78,12 +78,36 @@ const EventPage: React.FC = () => {
         const searchTerm = slugToSearchTerm(eventTitle);
         console.log(`[EventPage] Searching for event with term: "${searchTerm}"`);
 
-        // Fetch all events and find matching one
-        const response = await api.get('/events');
-        const events: Event[] = response.data as Event[];
+        // Check if current user is an organizer
+        const currentUser = authService.getCurrentUser();
+        const isOrganizer = currentUser && currentUser.roles && currentUser.roles.includes('Organizer');
+
+        let allEvents: Event[] = [];
+
+        // Fetch public events
+        const publicResponse = await api.get('/events');
+        const publicEvents: Event[] = Array.isArray(publicResponse.data) ? publicResponse.data : [];
+        allEvents.push(...publicEvents);
+
+        // If user is an organizer, also fetch their draft events
+        if (isOrganizer) {
+          try {
+            const organizerResponse = await api.get('/Events/by-organizer');
+            const organizerEvents: Event[] = Array.isArray(organizerResponse.data) ? organizerResponse.data : [];
+            
+            // Add organizer events that aren't already in public events (to avoid duplicates)
+            organizerEvents.forEach(orgEvent => {
+              if (!allEvents.find(pubEvent => pubEvent.id === orgEvent.id)) {
+                allEvents.push(orgEvent);
+              }
+            });
+          } catch (err) {
+            console.log('Could not fetch organizer events:', err);
+          }
+        }
 
         // Find event that matches the slug
-        const matchingEvent = events.find(e => 
+        const matchingEvent = allEvents.find(e => 
           createEventSlug(e.title) === eventTitle
         );
 
