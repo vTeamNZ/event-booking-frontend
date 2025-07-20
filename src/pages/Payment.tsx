@@ -7,7 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 import { reservationService, TicketReservationRequest } from '../services/reservationService';
 import { BookingData } from '../types/booking';
 import { qrCodeService, QRCodeGenerationRequest } from '../services/qrCodeService';
-import { seatSelectionService } from '../services/seatSelectionService';
+import { seatingAPIService } from '../services/seating-v2/seatingAPIService';
 import { completeBookingCleanup, getSessionId } from '../utils/seating-v2/sessionStorage';
 import { processingFeeService, ProcessingFeeCalculation } from '../services/processingFeeService';
 import { useEventDetails } from '../contexts/BookingContext';
@@ -458,7 +458,7 @@ const Payment: React.FC = () => {
             .map(r => r.seatNo);
           
           if (successfulSeatNumbers.length > 0) {
-            await seatSelectionService.markSeatsAsBooked({
+            await seatingAPIService.markSeatsAsBooked({
               eventId: eventId,
               seatNumbers: successfulSeatNumbers,
               organizerEmail: user.email

@@ -7,7 +7,6 @@ import toast from 'react-hot-toast';
 import { api } from '../services/api';
 import { createTicketType, createTicketTypesBulk } from '../services/eventService';
 import { useVenues } from '../hooks/useVenues';
-import { seatSelectionService } from '../services/seatSelectionService';
 import { Venue } from '../types/seatSelection';
 import { TicketTypeData, SeatRowAssignment } from '../types/ticketTypes';
 import { getTicketTypeName, getTicketTypeColor } from '../utils/ticketTypeUtils';

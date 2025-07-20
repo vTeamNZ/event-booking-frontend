@@ -28,7 +28,6 @@ import AdminOrganizers from './pages/AdminOrganizers';
 import AdminEvents from './pages/AdminEvents';
 import AdminUsers from './pages/AdminUsers';
 import { VenueManagement } from './pages/VenueManagement';
-import SeatingDemo from './components/SeatingDemo';
 import ManageFoodItems from './pages/ManageFoodItems';
 import EventPage from './pages/EventPage';
 import MyBookings from './pages/MyBookings';
@@ -125,7 +124,7 @@ const App: React.FC = () => {
               <VenueManagement />
             </PrivateRoute>
           } />
-          <Route path="/seating-demo" element={<SeatingDemo />} />            <Route 
+          <Route 
               path="/event/:eventId/manage-food" 
               element={
                 <PrivateRoute>

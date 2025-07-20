@@ -251,6 +251,22 @@ export class SeatingAPIService {
       throw new Error('Failed to process seat reservations');
     }
   }
+
+  /**
+   * Mark seats as permanently booked (after payment completion)
+   */
+  async markSeatsAsBooked(request: { eventId: number; seatNumbers: string[]; organizerEmail: string }): Promise<{ message: string; markedSeats: number; seatNumbers: string[] }> {
+    try {
+      console.log(`[SeatingAPIService] Marking seats as booked: ${request.seatNumbers.join(', ')} for event ${request.eventId}`);
+      const response = await api.post<{ message: string; markedSeats: number; seatNumbers: string[] }>(`${this.baseUrl}/mark-booked`, request);
+      
+      console.log(`[SeatingAPIService] Seats marked as booked:`, response.data);
+      return response.data;
+    } catch (error) {
+      console.error('[SeatingAPIService] Error marking seats as booked:', error);
+      throw new Error('Failed to mark seats as booked');
+    }
+  }
 }
 
 // Export singleton instance
