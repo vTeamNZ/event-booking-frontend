@@ -26,6 +26,7 @@ interface CreateCheckoutSessionRequest {
   ticketDetails?: TicketLineItem[];
   foodDetails?: FoodLineItem[];
   selectedSeats?: string[]; // Add this line
+  userSessionId?: string; // Add session ID for seat validation
 }
 
 interface CreateCheckoutSessionResponse {

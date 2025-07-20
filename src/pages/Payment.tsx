@@ -8,7 +8,7 @@ import { reservationService, TicketReservationRequest } from '../services/reserv
 import { BookingData } from '../types/booking';
 import { qrCodeService, QRCodeGenerationRequest } from '../services/qrCodeService';
 import { seatSelectionService } from '../services/seatSelectionService';
-import { completeBookingCleanup } from '../utils/seating-v2/sessionStorage';
+import { completeBookingCleanup, getSessionId } from '../utils/seating-v2/sessionStorage';
 import { processingFeeService, ProcessingFeeCalculation } from '../services/processingFeeService';
 import { useEventDetails } from '../contexts/BookingContext';
 import EventHero from '../components/EventHero';
@@ -281,6 +281,9 @@ const Payment: React.FC = () => {
         }
       }
 
+      // Get session ID for seat validation
+      const sessionId = getSessionId(eventId);
+
       // Create checkout session
       const checkoutSession = await createCheckoutSession({
         eventId,
@@ -294,6 +297,7 @@ const Payment: React.FC = () => {
         ticketDetails: ticketLineItems,
         foodDetails: foodLineItems,
         selectedSeats: selectedSeatNumbers.length > 0 ? selectedSeatNumbers : undefined,
+        userSessionId: sessionId || undefined, // Include session ID for seat validation
       });
 
       // Redirect to Stripe Checkout
