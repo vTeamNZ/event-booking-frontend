@@ -192,21 +192,8 @@ const HeroCarousel: React.FC = () => {
                   return;
                 }
                 
-                // Get the event's seat selection mode, defaulting to GeneralAdmission if not specified
-                const seatMode = event.seatSelectionMode ?? 3;
-                
-                // Use centralized navigation
-                navigateToEvent(event.title, navigate, {
-                  eventId: event.id,
-                  eventTitle: event.title,
-                  eventPrice: event.price,
-                  eventDate: event.date,
-                  eventLocation: event.location,
-                  eventDescription: event.description,
-                  organizerName: event.organizerName,
-                  seatSelectionMode: seatMode,
-                  venue: event.venue
-                });
+                // Simply navigate to the event details page
+                navigateToEvent(event.title, navigate);
               }}
             >
               <div className="bg-white rounded-xl overflow-hidden shadow-lg relative">
