@@ -1,5 +1,29 @@
 import { api } from './api';
 
+export interface OrganizerBookingRequest {
+  eventId: number;
+  firstName: string;
+  lastName?: string;
+  buyerEmail: string;
+  mobile?: string;
+  seatNumbers: string[];
+}
+
+export interface OrganizerBookingResponse {
+  bookingId: number;
+  paymentGUID: string;
+  message: string;
+  eventName: string;
+  seatNumbers: string[];
+  ticketDetails: TicketDetail[];
+}
+
+export interface TicketDetail {
+  seatNumber: string;
+  ticketPath: string;
+  lineItemId: number;
+}
+
 export interface QRCodeGenerationRequest {
   eventID: string;
   eventName: string;
@@ -18,30 +42,19 @@ export interface QRCodeGenerationResponse {
 }
 
 class QRCodeService {
-  private readonly QR_API_BASE_URL = process.env.REACT_APP_QR_API_BASE_URL || 'http://localhost:5075';
-
-  async generateETicket(request: QRCodeGenerationRequest): Promise<QRCodeGenerationResponse> {
+  async createOrganizerDirectBooking(request: OrganizerBookingRequest): Promise<OrganizerBookingResponse> {
     try {
-      // Make request directly to QR Code Generator API
-      const response = await fetch(`${this.QR_API_BASE_URL}/etickets/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(request)
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`QR Code generation failed: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      return data as QRCodeGenerationResponse;
+      const response = await api.post('/Bookings/organizer-direct', request);
+      return response.data as OrganizerBookingResponse;
     } catch (error) {
-      console.error('Error generating QR code:', error);
+      console.error('Error creating organizer booking:', error);
       throw error;
     }
+  }
+
+  async generateETicket(request: QRCodeGenerationRequest): Promise<QRCodeGenerationResponse> {
+    // This method is deprecated - use createOrganizerDirectBooking instead
+    throw new Error('External QR API is no longer available. Use createOrganizerDirectBooking for organizer tickets.');
   }
 
   // Helper method to generate a random GUID

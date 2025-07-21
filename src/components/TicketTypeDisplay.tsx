@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TicketType } from '../types/ticketTypes';
-import { seatSelectionService } from '../services/seatSelectionService';
+import { seatingAPIService } from '../services/seating-v2/seatingAPIService';
 
 interface TicketTypeDisplayProps {
   eventId: number;
@@ -15,8 +15,13 @@ const TicketTypeDisplay: React.FC<TicketTypeDisplayProps> = ({ eventId }) => {
     const fetchTicketTypes = async () => {
       try {
         setLoading(true);
-        const data = await seatSelectionService.getEventTicketTypes(eventId);
-        setTicketTypes(data);
+        const data = await seatingAPIService.getEventTicketTypes(eventId);
+        // Transform to include eventId for compatibility
+        const transformedData = data.map((ticketType: any) => ({
+          ...ticketType,
+          eventId: eventId
+        }));
+        setTicketTypes(transformedData);
       } catch (err) {
         console.error('Error fetching ticket types:', err);
         setError('Failed to load ticket types');

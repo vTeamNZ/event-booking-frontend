@@ -14,6 +14,7 @@ export interface BookingData {
     organizationName?: string;
   };
   selectedSeats?: Array<{
+    id?: number; // Seat ID for backend API calls
     row: string;
     number: number;
     price: number;

@@ -1,6 +1,6 @@
 // Seating Summary Component - Shows selection summary and checkout
 import React from 'react';
-import { X, RefreshCw } from 'lucide-react';
+import { X } from 'lucide-react';
 import { SeatingSummaryProps } from '../../types/seating-v2';
 import { formatPrice } from '../../utils/seating-v2/seatingUtils';
 
@@ -71,20 +71,6 @@ const SeatingSummary: React.FC<SeatingSummaryProps> = ({
 
         {/* Action Buttons */}
         <div className="space-y-3 pt-4">
-          {/* Refresh Button (for debugging/manual refresh) */}
-          {onRefresh && (
-            <div className="flex justify-center">
-              <button
-                onClick={onRefresh}
-                className="flex items-center gap-2 px-3 py-1 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                title="Refresh seat layout"
-              >
-                <RefreshCw size={14} />
-                Refresh Layout
-              </button>
-            </div>
-          )}
-          
           {/* Main Action Buttons */}
           <div className="flex justify-between items-center space-x-4">
             <button
@@ -107,7 +93,7 @@ const SeatingSummary: React.FC<SeatingSummaryProps> = ({
                   : 'text-gray-400 bg-gray-200 cursor-not-allowed'
               }`}
             >
-              Continue to Checkout
+              Reserve Selected Seats
             </button>
           </div>
         </div>

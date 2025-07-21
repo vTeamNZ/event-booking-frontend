@@ -1,4 +1,4 @@
-// API Service for Seating System V2
+// API Service for Seating System V2 - INDUSTRY STANDARD IMPLEMENTATION
 import { api } from '../api';
 import {
   SeatingLayoutResponse,
@@ -11,8 +11,57 @@ import {
 } from '../../types/seating-v2';
 import { ReservedSeatDTO } from '../../types/seating-v2/reservedSeatDTO';
 
+// ✅ NEW: Industry Standard Types
+interface ReserveSeatSelectionRequest {
+  eventId: number;
+  seatIds: number[];
+  sessionId: string;
+  userId?: string;
+}
+
+interface ReservationResponse {
+  reservationId: string;
+  expiresAt: string;
+  totalPrice: number;
+  seatsCount: number;
+  sessionId: string;
+  reservedSeats: ReservedSeatInfo[];
+}
+
+interface ReservedSeatInfo {
+  seatId: number;
+  seatNumber: string;
+  row: string;
+  number: number;
+  price: number;
+  ticketTypeId: number;
+  ticketTypeName: string;
+  ticketTypeColor: string;
+}
+
+interface SeatAvailabilityResponse {
+  availableSeatIds: number[];
+  unavailableSeatIds: number[];
+  unavailableDetails: Array<{
+    seatId: number;
+    seatNumber: string;
+    status: string;
+    reservedUntil?: string;
+    reason: string;
+  }>;
+}
+
+interface ReservationStatusResponse {
+  hasActiveReservation: boolean;
+  reservationId?: string;
+  expiresAt?: string;
+  seatsCount?: number;
+  totalPrice?: number;
+  reservedSeats: ReservedSeatInfo[];
+}
+
 export class SeatingAPIService {
-  private baseUrl = '/seats';
+  private baseUrl = '/Seats';
 
   /**
    * Get seat layout for an event
@@ -112,6 +161,133 @@ export class SeatingAPIService {
       throw new Error('Failed to fetch pricing information');
     }
   }
+
+  // =====================================================================
+  // 🚀 NEW INDUSTRY STANDARD METHODS
+  // =====================================================================
+
+  /**
+   * ✅ INDUSTRY STANDARD: Check seat availability before reservation (read-only)
+   */
+  async checkSeatAvailabilityBatch(eventId: number, seatIds: number[]): Promise<SeatAvailabilityResponse> {
+    try {
+      console.log(`[SeatingAPIService] Checking availability for ${seatIds.length} seats`);
+      const response = await api.post<SeatAvailabilityResponse>(`${this.baseUrl}/check-availability`, {
+        eventId,
+        seatIds
+      });
+      
+      console.log(`[SeatingAPIService] Availability check:`, {
+        available: response.data.availableSeatIds.length,
+        unavailable: response.data.unavailableSeatIds.length
+      });
+      return response.data;
+    } catch (error) {
+      console.error('[SeatingAPIService] Error checking seat availability:', error);
+      throw new Error('Failed to check seat availability');
+    }
+  }
+
+  /**
+   * ✅ INDUSTRY STANDARD: Reserve multiple seats in single transaction
+   * This replaces individual seat clicking with batch reservation
+   */
+  async reserveSeatSelection(eventId: number, seatIds: number[], sessionId: string, userId?: string): Promise<ReservationResponse> {
+    try {
+      console.log(`[SeatingAPIService] 🎯 BATCH RESERVING ${seatIds.length} seats for session ${sessionId}`);
+      const request: ReserveSeatSelectionRequest = {
+        eventId,
+        seatIds,
+        sessionId,
+        userId
+      };
+      
+      const response = await api.post<ReservationResponse>(`${this.baseUrl}/reserve-selection`, request);
+      
+      console.log(`[SeatingAPIService] ✅ BATCH RESERVATION SUCCESS:`, {
+        reservationId: response.data.reservationId,
+        seatsCount: response.data.seatsCount,
+        totalPrice: response.data.totalPrice,
+        expiresAt: response.data.expiresAt
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('[SeatingAPIService] ❌ BATCH RESERVATION FAILED:', error);
+      throw new Error('Failed to reserve seat selection');
+    }
+  }
+
+  /**
+   * ✅ INDUSTRY STANDARD: Get current reservation status for global timer
+   */
+  async getReservationStatus(sessionId: string): Promise<ReservationStatusResponse> {
+    try {
+      console.log(`[SeatingAPIService] Getting reservation status for session ${sessionId}`);
+      const response = await api.get<ReservationStatusResponse>(`${this.baseUrl}/reservation-status/${sessionId}`);
+      
+      if (response.data.hasActiveReservation) {
+        console.log(`[SeatingAPIService] ⏰ ACTIVE RESERVATION:`, {
+          reservationId: response.data.reservationId,
+          seatsCount: response.data.seatsCount,
+          expiresAt: response.data.expiresAt
+        });
+      } else {
+        console.log(`[SeatingAPIService] ℹ️ NO ACTIVE RESERVATION for session ${sessionId}`);
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('[SeatingAPIService] Error getting reservation status:', error);
+      return { hasActiveReservation: false, reservedSeats: [] };
+    }
+  }
+
+  /**
+   * ✅ INDUSTRY STANDARD: Release all seats for a session
+   */
+  async releaseReservation(sessionId: string, reservationId?: string): Promise<{ message: string; releasedSeats: number }> {
+    try {
+      console.log(`[SeatingAPIService] 🧹 RELEASING RESERVATION for session ${sessionId}`, reservationId ? `(ID: ${reservationId})` : '');
+      
+      const response = await api.post<{ message: string; releasedSeats: number }>(`${this.baseUrl}/release-reservation`, {
+        sessionId,
+        reservationId
+      });
+      
+      console.log(`[SeatingAPIService] ✅ RESERVATION RELEASED:`, response.data);
+      return response.data;
+    } catch (error) {
+      console.error('[SeatingAPIService] ❌ RELEASE FAILED:', error);
+      throw new Error('Failed to release reservation');
+    }
+  }
+
+  /**
+   * ✅ INDUSTRY STANDARD: Confirm reservation after successful payment
+   */
+  async confirmReservation(reservationId: string, sessionId: string, paymentIntentId: string, buyerEmail: string): Promise<{ message: string; confirmedSeats: number }> {
+    try {
+      console.log(`[SeatingAPIService] 🎫 CONFIRMING RESERVATION ${reservationId} for payment ${paymentIntentId}`);
+      
+      const response = await api.post<{ message: string; confirmedSeats: number }>(`${this.baseUrl}/confirm-reservation`, {
+        reservationId,
+        sessionId,
+        paymentIntentId,
+        buyerEmail
+      });
+      
+      console.log(`[SeatingAPIService] ✅ RESERVATION CONFIRMED:`, response.data);
+      return response.data;
+    } catch (error) {
+      console.error('[SeatingAPIService] ❌ CONFIRMATION FAILED:', error);
+      throw new Error('Failed to confirm reservation');
+    }
+  }
+
+  // =====================================================================
+  // 🔄 LEGACY METHODS (Keep for backward compatibility during migration)
+  // =====================================================================
 
   /**
    * Get ticket types for an event
@@ -249,6 +425,22 @@ export class SeatingAPIService {
     } catch (error) {
       console.error('[SeatingAPIService] Error in reserve multiple seats operation:', error);
       throw new Error('Failed to process seat reservations');
+    }
+  }
+
+  /**
+   * Mark seats as permanently booked (after payment completion)
+   */
+  async markSeatsAsBooked(request: { eventId: number; seatNumbers: string[]; organizerEmail: string }): Promise<{ message: string; markedSeats: number; seatNumbers: string[] }> {
+    try {
+      console.log(`[SeatingAPIService] Marking seats as booked: ${request.seatNumbers.join(', ')} for event ${request.eventId}`);
+      const response = await api.post<{ message: string; markedSeats: number; seatNumbers: string[] }>(`${this.baseUrl}/mark-booked`, request);
+      
+      console.log(`[SeatingAPIService] Seats marked as booked:`, response.data);
+      return response.data;
+    } catch (error) {
+      console.error('[SeatingAPIService] Error marking seats as booked:', error);
+      throw new Error('Failed to mark seats as booked');
     }
   }
 }

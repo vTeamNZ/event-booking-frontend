@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Timer Test</title>
+</head>
+<body>
+    <h1>Testing Global Timer</h1>
+    <p>Open browser console and run these commands to test:</p>
+    
+    <h2>1. Create Test Reservation:</h2>
+    <pre>
+// Create a test reservation that expires in 5 minutes
+const testReservation = {
+    reservationId: "test-123",
+    eventId: 21,
+    sessionId: "test-session",
+    expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes from now
+    seatsCount: 2,
+    totalPrice: 50.00
+};
+
+localStorage.setItem('activeReservation', JSON.stringify(testReservation));
+console.log('Test reservation created!');
+    </pre>
+    
+    <h2>2. Check Reservation:</h2>
+    <pre>
+const stored = localStorage.getItem('activeReservation');
+console.log('Stored reservation:', stored ? JSON.parse(stored) : 'None');
+    </pre>
+    
+    <h2>3. Clear Reservation:</h2>
+    <pre>
+localStorage.removeItem('activeReservation');
+console.log('Reservation cleared!');
+    </pre>
+
+    <script>
+        // Auto-create test reservation for quick testing
+        window.createTestReservation = function() {
+            const testReservation = {
+                reservationId: "test-123",
+                eventId: 21,
+                sessionId: "test-session",
+                expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+                seatsCount: 2,
+                totalPrice: 50.00
+            };
+            localStorage.setItem('activeReservation', JSON.stringify(testReservation));
+            alert('Test reservation created! Timer should appear now.');
+            window.location.reload();
+        };
+        
+        window.clearReservation = function() {
+            localStorage.removeItem('activeReservation');
+            alert('Reservation cleared!');
+            window.location.reload();
+        };
+    </script>
+    
+    <button onclick="createTestReservation()">Create Test Reservation</button>
+    <button onclick="clearReservation()">Clear Reservation</button>
+</body>
+</html>

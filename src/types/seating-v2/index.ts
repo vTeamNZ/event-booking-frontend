@@ -130,7 +130,6 @@ export interface SeatingSummaryProps {
   onProceed: () => void;
   onClear: () => void;
   onRemoveSeat?: (seat: SeatingSelectedSeat) => void;
-  onRefresh?: () => void;
 }
 
 export interface SeatingSelectedSeat extends Omit<SeatingLayoutSeat, 'ticketType' | 'reservedUntil'> {

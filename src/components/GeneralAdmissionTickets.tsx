@@ -6,7 +6,7 @@ import {
   PricingResponse 
 } from '../types/seatSelection';
 import { TicketType } from '../types/ticketTypes';
-import { seatSelectionService } from '../services/seatSelectionService';
+import { seatingAPIService } from '../services/seating-v2/seatingAPIService';
 import { ticketAvailabilityService, TicketAvailabilityInfo } from '../services/ticketAvailabilityService';
 import { formatPrice } from '../utils/seatSelection';
 import { cn } from '../utils/seatSelection';
@@ -33,15 +33,22 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
         setLoading(true);
         
         // Load ticket types
-        const pricing = await seatSelectionService.getEventPricing(eventId);
-        setTicketTypes(pricing.ticketTypes);
+        const pricing = await seatingAPIService.getEventPricing(eventId);
+        
+        // Transform seating-v2 ticket types to include eventId for compatibility
+        const transformedTicketTypes = pricing.ticketTypes.map((ticketType: any) => ({
+          ...ticketType,
+          eventId: eventId // Add eventId property for legacy compatibility
+        }));
+        
+        setTicketTypes(transformedTicketTypes);
         
         // Load ticket availability
         const availabilityData = await ticketAvailabilityService.getEventTicketAvailability(eventId);
         setAvailability(availabilityData);
         
         // Initialize selections with 0 quantity for each ticket type
-        const initialSelections = pricing.ticketTypes.map(ticketType => ({
+        const initialSelections = transformedTicketTypes.map((ticketType: any) => ({
           ticketType,
           quantity: 0
         }));

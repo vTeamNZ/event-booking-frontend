@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import SEO from '../components/SEO';
 
 interface FoodItem {
@@ -56,21 +57,37 @@ const FoodSelection: React.FC = () => {
   const selectedFoods = menu.filter(item => item.quantity > 0);
   const totalCost = selectedFoods.reduce((sum, item) => sum + item.price * item.quantity, 0);  
   const goToPayment = () => {
+    const selectedFoods = menu
+      .filter(item => item.quantity > 0)
+      .map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price * item.quantity,
+      }));
+
+    // Create payment state with all necessary data
     const paymentState = {
+      // Pass through seat data from previous page
       eventId: location.state?.eventId,
       eventTitle,
+      selectedSeats: location.state?.selectedSeats || [], // Pass seat data to payment
+      bookingType: location.state?.bookingType || 'seats',
+      imageUrl: location.state?.imageUrl,
       ticketDetails: location.state?.ticketDetails,
       selectedFoods,
-      amount: (ticketPrice || 0) + totalCost,  // Ensure amount is passed correctly
+      amount: (ticketPrice || 0) + totalCost,
+      totalAmount: (ticketPrice || 0) + totalCost,
     };
 
     // Validate required data before navigation
-    if (!paymentState.eventId || !paymentState.eventTitle || !paymentState.ticketDetails) {
-      console.error('Missing required payment information');
+    if (!paymentState.eventId || !paymentState.eventTitle) {
+      console.error('Missing required payment information:', paymentState);
+      console.error('Location state:', location.state);
       navigate('/');
       return;
     }
 
+    console.log('Navigating to payment with state:', paymentState);
     navigate("/payment", { state: paymentState });
   };
 
@@ -97,16 +114,7 @@ const FoodSelection: React.FC = () => {
                 <div className="flex-1">
                   <h3 className="text-xl font-semibold text-gray-800 mb-2">{item.name}</h3>
                   <p className="text-gray-600 text-sm mb-2">{item.description}</p>
-                  {item.price === 0 ? (
-                    <div className="flex items-center space-x-2">
-                      <span className="text-green-600 font-bold">Included</span>
-                      <span className="bg-green-100 text-green-600 px-2 py-1 rounded-full text-xs border border-green-300">
-                        Complimentary
-                      </span>
-                    </div>
-                  ) : (
-                    <p className="text-primary font-bold">${item.price.toFixed(2)}</p>
-                  )}
+                  <p className="text-primary font-bold">${item.price.toFixed(2)}</p>
                 </div>
                 
                 <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
@@ -121,13 +129,7 @@ const FoodSelection: React.FC = () => {
                     <span className="w-8 text-center font-semibold">{item.quantity}</span>
                     <button
                       onClick={() => handleQtyChange(idx, 1)}
-                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200 ${
-                        item.price === 0 
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                          : 'bg-primary text-white hover:bg-red-600'
-                      }`}
-                      disabled={item.price === 0}
-                      title={item.price === 0 ? 'This item is included with your ticket' : 'Add item'}
+                      className="w-8 h-8 rounded-full bg-primary text-white hover:bg-red-600 flex items-center justify-center transition-colors duration-200"
                     >
                       +
                     </button>
