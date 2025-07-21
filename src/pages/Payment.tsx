@@ -6,9 +6,8 @@ import SEO from '../components/SEO';
 import { useAuth } from '../hooks/useAuth';
 import { reservationService, TicketReservationRequest } from '../services/reservationService';
 import { BookingData } from '../types/booking';
-import { qrCodeService, QRCodeGenerationRequest } from '../services/qrCodeService';
+import { qrCodeService, QRCodeGenerationRequest, OrganizerBookingRequest } from '../services/qrCodeService';
 import { seatingAPIService } from '../services/seating-v2/seatingAPIService';
-import { completeBookingCleanup, getSessionId } from '../utils/seating-v2/sessionStorage';
 import { processingFeeService, ProcessingFeeCalculation } from '../services/processingFeeService';
 import { useEventDetails } from '../contexts/BookingContext';
 import EventHero from '../components/EventHero';
@@ -120,23 +119,18 @@ const Payment: React.FC = () => {
 
   // Check if we have the required payment state
   useEffect(() => {
-    console.log('Payment page received state:', state);
-    
     // More detailed validation
     if (!state) {
-      console.error('Missing state completely');
       navigate('/');
       return;
     }
 
     if (!eventId) {
-      console.error('Missing eventId in state:', state);
       navigate('/');
       return;
     }
 
     if (!eventTitle) {
-      console.error('Missing eventTitle in state:', state);
       navigate('/');
       return;
     }
@@ -144,31 +138,25 @@ const Payment: React.FC = () => {
     // Check if it's BookingData format
     if (isNewFormat) {
       const bookingData = state as BookingData;
-      console.log('BookingData format detected with type:', bookingData.bookingType);
       
       if (bookingData.bookingType === 'tickets' && 
           (!bookingData.selectedTickets || bookingData.selectedTickets.length === 0)) {
-        console.error('BookingData format missing selectedTickets:', state);
         navigate('/');
         return;
       }
       
       if (bookingData.bookingType === 'seats' && 
           (!bookingData.selectedSeats || bookingData.selectedSeats.length === 0)) {
-        console.error('BookingData format missing selectedSeats:', state);
         navigate('/');
         return;
       }
     } else {
       // Legacy format validation
       if (!ticketDetails || ticketDetails.length === 0) {
-        console.error('Legacy format missing ticketDetails:', state);
         navigate('/');
         return;
       }
     }
-
-    console.log('Payment state validation successful');
   }, [state, eventId, eventTitle, ticketDetails, isNewFormat, navigate]);
 
   // Calculate processing fees
@@ -256,33 +244,33 @@ const Payment: React.FC = () => {
         return;
       }
 
+      // ? SIMPLIFIED APPROACH: No API reservation calls needed
+      // Just use the seat data directly for payment processing
+
       // Convert ticket details to the format expected by the API
       const ticketLineItems = ticketDetails.map(ticket => ({
         type: ticket.type,
         quantity: ticket.quantity,
-        unitPrice: ticket.price / ticket.quantity, // Convert total price back to unit price
+        unitPrice: ticket.price / ticket.quantity,
       }));
 
       // Convert food details to the format expected by the API
       const foodLineItems = selectedFoods?.map(food => ({
         name: food.name,
         quantity: food.quantity,
-        unitPrice: food.price, // food.price is already the unit price
-        seatTicketId: food.seatTicketId, // Include seat/ticket association
-        seatTicketType: food.seatTicketType // Include association type
+        unitPrice: food.price,
+        seatTicketId: food.seatTicketId,
+        seatTicketType: food.seatTicketType
       })) || [];
 
-      // Get selected seat numbers if this is a seat booking
+      // Get selected seat numbers for checkout
       let selectedSeatNumbers: string[] = [];
       if (isNewFormat) {
         const bookingData = state as BookingData;
         if (bookingData.bookingType === 'seats' && bookingData.selectedSeats) {
-          selectedSeatNumbers = bookingData.selectedSeats.map(seat => `${seat.row}${seat.number}`);
+          selectedSeatNumbers = bookingData.selectedSeats.map(seat => seat.seatNumber || `${seat.row}${seat.number}`);
         }
       }
-
-      // Get session ID for seat validation
-      const sessionId = getSessionId(eventId);
 
       // Create checkout session
       const checkoutSession = await createCheckoutSession({
@@ -297,7 +285,7 @@ const Payment: React.FC = () => {
         ticketDetails: ticketLineItems,
         foodDetails: foodLineItems,
         selectedSeats: selectedSeatNumbers.length > 0 ? selectedSeatNumbers : undefined,
-        userSessionId: sessionId || undefined, // Include session ID for seat validation
+        // Note: No longer using session ID from localStorage
       });
 
       // Redirect to Stripe Checkout
@@ -344,8 +332,7 @@ const Payment: React.FC = () => {
       if (result.success) {
         message.success('Tickets reserved successfully!');
         
-        // Clear session storage since reservation is completed
-        completeBookingCleanup(eventId, 'reservation_success');
+        // Note: No longer using session storage cleanup
         
         navigate(`/payment/success`, {
           state: {
@@ -414,82 +401,47 @@ const Payment: React.FC = () => {
         });
       }
 
-      // Generate QR codes for each seat
-      const qrResults = [];
-      for (const seatNo of seatNumbers) {
-        const qrRequest: QRCodeGenerationRequest = {
-          eventID: eventId.toString(),
-          eventName: eventTitle,
-          seatNo: seatNo,
-          firstName: user.fullName, // Use organizer's name
-          paymentGUID: qrCodeService.generateGUID(),
-          buyerEmail: user.email, // Use organizer's email as buyer
-          organizerEmail: user.email // Use organizer's email as organizer
-        };
-
-        try {
-          const qrResult = await qrCodeService.generateETicket(qrRequest);
-          qrResults.push({ seatNo, result: qrResult });
-          
-          if (qrResult.isDuplicate) {
-            message.warning(`Ticket for seat ${seatNo} already exists - duplicate prevented`);
-          }
-        } catch (error) {
-          console.error(`Failed to generate QR code for seat ${seatNo}:`, error);
-          message.error(`Failed to generate QR code for seat ${seatNo}`);
-        }
+      if (seatNumbers.length === 0) {
+        setError('No seats selected for booking');
+        return;
       }
 
-      if (qrResults.length > 0) {
-        const successCount = qrResults.filter(r => !r.result.isDuplicate).length;
-        const duplicateCount = qrResults.filter(r => r.result.isDuplicate).length;
+      // Create organizer direct booking using internal API
+      const bookingRequest: OrganizerBookingRequest = {
+        eventId: eventId,
+        firstName: customerDetails.firstName,
+        lastName: customerDetails.lastName,
+        buyerEmail: customerDetails.email,
+        mobile: customerDetails.mobile || undefined,
+        seatNumbers: seatNumbers
+      };
+
+      try {
+        const bookingResult = await qrCodeService.createOrganizerDirectBooking(bookingRequest);
         
-        if (successCount > 0) {
-          message.success(`Successfully generated ${successCount} QR ticket(s)!`);
-        }
-        if (duplicateCount > 0) {
-          message.info(`${duplicateCount} ticket(s) already existed and were not regenerated.`);
-        }
-        
-        // Mark seats as booked in the database (only for successfully generated tickets)
-        try {
-          const successfulSeatNumbers = qrResults
-            .filter(r => !r.result.isDuplicate)
-            .map(r => r.seatNo);
-          
-          if (successfulSeatNumbers.length > 0) {
-            await seatingAPIService.markSeatsAsBooked({
-              eventId: eventId,
-              seatNumbers: successfulSeatNumbers,
-              organizerEmail: user.email
-            });
-            console.log(`Successfully marked ${successfulSeatNumbers.length} seats as booked`);
-          }
-        } catch (seatBookingError) {
-          console.error('Error marking seats as booked:', seatBookingError);
-          // Don't show error to user since QR codes were already generated successfully
-          // This is a non-critical operation that can be handled later if needed
-        }
-        
-        // Clear session storage before navigation since booking is completed
-        completeBookingCleanup(eventId, 'qr_ticket_generation');
-        
-        // Navigate to success page with QR ticket information
-        navigate('/payment/success', {
-          state: {
-            eventTitle,
-            eventId, // Include eventId in state for cleanup verification
-            isQRTickets: true,
-            qrResults: qrResults,
-            organizerGenerated: true
-          }
+        // Show success notification with booking details
+        message.success({
+          content: `Successfully created organizer booking for ${seatNumbers.length} seat(s)! Booking ID: ${bookingResult.bookingId}`,
+          duration: 5
         });
-      } else {
-        setError('No QR tickets were generated. Please try again.');
+        
+        // Note: No longer using session storage cleanup
+        
+        // Reset form after successful booking
+        const form = document.querySelector('form') as HTMLFormElement;
+        if (form) {
+          form.reset();
+        }
+        
+      } catch (error) {
+        console.error('Error creating organizer booking:', error);
+        message.error('Failed to create organizer booking. Please try again.');
+        setError('Failed to create organizer booking. Please try again.');
       }
+
     } catch (err) {
-      console.error('Error generating QR tickets:', err);
-      setError('An error occurred while generating QR tickets. Please try again.');
+      console.error('Error generating organizer booking:', err);
+      setError('An error occurred while creating organizer booking. Please try again.');
     } finally {
       setLoading(false);
     }

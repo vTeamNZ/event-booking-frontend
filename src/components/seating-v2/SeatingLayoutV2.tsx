@@ -30,7 +30,6 @@ import { SeatStatus } from '../../types/seatStatus';
 import SeatingGrid from './SeatingGrid';
 import SeatingLegend from './SeatingLegend';
 import SeatingSummary from './SeatingSummary';
-import SeatingReservationTimer from './SeatingReservationTimer';
 import SeatingLoadingSpinner from './SeatingLoadingSpinner';
 import SeatingErrorMessage from './SeatingErrorMessage';
 
@@ -70,6 +69,7 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
   const [layout, setLayout] = useState<SeatingLayoutResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [restorationNotificationShown, setRestorationNotificationShown] = useState(false);
 
   // Load seating layout
   useEffect(() => {
@@ -101,81 +101,163 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
     loadLayout();
   }, [eventId]);
 
-  // Load reservations separately after layout is loaded
+  // 🎯 INDUSTRY STANDARD: Load reservations and initialize active reservation state
   useEffect(() => {
     // Skip if layout isn't loaded yet
     if (!layout) return;
     
     const loadReservations = async () => {
       try {
-        // Check for existing reservations
-        const reservedSeats = await seatingAPIService.getReservationsBySession(eventId, selectionState.sessionId);
+        // Check for active reservation from timer service
+        const reservationTimer = (await import('../../services/reservationTimerService')).default;
+        const activeReservation = reservationTimer.getReservation();
         
-        if (reservedSeats.length > 0) {
-          console.log(`Found ${reservedSeats.length} existing reservations for session ${selectionState.sessionId}`);
+        if (activeReservation && activeReservation.eventId === eventId) {
+          const timeLeft = reservationTimer.getTimeLeft();
           
-          // Convert ReservedSeatDTO to SeatingSelectedSeat format
-          const selectedSeats = reservedSeats
-            .map(reservedSeat => {
-              const now = new Date();
-              
-              // Find the corresponding layout seat for position data
-              const layoutSeat = layout.seats.find(s => s.id === reservedSeat.seatId);
-              if (!layoutSeat) return null;
-
-              // Create selected seat with all required properties
-              const selectedSeat: SeatingSelectedSeat = {
-                // Base properties from layout seat
-                id: layoutSeat.id,
-                seatNumber: layoutSeat.seatNumber,
-                row: layoutSeat.row,
-                number: layoutSeat.number,
-                x: layoutSeat.x,
-                y: layoutSeat.y,
-                width: layoutSeat.width,
-                height: layoutSeat.height,
-                status: reservedSeat.status,
-
-                // Selection properties
-                selectedAt: now,
-                // Convert reservedUntil string to Date, or generate new expiry
-                reservedUntil: reservedSeat.reservedUntil ? new Date(reservedSeat.reservedUntil) : new Date(now.getTime() + 10 * 60 * 1000),
-                ticketType: reservedSeat.ticketType ?? {
-                  id: 0,
-                  type: 'General',
-                  name: 'General',
-                  price: reservedSeat.price || 0,
-                  color: '#4B5563',
-                  description: 'General Admission'
-                },
-                price: reservedSeat.price || 0
-              };
-
-              return selectedSeat;
-            })
-            .filter((seat): seat is SeatingSelectedSeat => seat !== null);
-          
-          // Calculate total price for selected seats
-          const totalPrice = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
-          
-          // Update selection state with existing reservations
-          setSelectionState(prev => ({
-            ...prev,
-            selectedSeats,
-            totalPrice
-          }));
-          
-          if (selectedSeats.length > 0) {
-            toast.success(`Restored ${selectedSeats.length} previously selected seat${selectedSeats.length > 1 ? 's' : ''}`);
+          if (timeLeft > 0) {
+            console.log(`🎯 Active reservation found on page load:`, {
+              reservationId: activeReservation.reservationId,
+              seatsCount: activeReservation.seatsCount,
+              timeLeft: `${Math.floor(timeLeft / 60)}:${(timeLeft % 60).toString().padStart(2, '0')}`
+            });
+            
+            // ✅ INDUSTRY STANDARD: Restore full selection state for session recovery
+            await restoreReservationState(activeReservation);
+            
+            // Note: Welcome back message removed as it was redundant
+            // Reserved seats will be highlighted by the UI automatically
+          } else {
+            console.log('⏰ Found expired reservation, cleaning up...');
+            reservationTimer.cleanup();
+          }
+        }
+        
+        // Legacy fallback: Check localStorage for backward compatibility
+        const legacyReservation = localStorage.getItem('activeReservation');
+        if (legacyReservation && !activeReservation) {
+          const reservation = JSON.parse(legacyReservation);
+          if (reservation.eventId === eventId && reservation.sessionId === selectionState.sessionId) {
+            const expiresAt = new Date(reservation.expiresAt);
+            if (expiresAt > new Date()) {
+              console.log('🔄 Migrating legacy reservation to timer service...');
+              // Migrate to new timer service
+              await reservationTimer.startTimer(reservation);
+            } else {
+              console.log('⏰ Legacy reservation expired, clearing...');
+              localStorage.removeItem('activeReservation');
+            }
           }
         }
       } catch (err) {
-        console.warn('Failed to load reservations, continuing without them:', err);
+        console.warn('Failed to load active reservation:', err);
       }
     };
     
     loadReservations();
   }, [layout, eventId, selectionState.sessionId]);
+
+  // ✅ INDUSTRY STANDARD: Restore full selection state from existing reservation
+  const restoreReservationState = useCallback(async (reservation: any) => {
+    try {
+      console.log('[SeatingLayoutV2] 🔄 Restoring selection state from reservation...');
+      
+      // First check if we actually have seat reservations in localStorage for this session
+      const expectedSeats = reservation.seatsCount || 0;
+      if (expectedSeats === 0) {
+        console.log('[SeatingLayoutV2] ℹ️ No seats expected to restore (seatsCount: 0)');
+        return;
+      }
+      
+      // Get reserved seats for this session from the layout
+      const reservedSeats = layout?.seats?.filter(seat => 
+        isSeatReservedBySession(eventId, seat.id, selectionState.sessionId)
+      ) || [];
+
+      if (reservedSeats.length > 0) {
+        console.log(`[SeatingLayoutV2] 🎯 Found ${reservedSeats.length} reserved seats to restore`);
+        
+        // Convert layout seats to selection format
+        const selectedSeats: SeatingSelectedSeat[] = reservedSeats.map(seat => {
+          const selectedSeat: SeatingSelectedSeat = {
+            id: seat.id,
+            row: seat.row,
+            number: seat.number,
+            seatNumber: seat.seatNumber,
+            x: seat.x,
+            y: seat.y,
+            width: seat.width,
+            height: seat.height,
+            price: seat.price || seat.ticketType?.price || 0,
+            status: seat.status,
+            ticketType: seat.ticketType,
+            reservedUntil: new Date(Date.now() + 10 * 60 * 1000)
+          };
+          return selectedSeat;
+        });
+
+        // Calculate total price
+        const totalPrice = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
+
+        // Restore the selection state
+        setSelectionState(prev => ({
+          ...prev,
+          selectedSeats,
+          totalPrice,
+          isValid: true
+        }));
+
+        // Store in session storage for persistence
+        const seatIds = selectedSeats.map(s => s.id);
+        storeSelectedSeats(eventId, seatIds);
+
+        console.log('[SeatingLayoutV2] ✅ Selection state restored successfully:', {
+          seatsCount: selectedSeats.length,
+          totalPrice,
+          seatNumbers: selectedSeats.map(s => s.seatNumber)
+        });
+
+        // Selection restored silently - no toast needed since feature is unreliable
+      } else {
+        console.log('[SeatingLayoutV2] ℹ️ No reserved seats found for session recovery - this is normal for new visits');
+        // Only show error if we expected seats but couldn't find them AND we haven't already shown a notification
+        if (expectedSeats > 0 && !restorationNotificationShown) {
+          console.warn(`[SeatingLayoutV2] ⚠️ Expected ${expectedSeats} seats but found none - showing restoration error`);
+          setRestorationNotificationShown(true);
+          toast(
+            'Session expired. Please select your new seats, or try again later',
+            { 
+              duration: 5000, 
+              icon: '🔄',
+              style: {
+                background: '#f59e0b',
+                color: '#ffffff',
+                fontWeight: '500'
+              }
+            }
+          );
+        }
+      }
+    } catch (error) {
+      console.error('[SeatingLayoutV2] ❌ Error restoring reservation state:', error);
+      // Only show error notification if we haven't already shown one
+      if (!restorationNotificationShown) {
+        setRestorationNotificationShown(true);
+        toast(
+          'Please select your seats again to continue.',
+          { 
+            duration: 4000, 
+            icon: '🔄',
+            style: {
+              background: '#ef4444',
+              color: '#ffffff',
+              fontWeight: '500'
+            }
+          }
+        );
+      }
+    }
+  }, [layout, eventId, selectionState.sessionId, setSelectionState]);
 
   // Function to refresh seat layout from backend
   const refreshSeatLayout = useCallback(async () => {
@@ -198,132 +280,37 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
       console.log('[SeatingLayoutV2] Manually refreshing layout...');
       const freshLayout = await seatingAPIService.getEventSeatLayout(eventId);
       setLayout(freshLayout);
-      toast.success('Seating layout refreshed');
+      // Layout refreshed silently
     } catch (error) {
       console.error('[SeatingLayoutV2] Error refreshing layout:', error);
       toast.error('Failed to refresh layout. Please try again.');
     }
   }, [eventId]);
 
-  // Handle individual seat reservation when selected
-  const handleSeatReserve = useCallback(async (seat: SeatingLayoutSeat, isSelecting: boolean) => {
-    try {
-      if (isSelecting) {
-        // Reserve the seat
-        const reservationRequest = {
-          EventId: eventId,
-          SessionId: selectionState.sessionId,
-          SeatId: seat.id,
-          Row: seat.row,
-          Number: seat.number
-        };
-
-        await seatingAPIService.reserveSeat(reservationRequest);
-        
-        // Track reservation locally as well
-        storeSeatReservation(eventId, seat.id, selectionState.sessionId);
-        
-        console.log(`[SeatingLayoutV2] Reserved seat ${seat.row}${seat.number} for session ${selectionState.sessionId}`);
-      } else {
-        // Release the seat
-        const releaseRequest = {
-          SeatId: seat.id,
-          SessionId: selectionState.sessionId
-        };
-
-        const releaseResult = await seatingAPIService.releaseSeat(releaseRequest);
-        
-        // If we got an updated layout from the backend, use it to refresh UI
-        if (releaseResult.updatedLayout) {
-          console.log('[SeatingLayoutV2] Refreshing layout with updated data from server');
-          setLayout(releaseResult.updatedLayout);
-        }
-        
-        // Remove local reservation tracking
-        removeSeatReservation(eventId, seat.id);
-        
-        console.log(`[SeatingLayoutV2] Released seat ${seat.row}${seat.number} for session ${selectionState.sessionId}`);
-      }
-    } catch (error: any) {
-      console.error(`[SeatingLayoutV2] Error ${isSelecting ? 'reserving' : 'releasing'} seat:`, error);
-      throw error; // Re-throw to handle in seat selection
-    }
-  }, [eventId, selectionState.sessionId]);
-
-  // Handle seat selection
-  const handleSeatSelect = useCallback(async (seat: SeatingLayoutSeat) => {
+  // ✅ INDUSTRY STANDARD: Client-side seat selection (no database hits)
+  const handleSeatSelect = useCallback((seat: SeatingLayoutSeat) => {
     const isCurrentlySelected = selectionState.selectedSeats.some(s => s.row === seat.row && s.number === seat.number);
     const isSelecting = !isCurrentlySelected;
     
-    console.log(`[SeatingLayoutV2] handleSeatSelect called:`, {
+    console.log(`[SeatingLayoutV2] 🎯 CLIENT-SIDE handleSeatSelect:`, {
       seatId: seat.id,
       seatNumber: seat.seatNumber,
       isCurrentlySelected,
       isSelecting,
-      sessionId: selectionState.sessionId,
       currentSelectedSeats: selectionState.selectedSeats.map(s => `${s.seatNumber}(${s.id})`)
     });
     
-    // Check if seat can be selected/deselected (pass eventId and sessionId)
+    // Check if seat can be selected/deselected
     if (!canSelectSeat(seat, selectionState.selectedSeats, eventId, selectionState.sessionId)) {
-      // Special case - check if it's reserved by this session
-      const isReservedByCurrentSession = isSeatReservedBySession(eventId, seat.id, selectionState.sessionId);
-      
-      if (!isReservedByCurrentSession) {
-        if (seat.status !== SeatStatus.Available) {
-          toast.error('This seat is not available');
-        } else if (selectionState.selectedSeats.length >= maxSeats && isSelecting) {
-          toast.error(`Maximum ${maxSeats} seats allowed`);
-        }
-        return;
+      if (seat.status !== SeatStatus.Available) {
+        toast.error('This seat is not available');
+      } else if (selectionState.selectedSeats.length >= maxSeats && isSelecting) {
+        toast.error(`Maximum ${maxSeats} seats allowed`);
       }
-    }
-
-    // For deselection, we'll be more lenient with API failures
-    if (!isSelecting) {
-      // For deselection, try the API but don't let failures block UI updates
-      try {
-        await handleSeatReserve(seat, isSelecting);
-        console.log(`[SeatingLayoutV2] Successfully released seat ${seat.row}${seat.number} on server`);
-        
-        // After successful deselection, refresh the entire seat layout to ensure UI consistency
-        setTimeout(async () => {
-          try {
-            console.log('[SeatingLayoutV2] Refreshing layout after deselection to ensure UI consistency');
-            const freshLayout = await seatingAPIService.getEventSeatLayout(eventId);
-            setLayout(freshLayout);
-          } catch (refreshError) {
-            console.warn('[SeatingLayoutV2] Failed to refresh layout after deselection:', refreshError);
-          }
-        }, 500); // Small delay to allow backend to process the release
-        
-      } catch (error: any) {
-        console.warn(`[SeatingLayoutV2] Failed to release seat ${seat.row}${seat.number} on server, continuing with UI update:`, error);
-        // Remove local reservation tracking even if API fails
-        removeSeatReservation(eventId, seat.id);
-      }
-      
-      // ALWAYS update UI for deselection, regardless of API result
-      setSelectionState(prev => ({
-        ...prev,
-        selectedSeats: prev.selectedSeats.filter(s => s.id !== seat.id),
-        totalPrice: prev.totalPrice - (prev.selectedSeats.find(s => s.id === seat.id)?.price || 0)
-      }));
-      
-      toast.success(`Seat ${seat.row}${seat.number} released`);
       return;
     }
 
-    // For selection, we require the API call to succeed
-    try {
-      await handleSeatReserve(seat, isSelecting);
-    } catch (error: any) {
-      console.error('Failed to update seat reservation:', error);
-      toast.error(error.message || `Failed to reserve seat. Please try again.`);
-      return;
-    }
-      
-    // Update the UI state (always for deselection, only on success for selection)
+    // ✅ INDUSTRY STANDARD: Pure client-side selection/deselection
     let validationError: string | null = null;
     
     setSelectionState(prev => {
@@ -350,111 +337,71 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
       return;
     }
 
-    // Show success message
+    // Show success message with different text to indicate it's client-side
     if (isSelecting) {
-      toast.success(`Seat ${seat.row}${seat.number} reserved`);
+      console.log(`[SeatingLayoutV2] ✅ CLIENT-SIDE: Added seat ${seat.row}${seat.number} to selection`);
     } else {
-      toast.success(`Seat ${seat.row}${seat.number} released`);
+      console.log(`[SeatingLayoutV2] ✅ CLIENT-SIDE: Removed seat ${seat.row}${seat.number} from selection`);
     }
-  }, [maxSeats, selectionState.selectedSeats, layout?.ticketTypes, handleSeatReserve, eventId]);
+  }, [maxSeats, selectionState.selectedSeats, layout?.ticketTypes, eventId]);
 
-  // Handle clear selection
+  // 🎯 INDUSTRY STANDARD: Clear selection with active reservation handling
   const handleClearSelection = useCallback(async () => {
-    // Early return if no seats are selected
+    // Check for active reservation first
+    const reservationTimer = (await import('../../services/reservationTimerService')).default;
+    const activeReservation = reservationTimer.getReservation();
+    
+    if (activeReservation) {
+      // User has active reservation - proceed directly without dialog
+      const timeLeft = reservationTimer.getTimeLeft();
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      
+      // Clear UI selection only - timer continues
+      setSelectionState(prev => ({
+        ...initialSelectionState,
+        sessionId: prev.sessionId // Preserve session ID
+      }));
+      
+      toast('Select new seats to continue', {
+        duration: 3000,
+        icon: '🔄'
+      });
+      
+      console.log('🎯 Clear during active reservation: UI cleared, timer continues');
+      return;
+    }
+    
+    // No active reservation - normal clear behavior
     if (selectionState.selectedSeats.length === 0) {
-      toast('No seats selected to clear', { icon: 'ℹ️' });
+      console.log('No seats selected to clear');
       return;
     }
 
-    try {
-      // Extract all seat IDs
-      const seatIds = selectionState.selectedSeats.map(seat => seat.id);
-      
-      // Release all seats at once using the batch method
-      await seatingAPIService.releaseSeats(
-        seatIds, 
-        selectionState.sessionId
-      );
-      
-      // Clean up local storage for all released seats
-      seatIds.forEach(seatId => {
-        removeSeatReservation(eventId, seatId);
-      });
+    console.log(`[SeatingLayoutV2] 🎯 CLIENT-SIDE: Clearing ${selectionState.selectedSeats.length} selected seats`);
 
-      toast.success('All seats released');
-      
-      // Refresh the layout after clearing all selections to ensure visual consistency
-      console.log('[SeatingLayoutV2] Refreshing layout after clearing all selections');
-      try {
-        const freshLayout = await seatingAPIService.getEventSeatLayout(eventId);
-        setLayout(freshLayout);
-      } catch (refreshError) {
-        console.warn('[SeatingLayoutV2] Failed to refresh layout after clearing selections:', refreshError);
-      }
+    // Since we're using client-side selection, just clear the UI state
+    setSelectionState(prev => ({
+      ...initialSelectionState,
+      sessionId: prev.sessionId // Preserve session ID
+    }));
 
-      // Reset selection state 
-      setSelectionState(prev => ({
-        ...initialSelectionState,
-        sessionId: prev.sessionId // Preserve session ID
-      }));
-      
-    } catch (error) {
-      console.error('[SeatingLayoutV2] Error clearing selection:', error);
-      toast.error('Failed to release seats. Please try again.');
-      
-      // Reset selection state anyway since we want to clear the UI
-      setSelectionState(prev => ({
-        ...initialSelectionState,
-        sessionId: prev.sessionId // Preserve session ID
-      }));
-    }
-  }, [initialSelectionState, selectionState.selectedSeats, selectionState.sessionId, eventId]);
+    // Clear completed silently
+  }, [initialSelectionState, selectionState.selectedSeats]);
 
-  // Handle removing individual seat
-  const handleRemoveSeat = useCallback(async (seat: SeatingSelectedSeat) => {
-    try {
-      // Release the seat
-      const releaseRequest = {
-        SeatId: seat.id,
-        SessionId: selectionState.sessionId
-      };
-
-      const releaseResult = await seatingAPIService.releaseSeat(releaseRequest);
-      
-      // If we got an updated layout, use it to refresh the UI
-      if (releaseResult.updatedLayout) {
-        console.log('[SeatingLayoutV2] Refreshing layout after removing seat');
-        setLayout(releaseResult.updatedLayout);
-      } else {
-        // If no updated layout was returned, manually refresh after a short delay
-        setTimeout(async () => {
-          try {
-            console.log('[SeatingLayoutV2] Manually refreshing layout after seat removal');
-            const freshLayout = await seatingAPIService.getEventSeatLayout(eventId);
-            setLayout(freshLayout);
-          } catch (refreshError) {
-            console.warn('[SeatingLayoutV2] Failed to refresh layout after seat removal:', refreshError);
-          }
-        }, 500);
-      }
-      
-      console.log(`[SeatingLayoutV2] Released seat ${seat.row}${seat.number} for session ${selectionState.sessionId}`);
-    } catch (error: any) {
-      console.warn(`[SeatingLayoutV2] Failed to release seat ${seat.row}${seat.number} on server:`, error);
-      // Continue with UI update even if API fails
-    }
+  // ✅ INDUSTRY STANDARD: Remove individual seat (client-side only until batch reservation)
+  const handleRemoveSeat = useCallback((seat: SeatingSelectedSeat) => {
+    console.log(`[SeatingLayoutV2] 🎯 CLIENT-SIDE: Removing seat ${seat.row}${seat.number} from selection`);
     
-    // Always update UI state and remove local tracking
-    removeSeatReservation(eventId, seat.id);
-    
+    // Since we're using client-side selection, just update the UI state
     setSelectionState(prev => ({
       ...prev,
       selectedSeats: prev.selectedSeats.filter(s => s.id !== seat.id),
       totalPrice: prev.totalPrice - (seat.price || 0)
     }));
 
-    toast.success(`Seat ${seat.row}${seat.number} released`);
-  }, [eventId, selectionState.sessionId]);
+    console.log(`[SeatingLayoutV2] ✅ CLIENT-SIDE: Removed seat ${seat.row}${seat.number} from selection`);
+  }, []);
 
   // Handle reservation expiry
   const handleReservationExpiry = useCallback(() => {
@@ -462,8 +409,8 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
     handleClearSelection();
   }, [handleClearSelection]);
 
-  // Handle seat click
-  const handleSeatClick = useCallback((seat: SeatingLayoutSeat) => {
+  // 🎯 INDUSTRY STANDARD: Handle seat click with active reservation logic
+  const handleSeatClick = useCallback(async (seat: SeatingLayoutSeat) => {
     if (!layout) return;
     
     const isAlreadySelected = selectionState.selectedSeats.some(s => s.row === seat.row && s.number === seat.number);
@@ -478,14 +425,30 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
       sessionId: selectionState.sessionId
     });
     
+    // Check for active reservation timer
+    const reservationTimer = (await import('../../services/reservationTimerService')).default;
+    const activeReservation = reservationTimer.getReservation();
+    
     // ALLOW clicking if:
     // 1. Seat is already selected (for deselection)
     // 2. Seat is reserved by current session (for deselection) 
-    // 3. Seat is available (for selection)
     if (isAlreadySelected || isReservedByCurrentSession) {
       console.log(`[SeatingLayoutV2] Allowing click on ${seat.row}${seat.number} - already selected or reserved by current session`);
       handleSeatSelect(seat);
       return;
+    }
+    
+    // For new selections during active reservation - show warning
+    if (activeReservation && selectionState.selectedSeats.length === 0) {
+      const timeLeft = reservationTimer.getTimeLeft();
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      
+      // Proceed directly without dialog - user can select new seats
+      console.log(`User has ${activeReservation.seatsCount} seats reserved (${minutes}:${seconds.toString().padStart(2, '0')} remaining) - allowing new selection`);
+      
+      // User proceeds with seat selection silently
+      console.log('User confirmed seat replacement - proceeding with selection');
     }
     
     // For new selections, check if seat is available
@@ -497,7 +460,7 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
     handleSeatSelect(seat);
   }, [layout, selectionState.selectedSeats, selectionState.sessionId, eventId, handleSeatSelect]);
 
-  // Handle checkout - seats should already be reserved individually
+  // ? SIMPLIFIED: Direct proceed to food selection without reservation API calls
   const handleReservation = useCallback(async () => {
     if (!selectionState.selectedSeats.length) {
       toast.error('Please select at least one seat');
@@ -505,13 +468,16 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
     }
 
     try {
-      // Seats should already be reserved individually when clicked
-      // Just proceed with the booking flow
-      console.log(`[SeatingLayoutV2] Proceeding to checkout with ${selectionState.selectedSeats.length} pre-reserved seats`);
-      onSelectionComplete?.(selectionState);
-    } catch (err: any) {
-      console.error('Failed to proceed to checkout:', err);
-      toast.error(err.message || 'Failed to proceed to checkout. Please try again.');
+      console.log(`[SeatingLayoutV2] ? SIMPLIFIED: Proceeding with ${selectionState.selectedSeats.length} seats directly to food selection`);
+      
+      // Call the completion handler directly - no API reservation calls needed
+      onSelectionComplete(selectionState);
+      
+      toast.success('Seats selected! Proceeding to food selection...');
+      
+    } catch (error) {
+      console.error('Error during selection completion:', error);
+      toast.error('Failed to proceed with seat selection');
     }
   }, [selectionState, onSelectionComplete]);
 
@@ -631,13 +597,6 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
           onAdminToggle={onAdminToggle}
         />
       </div>
-
-      {selectionState.selectedSeats.length > 0 && (
-        <SeatingReservationTimer
-          sessionId={selectionState.sessionId}
-          onExpiry={handleReservationExpiry}
-        />
-      )}
       
       <SeatingSummary
         selectedSeats={selectionState.selectedSeats}
@@ -645,7 +604,6 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
         onProceed={handleReservation}
         onClear={handleClearSelection}
         onRemoveSeat={handleRemoveSeat}
-        onRefresh={refreshLayout}
       />
     </div>
   );

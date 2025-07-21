@@ -130,51 +130,7 @@ const SeatSelectionPage: React.FC = () => {
   }, [event?.id, fetchEventDetails]);
 
   const handleSelectionComplete = (selectionState: SeatingSelectionState) => {
-    // For backward compatibility - convert to old format
-    const oldFormatState: SeatSelectionState = {
-      mode: selectionState.mode as any, // Type conversion needed between enums
-      selectedSeats: selectionState.selectedSeats.map(selectedSeat => ({
-        seat: {
-          id: selectedSeat.id,
-          seatNumber: selectedSeat.seatNumber,
-          row: selectedSeat.row,
-          number: selectedSeat.number,
-          x: selectedSeat.x,
-          y: selectedSeat.y,
-          width: selectedSeat.width,
-          height: selectedSeat.height,
-          price: selectedSeat.price || 0,
-          status: selectedSeat.status,
-          ticketTypeId: selectedSeat.ticketType?.id,
-          ticketType: selectedSeat.ticketType && {
-            id: selectedSeat.ticketType.id,
-            type: selectedSeat.ticketType.type,
-            name: selectedSeat.ticketType.name,
-            price: selectedSeat.ticketType.price,
-            color: selectedSeat.ticketType.color,
-            description: selectedSeat.ticketType.description,
-            eventId: selectionState.eventId
-          }
-        }
-      })),
-      selectedTables: [], // Tables no longer used
-      generalTickets: selectionState.generalTickets.map(ticket => ({
-        ticketType: {
-          id: ticket.id,
-          type: ticket.type,
-          name: ticket.name || ticket.type,  // Fallback to type if name is not available
-          price: ticket.price,
-          color: ticket.color,
-          description: ticket.description,
-          eventId: selectionState.eventId
-        },
-        quantity: 1 // Default to 1 since we're handling individual seats
-      })),
-      totalPrice: selectionState.totalPrice,
-      sessionId: selectionState.sessionId
-    };
-
-    // Create the unified booking data format
+    // Create the simplified booking data format - no session storage needed
     const bookingData: BookingData = {
       eventId: event?.id || state?.eventId,
       eventTitle: event?.title || eventTitle || '',
@@ -182,6 +138,7 @@ const SeatSelectionPage: React.FC = () => {
       totalAmount: selectionState.totalPrice,
       imageUrl: event?.imageUrl || '/events/fallback.jpg',
       selectedSeats: selectionState.selectedSeats.map(seat => ({
+        id: seat.id, // Include seat ID for backend calls
         row: seat.row,
         number: seat.number,
         price: seat.price || 0,
@@ -190,14 +147,15 @@ const SeatSelectionPage: React.FC = () => {
       }))
     };
     
-    // Also create a compatible ticketDetails array for legacy support
+    // Create detailed seat information for the UI
     const seatTicketDetails: Array<{
       type: string;
       quantity: number;
       price: number;
       unitPrice: number;
     }> = [];
-    // Group seats by ticket type
+    
+    // Group seats by ticket type for display
     const seatsByTicketType = selectionState.selectedSeats.reduce((acc, seat) => {
       const typeKey = seat.ticketType?.id?.toString() || 'default';
       if (!acc[typeKey]) {
@@ -215,7 +173,7 @@ const SeatSelectionPage: React.FC = () => {
       return acc;
     }, {} as Record<string, { ticketTypeId: number, ticketTypeName: string, count: number, totalPrice: number, seatNumbers: string[] }>);
     
-    // Add this to our booking data for compatibility
+    // Add grouped seat details for display
     Object.values(seatsByTicketType).forEach(group => {
       seatTicketDetails.push({
         type: `${group.ticketTypeName} (${group.seatNumbers.join(', ')})`,
@@ -225,10 +183,7 @@ const SeatSelectionPage: React.FC = () => {
       });
     });
 
-    // We now pass this information directly to the BookingNavigator
-    // so we don't need a separate navigationState variable
-
-    // Use context API if available
+    // Update booking context if available
     if (bookingDispatch) {
       try {
         bookingDispatch({
@@ -236,16 +191,17 @@ const SeatSelectionPage: React.FC = () => {
           payload: bookingData.selectedSeats
         });
       } catch (e) {
-        // Silent fallback to direct navigation
         console.error('Failed to update booking context:', e);
       }
     }
 
-    // Navigate to food selection using our navigator
-    BookingNavigator.toFoodSelection(navigate, bookingData, {
-      ticketDetails: seatTicketDetails,
-      seatSelection: oldFormatState,
-      fromSeatSelection: true
+    // Navigate to food selection with simplified state
+    navigate('/food-selection', {
+      state: {
+        ...bookingData,
+        ticketDetails: seatTicketDetails,
+        fromSeatSelection: true
+      }
     });
   };
 

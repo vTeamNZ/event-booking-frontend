@@ -7,6 +7,7 @@ import ConditionalMain from './components/ConditionalMain';
 import { PrivateRoute } from './components/PrivateRoute';
 import { BookingProvider } from './contexts/BookingContext';
 import RouteTracker from './components/RouteTracker';
+import SimpleGlobalTimer from './components/SimpleGlobalTimer';
 import EventsList from './pages/EventsList';
 import About from './pages/About';
 import FoodSelectionEnhanced from './pages/FoodSelectionEnhanced';
@@ -43,12 +44,19 @@ const App: React.FC = () => {
         {/* Toast Notifications */}
         <Toaster />
         
-        {/* Top Ribbon */}
+        {/* 🎯 INDUSTRY STANDARD: Global Reservation Timer - Fixed above everything */}
+        <div className="fixed top-0 left-0 right-0 z-[60]">
+          <SimpleGlobalTimer />
+        </div>
+        
+        {/* Top Ribbon - Positioned below timer */}
         <div className="bg-red-900 h-1 w-full" />
-        {/* Page Content */}
-        <AnimatedHeader />
-        <ConditionalCarousel />      
-        <ConditionalMain>
+        
+        {/* Page Content - Add top padding for both timer and header */}
+        <div className="pt-24" style={{ paddingTop: 'calc(var(--timer-height, 0px) + 96px)' }}>
+          <AnimatedHeader />
+          <ConditionalCarousel />      
+          <ConditionalMain>
           <Routes>
             <Route path="/" element={<EventsList />} />
             <Route path="/event/:eventTitle/tickets" element={<TicketSelection />} />
@@ -134,6 +142,7 @@ const App: React.FC = () => {
             />
         </Routes>
         </ConditionalMain>
+        </div>
     </div>
     </BookingProvider>
   );

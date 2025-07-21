@@ -62,3 +62,173 @@
   transform: scale(1.1);
   box-shadow: 0 0 5px rgba(0,0,0,0.3);
 }
+
+/* 🎯 INDUSTRY STANDARD: Enhanced Seat States */
+/* Matches Ticketmaster/Eventbrite visual feedback patterns */
+
+/* Active Reservation Seat States */
+.seat-user-selected {
+  background-color: #10B981 !important; /* Green - user's current selection */
+  border: 3px solid #059669 !important;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.5) !important;
+  animation: pulse-green 2s infinite;
+}
+
+.seat-user-reserved {
+  background-color: #3B82F6 !important; /* Blue - user's confirmed reservation */
+  border: 3px solid #2563EB !important;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.5) !important;
+}
+
+.seat-user-temporary {
+  background-color: #F59E0B !important; /* Orange - user's temporary hold */
+  border: 3px solid #D97706 !important;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4) !important;
+  animation: pulse-orange 3s infinite;
+}
+
+/* Other User States */
+.seat-other-reserved {
+  background-color: #EF4444 !important; /* Red - other user's reservation */
+  border: 2px solid #DC2626 !important;
+  cursor: not-allowed !important;
+  opacity: 0.8;
+}
+
+.seat-other-temporary {
+  background-color: #F87171 !important; /* Light red - other user's temp hold */
+  border: 2px solid #EF4444 !important;
+  cursor: not-allowed !important;
+  opacity: 0.7;
+}
+
+/* Available States */
+.seat-available {
+  background-color: #6B7280 !important; /* Gray - available */
+  border: 2px solid #4B5563 !important;
+  cursor: pointer !important;
+}
+
+.seat-available:hover {
+  background-color: #9CA3AF !important;
+  border-color: #6B7280 !important;
+  transform: scale(1.05) !important;
+}
+
+/* Special States */
+.seat-disabled {
+  background-color: #374151 !important; /* Dark gray - not available */
+  border: 2px solid #1F2937 !important;
+  cursor: not-allowed !important;
+  opacity: 0.5;
+}
+
+.seat-sold {
+  background-color: #991B1B !important; /* Dark red - sold/booked */
+  border: 2px solid #7F1D1D !important;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}
+
+/* Timer Warning States */
+.seat-expiring-soon {
+  animation: pulse-warning 1s infinite !important;
+}
+
+.seat-expired {
+  animation: flash-red 0.5s 3 !important;
+}
+
+/* Animations */
+@keyframes pulse-green {
+  0%, 100% { 
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+  }
+  50% { 
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
+  }
+}
+
+@keyframes pulse-orange {
+  0%, 100% { 
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+  }
+  50% { 
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.7);
+  }
+}
+
+@keyframes pulse-warning {
+  0%, 100% { 
+    background-color: #F59E0B;
+  }
+  50% { 
+    background-color: #EF4444;
+  }
+}
+
+@keyframes flash-red {
+  0%, 100% { 
+    background-color: #EF4444;
+  }
+  50% { 
+    background-color: #7F1D1D;
+  }
+}
+
+/* Seat Legend Styles */
+.seat-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: var(--color-card);
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.seat-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.seat-legend-color {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0.25rem;
+  border: 2px solid;
+}
+
+/* Reservation Status Panel Enhancements */
+.reservation-panel-entering {
+  animation: slide-down 0.3s ease-out;
+}
+
+.reservation-panel-leaving {
+  animation: slide-up 0.3s ease-in;
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}

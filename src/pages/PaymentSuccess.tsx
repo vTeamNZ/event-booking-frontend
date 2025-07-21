@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { verifyPaymentWithPolling } from '../services/checkoutService';
 import SEO from '../components/SEO';
 import { safeBookingCompletionCleanup, completeBookingCleanup } from '../utils/seating-v2/sessionStorage';
+import { reservationTimer } from '../services/reservationTimerService';
 
 const PaymentSuccess: React.FC = () => {
   const navigate = useNavigate();
@@ -108,6 +109,10 @@ const PaymentSuccess: React.FC = () => {
       } else {
         console.warn('[PaymentSuccess] Could not complete session storage cleanup - event ID not found');
       }
+      
+      // ✅ CRITICAL FIX: Clear reservation timer after successful payment
+      reservationTimer.clearAfterPayment();
+      console.log('[PaymentSuccess] Reservation timer cleared after successful payment');
     }
   }, [loading, sessionData, error, isQRTicketSuccess, isReservationSuccess, searchParams, navigationState]);
 

@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useReducer } from 'react';
+import React, { createContext, useContext, useReducer, useCallback } from 'react';
 import { BookingData } from '../types/booking';
+import { api } from '../services/api';
 
 interface BookingState {
   bookingData: BookingData | null;
@@ -142,7 +143,7 @@ export const useBooking = () => {
 export const useEventDetails = () => {
   const { state, dispatch } = useBooking();
 
-  const fetchEventDetails = async (eventId: number) => {
+  const fetchEventDetails = useCallback(async (eventId: number) => {
     if (state.bookingData?.eventDetails?.organizationName) {
       // Already have details for this event
       return;
@@ -151,12 +152,8 @@ export const useEventDetails = () => {
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
-      const response = await fetch(`/api/events/${eventId}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch event details');
-      }
-      
-      const eventData = await response.json();
+      const response = await api.get(`/events/${eventId}`);
+      const eventData = response.data as any;
       
       const eventDetails = {
         description: eventData.description,
@@ -182,7 +179,7 @@ export const useEventDetails = () => {
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  };
+  }, [state.bookingData?.eventDetails?.organizationName, dispatch]);
 
   return {
     fetchEventDetails,

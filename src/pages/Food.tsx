@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import SEO from '../components/SEO';
 
 interface FoodItem {
@@ -56,21 +57,37 @@ const FoodSelection: React.FC = () => {
   const selectedFoods = menu.filter(item => item.quantity > 0);
   const totalCost = selectedFoods.reduce((sum, item) => sum + item.price * item.quantity, 0);  
   const goToPayment = () => {
+    const selectedFoods = menu
+      .filter(item => item.quantity > 0)
+      .map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price * item.quantity,
+      }));
+
+    // Create payment state with all necessary data
     const paymentState = {
+      // Pass through seat data from previous page
       eventId: location.state?.eventId,
       eventTitle,
+      selectedSeats: location.state?.selectedSeats || [], // Pass seat data to payment
+      bookingType: location.state?.bookingType || 'seats',
+      imageUrl: location.state?.imageUrl,
       ticketDetails: location.state?.ticketDetails,
       selectedFoods,
-      amount: (ticketPrice || 0) + totalCost,  // Ensure amount is passed correctly
+      amount: (ticketPrice || 0) + totalCost,
+      totalAmount: (ticketPrice || 0) + totalCost,
     };
 
     // Validate required data before navigation
-    if (!paymentState.eventId || !paymentState.eventTitle || !paymentState.ticketDetails) {
-      console.error('Missing required payment information');
+    if (!paymentState.eventId || !paymentState.eventTitle) {
+      console.error('Missing required payment information:', paymentState);
+      console.error('Location state:', location.state);
       navigate('/');
       return;
     }
 
+    console.log('Navigating to payment with state:', paymentState);
     navigate("/payment", { state: paymentState });
   };
 
