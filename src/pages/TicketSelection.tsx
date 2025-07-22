@@ -74,6 +74,11 @@ const TicketSelection: React.FC = () => {
         setLoading(true);
         setError(null);
         
+        // Clear any existing booking context to prevent cross-event contamination
+        if (dispatch) {
+          dispatch({ type: 'RESET' });
+        }
+        
         let eventData: Event;
         
         // If we have state from navigation, use it
@@ -306,15 +311,15 @@ const TicketSelection: React.FC = () => {
         }} />
       )}
       
-      {/* Event Hero Section */}
+      {/* Event Hero Section - Prioritize fresh navigation state over cached context */}
       {(event || state) && (
         <EventHero 
           title={(event?.title || state?.eventTitle) || 'Event'}
-          imageUrl={eventDetails?.imageUrl || event?.imageUrl || (state as any)?.imageUrl}
+          imageUrl={event?.imageUrl || (state as any)?.imageUrl || eventDetails?.imageUrl}
           date={event?.date || state?.eventDate}
           location={event?.location || state?.eventLocation}
           description={event?.description || state?.eventDescription}
-          organizerName={eventDetails?.organizationName}
+          organizationName={eventDetails?.organizationName}
           className="mb-8"
         />
       )}

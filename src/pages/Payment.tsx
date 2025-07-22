@@ -11,6 +11,7 @@ import { seatingAPIService } from '../services/seating-v2/seatingAPIService';
 import { processingFeeService, ProcessingFeeCalculation } from '../services/processingFeeService';
 import { useEventDetails } from '../contexts/BookingContext';
 import EventHero from '../components/EventHero';
+import SupportPanel from '../components/SupportPanel';
 
 interface LegacyPaymentLocationState {
   amount: number;
@@ -454,12 +455,12 @@ const Payment: React.FC = () => {
         description="Complete your booking securely with Stripe payment integration."
       />
       <div className="min-h-screen bg-gray-900">
-        {/* Event Hero Section */}
+        {/* Event Hero Section - Prioritize fresh data over cached context */}
         <EventHero 
           title={eventTitle}
-          imageUrl={eventDetails?.imageUrl || (state as any)?.imageUrl}
+          imageUrl={(state as any)?.imageUrl || eventDetails?.imageUrl}
           description="Complete your booking"
-          organizerName={eventDetails?.organizationName}
+          organizationName={eventDetails?.organizationName}
           className="mb-8"
         />
 
@@ -683,6 +684,11 @@ const Payment: React.FC = () => {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Support Panel */}
+            <div className="mt-8">
+              <SupportPanel />
             </div>
           </div>
         </div>

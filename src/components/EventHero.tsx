@@ -6,7 +6,8 @@ interface EventHeroProps {
   date?: string | null;
   location?: string;
   description?: string;
-  organizerName?: string;
+  organizerName?: string; // For backward compatibility
+  organizationName?: string; // Preferred - shows the organization/company name
   className?: string;
 }
 
@@ -17,10 +18,18 @@ const EventHero: React.FC<EventHeroProps> = ({
   location, 
   description,
   organizerName,
+  organizationName,
   className = "" 
 }) => {
   const fallbackImage = '/events/fallback.jpg';
   const backgroundImage = imageUrl || fallbackImage;
+
+  // Prioritize organizationName over organizerName for display, with better fallback handling
+  const displayName = (organizationName && organizationName.trim()) 
+    ? organizationName.trim() 
+    : (organizerName && organizerName.trim()) 
+      ? organizerName.trim() 
+      : 'Event Organizer';
 
   return (
     <div className={`relative ${className}`}>
@@ -40,7 +49,7 @@ const EventHero: React.FC<EventHeroProps> = ({
         <div className="absolute bottom-4 right-4 z-10">
           <div className="bg-white/10 backdrop-blur-sm rounded-lg px-3 py-1">
             <span className="text-white text-sm font-medium opacity-80">
-              {organizerName || 'KiwiLanka Events'}
+              {displayName}
             </span>
           </div>
         </div>

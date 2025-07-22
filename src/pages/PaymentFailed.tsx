@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
+import SupportPanel from '../components/SupportPanel';
 
 interface LocationState {
   error?: string;
@@ -64,6 +65,9 @@ const PaymentFailed: React.FC = () => {
                   Return to Home
                 </Link>
               </div>
+
+              {/* Support Panel */}
+              <SupportPanel className="mt-6" />
             </div>
           </div>
         </div>

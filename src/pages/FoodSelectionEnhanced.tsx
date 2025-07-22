@@ -5,6 +5,7 @@ import { BookingData } from '../types/booking';
 import { useEventDetails } from '../contexts/BookingContext';
 import SEO from '../components/SEO';
 import EventHero from '../components/EventHero';
+import SupportPanel from '../components/SupportPanel';
 
 interface LocationState {
   eventId: number;
@@ -67,6 +68,11 @@ const FoodSelectionEnhanced: React.FC = () => {
   // Fetch event details for organizer information
   useEffect(() => {
     if (locationState?.eventId) {
+      // Clear any cached event details if this is a different event
+      if (eventDetails && eventDetails.organizationName) {
+        // We have cached data, but need to verify it's for the right event
+        // For now, always fetch fresh data to avoid stale cache issues
+      }
       fetchEventDetails(locationState.eventId);
     }
   }, [locationState?.eventId, fetchEventDetails]);
@@ -129,13 +135,29 @@ const FoodSelectionEnhanced: React.FC = () => {
     }
   }, [locationState]);
 
-  // Fetch food items
+  // Fetch food items and auto-add free items
   useEffect(() => {
     const fetchFoodItems = async () => {
       if (!locationState?.eventId) return;
       try {
         const items = await getFoodItemsForEvent(locationState.eventId);
         setFoodItems(items);
+        
+        // Auto-add free items (price === 0) to all seats/tickets
+        const freeItems = items.filter(item => item.price === 0);
+        if (freeItems.length > 0) {
+          setSeatTicketItems(prev => prev.map(seatTicket => {
+            const updatedSelections = { ...seatTicket.foodSelections };
+            freeItems.forEach(freeItem => {
+              updatedSelections[freeItem.id] = 1; // Add 1 free item per seat/ticket
+            });
+            return {
+              ...seatTicket,
+              foodSelections: updatedSelections
+            };
+          }));
+        }
+        
         setError(null);
       } catch (err) {
         console.error('Error fetching food items:', err);
@@ -150,6 +172,12 @@ const FoodSelectionEnhanced: React.FC = () => {
 
   // Handle individual seat/ticket food selection
   const handleFoodChange = (itemId: string, foodId: number, delta: number) => {
+    // Check if this food item is free (price === 0) and prevent modification
+    const foodItem = foodItems.find(f => f.id === foodId);
+    if (foodItem && foodItem.price === 0) {
+      return; // Don't allow changes to free items
+    }
+
     setSeatTicketItems(prev => prev.map(item => {
       if (item.id === itemId) {
         const currentQty = item.foodSelections[foodId] || 0;
@@ -177,19 +205,41 @@ const FoodSelectionEnhanced: React.FC = () => {
 
   // Apply global selections to all items
   const applyGlobalSelections = () => {
-    setSeatTicketItems(prev => prev.map(item => ({
-      ...item,
-      foodSelections: { ...globalSelections }
-    })));
+    setSeatTicketItems(prev => prev.map(item => {
+      const newSelections = { ...globalSelections };
+      
+      // Preserve free items (price === 0) - don't override them
+      foodItems.forEach(food => {
+        if (food.price === 0) {
+          newSelections[food.id] = item.foodSelections[food.id] || 1; // Keep free items at 1
+        }
+      });
+      
+      return {
+        ...item,
+        foodSelections: newSelections
+      };
+    }));
     setGlobalFoodMode(false);
   };
 
   // Clear all food selections
   const clearAllSelections = () => {
-    setSeatTicketItems(prev => prev.map(item => ({
-      ...item,
-      foodSelections: {}
-    })));
+    setSeatTicketItems(prev => prev.map(item => {
+      const clearedSelections: Record<number, number> = {};
+      
+      // Keep free items (price === 0) - don't clear them
+      foodItems.forEach(food => {
+        if (food.price === 0) {
+          clearedSelections[food.id] = 1; // Keep free items at 1
+        }
+      });
+      
+      return {
+        ...item,
+        foodSelections: clearedSelections
+      };
+    }));
     setGlobalSelections({});
   };
 
@@ -380,6 +430,9 @@ const FoodSelectionEnhanced: React.FC = () => {
                 Continue to Payment <span className="ml-2">→</span>
               </button>
             </div>
+
+            {/* Support Panel */}
+            <SupportPanel className="mt-6" />
           </div>
         </div>
       </>
@@ -395,12 +448,12 @@ const FoodSelectionEnhanced: React.FC = () => {
       />
       
       <div className="min-h-screen bg-gray-900">
-        {/* Event Hero Section */}
+        {/* Event Hero Section - Prioritize fresh navigation state over cached context */}
         <EventHero 
           title={locationState?.eventTitle || 'Food Selection'}
-          imageUrl={eventDetails?.imageUrl || (locationState as any)?.imageUrl}
+          imageUrl={locationState?.imageUrl || eventDetails?.imageUrl}
           description="Select food and beverages for your seats"
-          organizerName={eventDetails?.organizationName}
+          organizationName={eventDetails?.organizationName}
           className="mb-8"
         />
 
@@ -465,35 +518,54 @@ const FoodSelectionEnhanced: React.FC = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              {foodItems.map((food) => (
-                <div key={food.id} className="bg-gray-800 rounded-lg p-4 border border-gray-600">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h4 className="font-semibold text-gray-200">{food.name}</h4>
-                      <p className="text-sm text-gray-400">{food.description}</p>
-                      <p className="text-yellow-400 font-bold">${food.price.toFixed(2)}</p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleGlobalFoodChange(food.id, -1)}
-                        className="w-8 h-8 rounded-full bg-gray-600 hover:bg-gray-500 text-gray-200 flex items-center justify-center border border-gray-500"
-                        disabled={(globalSelections[food.id] || 0) === 0}
-                      >
-                        -
-                      </button>
-                      <span className="w-8 text-center font-semibold text-gray-200">
-                        {globalSelections[food.id] || 0}
-                      </span>
-                      <button
-                        onClick={() => handleGlobalFoodChange(food.id, 1)}
-                        className="w-8 h-8 rounded-full bg-yellow-600 text-black hover:bg-yellow-500 flex items-center justify-center"
-                      >
-                        +
-                      </button>
+              {foodItems.map((food) => {
+                const isFree = food.price === 0;
+                return (
+                  <div key={food.id} className="bg-gray-800 rounded-lg p-4 border border-gray-600">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h4 className="font-semibold text-gray-200">{food.name}</h4>
+                        <p className="text-sm text-gray-400">{food.description}</p>
+                        {isFree ? (
+                          <div className="flex items-center space-x-2">
+                            <p className="text-green-400 font-bold">FREE</p>
+                            <span className="text-xs bg-green-900/30 text-green-300 px-2 py-1 rounded-full border border-green-500/30">
+                              Auto-included
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="text-yellow-400 font-bold">${food.price.toFixed(2)}</p>
+                        )}
+                      </div>
+                      {!isFree && (
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleGlobalFoodChange(food.id, -1)}
+                            className="w-8 h-8 rounded-full bg-gray-600 hover:bg-gray-500 text-gray-200 flex items-center justify-center border border-gray-500"
+                            disabled={(globalSelections[food.id] || 0) === 0}
+                          >
+                            -
+                          </button>
+                          <span className="w-8 text-center font-semibold text-gray-200">
+                            {globalSelections[food.id] || 0}
+                          </span>
+                          <button
+                            onClick={() => handleGlobalFoodChange(food.id, 1)}
+                            className="w-8 h-8 rounded-full bg-yellow-600 text-black hover:bg-yellow-500 flex items-center justify-center"
+                          >
+                            +
+                          </button>
+                        </div>
+                      )}
+                      {isFree && (
+                        <div className="text-center">
+                          <span className="text-sm text-gray-400">Auto-added to all</span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             
             <button
@@ -561,6 +633,7 @@ const FoodSelectionEnhanced: React.FC = () => {
                       {foodItems.map((food) => {
                         const quantity = item.foodSelections[food.id] || 0;
                         const itemTotal = quantity * food.price;
+                        const isFree = food.price === 0;
 
                         return (
                           <div key={food.id} className="bg-gray-800 rounded-lg p-4 border border-gray-600">
@@ -568,30 +641,49 @@ const FoodSelectionEnhanced: React.FC = () => {
                               <div className="flex-1">
                                 <h4 className="font-semibold text-gray-200">{food.name}</h4>
                                 <p className="text-sm text-gray-400 mb-2">{food.description}</p>
-                                <p className="text-yellow-400 font-bold">${food.price.toFixed(2)} each</p>
+                                {isFree ? (
+                                  <div className="flex items-center space-x-2">
+                                    <p className="text-green-400 font-bold">FREE</p>
+                                    <span className="text-xs bg-green-900/30 text-green-300 px-2 py-1 rounded-full border border-green-500/30">
+                                      Auto-included
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <p className="text-yellow-400 font-bold">${food.price.toFixed(2)} each</p>
+                                )}
                               </div>
                             </div>
                             
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-2">
-                                <button
-                                  onClick={() => handleFoodChange(item.id, food.id, -1)}
-                                  className="w-8 h-8 rounded-full bg-gray-600 hover:bg-gray-500 text-gray-200 flex items-center justify-center border border-gray-500"
-                                  disabled={quantity === 0}
-                                >
-                                  -
-                                </button>
-                                <span className="w-8 text-center font-semibold text-gray-200">{quantity}</span>
-                                <button
-                                  onClick={() => handleFoodChange(item.id, food.id, 1)}
-                                  className="w-8 h-8 rounded-full bg-yellow-600 text-black hover:bg-yellow-500 flex items-center justify-center"
-                                >
-                                  +
-                                </button>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-semibold text-yellow-400">${itemTotal.toFixed(2)}</p>
-                              </div>
+                              {isFree ? (
+                                <div className="flex items-center justify-center w-full">
+                                  <div className="text-center">
+                                    {/* Removed "Included with your order" and quantity display for free items to give organizers more freedom */}
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      onClick={() => handleFoodChange(item.id, food.id, -1)}
+                                      className="w-8 h-8 rounded-full bg-gray-600 hover:bg-gray-500 text-gray-200 flex items-center justify-center border border-gray-500"
+                                      disabled={quantity === 0}
+                                    >
+                                      -
+                                    </button>
+                                    <span className="w-8 text-center font-semibold text-gray-200">{quantity}</span>
+                                    <button
+                                      onClick={() => handleFoodChange(item.id, food.id, 1)}
+                                      className="w-8 h-8 rounded-full bg-yellow-600 text-black hover:bg-yellow-500 flex items-center justify-center"
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="font-semibold text-yellow-400">${itemTotal.toFixed(2)}</p>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </div>
                         );
@@ -660,6 +752,9 @@ const FoodSelectionEnhanced: React.FC = () => {
             Continue to Payment <span className="ml-2">→</span>
           </button>
         </div>
+
+        {/* Support Panel */}
+        <SupportPanel className="mt-6" />
           </div>
         </div>
       </div>

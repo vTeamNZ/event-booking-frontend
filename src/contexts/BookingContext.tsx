@@ -144,11 +144,7 @@ export const useEventDetails = () => {
   const { state, dispatch } = useBooking();
 
   const fetchEventDetails = useCallback(async (eventId: number) => {
-    if (state.bookingData?.eventDetails?.organizationName) {
-      // Already have details for this event
-      return;
-    }
-
+    // ALWAYS fetch fresh data - no caching to prevent cross-event contamination
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
@@ -160,26 +156,31 @@ export const useEventDetails = () => {
         date: eventData.date,
         location: eventData.location,
         imageUrl: eventData.imageUrl,
-        organizerName: eventData.organizer?.name || 'Event Organizer',
-        organizationName: eventData.organizer?.organizationName || eventData.organizer?.name || 'KiwiLanka Events'
+        organizerName: eventData.organizer?.name || undefined,
+        organizationName: eventData.organizer?.organizationName || eventData.organizer?.name || undefined
       };
 
-      dispatch({ type: 'SET_EVENT_DETAILS', payload: eventDetails });
+      // Only set event details if this is still the current event (prevent race conditions)
+      if (state.bookingData?.eventId === eventId) {
+        dispatch({ type: 'SET_EVENT_DETAILS', payload: eventDetails });
+      }
     } catch (error) {
       console.error('Error fetching event details:', error);
       dispatch({ type: 'SET_ERROR', payload: 'Failed to load event details' });
       
-      // Set fallback details
-      const fallbackDetails = {
-        organizerName: 'Event Organizer',
-        organizationName: 'KiwiLanka Events',
-        imageUrl: undefined
-      };
-      dispatch({ type: 'SET_EVENT_DETAILS', payload: fallbackDetails });
+      // Set fallback details only for the current event
+      if (state.bookingData?.eventId === eventId) {
+        const fallbackDetails = {
+          organizerName: undefined,
+          organizationName: undefined,
+          imageUrl: undefined
+        };
+        dispatch({ type: 'SET_EVENT_DETAILS', payload: fallbackDetails });
+      }
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
-  }, [state.bookingData?.eventDetails?.organizationName, dispatch]);
+  }, [state.bookingData?.eventId, dispatch]);
 
   return {
     fetchEventDetails,

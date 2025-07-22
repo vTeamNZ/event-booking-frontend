@@ -4,6 +4,7 @@ import { BookingData } from '../types/booking';
 import { useEventDetails } from '../contexts/BookingContext';
 import SEO from '../components/SEO';
 import EventHero from '../components/EventHero';
+import SupportPanel from '../components/SupportPanel';
 
 interface PaymentSummaryProps {}
 
@@ -105,12 +106,12 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = () => {
         keywords={['payment summary', 'booking review', 'event tickets']}
       />
       <div className="min-h-screen bg-gray-900">
-        {/* Event Hero Section */}
+        {/* Event Hero Section - Prioritize fresh data over cached context */}
         <EventHero 
           title={bookingData.eventTitle}
-          imageUrl={eventDetails?.imageUrl || (bookingData as any).imageUrl}
+          imageUrl={(bookingData as any).imageUrl || eventDetails?.imageUrl}
           description="Review your order"
-          organizerName={eventDetails?.organizationName}
+          organizationName={eventDetails?.organizationName}
           className="mb-8"
         />
 
@@ -239,6 +240,11 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = () => {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Support Panel */}
+            <div className="mt-8">
+              <SupportPanel />
             </div>
           </div>
         </div>

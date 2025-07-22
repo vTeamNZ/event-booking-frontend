@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { verifyPaymentWithPolling } from '../services/checkoutService';
 import SEO from '../components/SEO';
+import SupportPanel from '../components/SupportPanel';
 import { safeBookingCompletionCleanup, completeBookingCleanup } from '../utils/seating-v2/sessionStorage';
 import { reservationTimer } from '../services/reservationTimerService';
 
@@ -395,6 +396,9 @@ const PaymentSuccess: React.FC = () => {
             Back to Events
           </button>
         </div>
+
+        {/* Support Panel */}
+        <SupportPanel className="mt-6" />
       </div>
     </>
   );

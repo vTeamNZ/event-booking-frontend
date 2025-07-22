@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useBookingFlow } from '../hooks/useBookingFlow';
 import { BookingData, FoodItem } from '../types/booking';
+import SupportPanel from './SupportPanel';
 
 interface FoodSelectionProps {
   eventId?: number;
@@ -25,7 +26,7 @@ const FoodSelection: React.FC<FoodSelectionProps> = ({ eventId }) => {
     updateFoodItems
   } = useBookingFlow(actualEventId || 0);
 
-  // Fetch food items for the event
+  // Fetch food items for the event and auto-add free items
   useEffect(() => {
     if (!actualEventId) return;
 
@@ -35,6 +36,19 @@ const FoodSelection: React.FC<FoodSelectionProps> = ({ eventId }) => {
         const response = await fetch(`/api/events/${actualEventId}/food-items`);
         const data = await response.json();
         setFoodItems(data || []);
+        
+        // Auto-add free items (price === 0) to the selection
+        const freeItems = (data || []).filter((item: any) => item.price === 0);
+        if (freeItems.length > 0) {
+          const freeSelections: Record<number, number> = {};
+          freeItems.forEach((item: any) => {
+            freeSelections[item.id] = 1; // Add 1 free item
+          });
+          setSelectedFood(prev => ({
+            ...prev,
+            ...freeSelections
+          }));
+        }
       } catch (error) {
         console.error('Error fetching food items:', error);
         setFoodItems([]);
@@ -54,6 +68,12 @@ const FoodSelection: React.FC<FoodSelectionProps> = ({ eventId }) => {
   }, [bookingData, navigate]);
 
   const handleFoodQuantityChange = (foodId: number, change: number) => {
+    // Check if this food item is free (price === 0) and prevent modification
+    const foodItem = foodItems.find(f => f.id === foodId);
+    if (foodItem && foodItem.price === 0) {
+      return; // Don't allow changes to free items
+    }
+
     setSelectedFood(prev => ({
       ...prev,
       [foodId]: Math.max(0, (prev[foodId] || 0) + change)
@@ -166,51 +186,71 @@ const FoodSelection: React.FC<FoodSelectionProps> = ({ eventId }) => {
               <p className="text-sm text-gray-500">You can proceed directly to payment</p>
             </div>
             <button 
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors mb-6"
               onClick={handleContinue}
             >
               Continue to Payment
             </button>
+            <SupportPanel />
           </div>
         ) : (
           <div>
             <div className="space-y-4 mb-6">
-              {foodItems.map(item => (
-                <div key={item.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg">{item.name}</h3>
-                      <p className="text-green-600 font-medium">${formatPrice(item.price)}</p>
-                      {item.description && (
-                        <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+              {foodItems.map(item => {
+                const isFree = item.price === 0;
+                return (
+                  <div key={item.id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg">{item.name}</h3>
+                        {isFree ? (
+                          <div className="flex items-center space-x-2">
+                            <p className="text-green-600 font-bold">FREE</p>
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full border border-green-300">
+                              Auto-included
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="text-green-600 font-medium">${formatPrice(item.price)}</p>
+                        )}
+                        {item.description && (
+                          <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                        )}
+                      </div>
+                      {isFree ? (
+                        <div className="text-center text-gray-600">
+                          <div className="text-sm">Included with order</div>
+                          <div className="font-semibold">Quantity: {selectedFood[item.id] || 0}</div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <button
+                            className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 disabled:opacity-50"
+                            onClick={() => handleFoodQuantityChange(item.id, -1)}
+                            disabled={!selectedFood[item.id] || selectedFood[item.id] === 0}
+                          >
+                            -
+                          </button>
+                          <span className="w-8 text-center font-medium">
+                            {selectedFood[item.id] || 0}
+                          </span>
+                          <button
+                            className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100"
+                            onClick={() => handleFoodQuantityChange(item.id, 1)}
+                          >
+                            +
+                          </button>
+                        </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-3">
-                      <button
-                        className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 disabled:opacity-50"
-                        onClick={() => handleFoodQuantityChange(item.id, -1)}
-                        disabled={!selectedFood[item.id] || selectedFood[item.id] === 0}
-                      >
-                        -
-                      </button>
-                      <span className="w-8 text-center font-medium">
-                        {selectedFood[item.id] || 0}
-                      </span>
-                      <button
-                        className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100"
-                        onClick={() => handleFoodQuantityChange(item.id, 1)}
-                      >
-                        +
-                      </button>
-                    </div>
+                    {selectedFood[item.id] > 0 && (
+                      <div className="mt-2 text-right text-sm text-gray-600">
+                        Subtotal: ${formatPrice((item.price || 0) * selectedFood[item.id])}
+                      </div>
+                    )}
                   </div>
-                  {selectedFood[item.id] > 0 && (
-                    <div className="mt-2 text-right text-sm text-gray-600">
-                      Subtotal: ${formatPrice((item.price || 0) * selectedFood[item.id])}
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
             
             {/* Total Summary */}
@@ -245,6 +285,9 @@ const FoodSelection: React.FC<FoodSelectionProps> = ({ eventId }) => {
             </div>
           </div>
         )}
+
+        {/* Support Panel */}
+        <SupportPanel className="mt-6" />
       </div>
     </div>
   );

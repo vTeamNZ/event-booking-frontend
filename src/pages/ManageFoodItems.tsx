@@ -62,8 +62,8 @@ const ManageFoodItems: React.FC = () => {
       return;
     }
 
-    if (form.price <= 0) {
-      toast.error('Price must be greater than 0');
+    if (form.price < 0) {
+      toast.error('Price cannot be negative');
       return;
     }
 

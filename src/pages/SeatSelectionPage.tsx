@@ -63,6 +63,11 @@ const SeatSelectionPage: React.FC = () => {
         setLoading(true);
         setError(null);
         
+        // Clear any existing booking context to prevent cross-event contamination
+        if (bookingDispatch) {
+          bookingDispatch({ type: 'RESET' });
+        }
+        
         let eventData: Event;
         
         // If we have state from navigation, use it
@@ -247,15 +252,15 @@ const SeatSelectionPage: React.FC = () => {
       />
       
       <div className="min-h-screen bg-gray-900">
-        {/* Event Hero Section */}
+        {/* Event Hero Section - Prioritize fresh navigation state */}
         <div className="relative">
           <EventHero 
             title={event.title}
-            imageUrl={eventDetails?.imageUrl || event.imageUrl}
+            imageUrl={event.imageUrl || eventDetails?.imageUrl}
             date={event.date}
             location={event.location}
             description={event.description}
-            organizerName={eventDetails?.organizationName}
+            organizationName={eventDetails?.organizationName}
           />
           
           {/* Back Button Overlay */}

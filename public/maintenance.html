@@ -15,57 +15,103 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            background: linear-gradient(135deg, #111827 0%, #1F2937 50%, #374151 100%);
+            height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #333;
+            color: #F9FAFB;
+            position: relative;
+            overflow: hidden;
+            padding: 1rem;
+        }
+
+        /* Cinema-style background pattern */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(234, 179, 8, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(234, 179, 8, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+            animation: shimmer 10s ease-in-out infinite alternate;
+        }
+
+        @keyframes shimmer {
+            0% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
 
         .maintenance-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 3rem;
-            max-width: 600px;
+            background: rgba(31, 41, 55, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 2rem;
+            max-width: 500px;
             text-align: center;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(234, 179, 8, 0.2),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(55, 65, 81, 0.5);
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-height: 95vh;
+            overflow: hidden;
+        }
+
+        .logo-container {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 1.5rem;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1F2937 0%, #111827 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 
+                0 20px 40px rgba(234, 179, 8, 0.3),
+                0 0 0 4px rgba(234, 179, 8, 0.6);
+            animation: glow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            0% { box-shadow: 0 20px 40px rgba(234, 179, 8, 0.3), 0 0 0 4px rgba(234, 179, 8, 0.6); }
+            100% { box-shadow: 0 25px 50px rgba(234, 179, 8, 0.5), 0 0 0 4px rgba(234, 179, 8, 0.8); }
         }
 
         .logo {
             width: 80px;
             height: 80px;
-            margin: 0 auto 2rem;
-            background: #667eea;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            color: white;
-            font-weight: bold;
+            object-fit: contain;
+            filter: contrast(1.2) brightness(0.9);
         }
 
         h1 {
-            font-size: 2.5rem;
-            color: #2d3748;
-            margin-bottom: 1rem;
+            font-size: 2rem;
+            color: #F9FAFB;
+            margin-bottom: 0.75rem;
             font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
         }
 
         .subtitle {
-            font-size: 1.2rem;
-            color: #4a5568;
-            margin-bottom: 2rem;
-            line-height: 1.6;
+            font-size: 1rem;
+            color: #D1D5DB;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
         }
 
         .maintenance-icon {
-            font-size: 4rem;
-            margin-bottom: 2rem;
+            font-size: 3rem;
+            margin-bottom: 1rem;
             animation: pulse 2s infinite;
+            filter: drop-shadow(0 4px 8px rgba(234, 179, 8, 0.3));
         }
 
         @keyframes pulse {
@@ -75,54 +121,81 @@
         }
 
         .message {
-            background: #f7fafc;
-            border-left: 4px solid #667eea;
+            background: rgba(55, 65, 81, 0.8);
+            border-left: 4px solid #EAB308;
             padding: 1.5rem;
             margin: 2rem 0;
-            border-radius: 8px;
+            border-radius: 12px;
             text-align: left;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
         }
 
         .message h3 {
-            color: #2d3748;
+            color: #EAB308;
             margin-bottom: 0.5rem;
             font-size: 1.1rem;
+            font-weight: 600;
         }
 
         .message p {
-            color: #4a5568;
+            color: #D1D5DB;
             line-height: 1.6;
             margin-bottom: 0.5rem;
         }
 
         .eta {
-            background: #e6fffa;
-            border: 1px solid #81e6d9;
-            padding: 1rem;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 0.75rem;
             border-radius: 8px;
-            margin: 1.5rem 0;
+            margin: 1rem 0;
+            box-shadow: 0 4px 8px rgba(16, 185, 129, 0.1);
+            font-size: 0.9rem;
         }
 
         .eta strong {
-            color: #234e52;
+            color: #10B981;
         }
 
         .contact-info {
-            background: #fff5f5;
-            border: 1px solid #fed7d7;
+            background: linear-gradient(135deg, rgba(234, 179, 8, 0.2) 0%, rgba(202, 138, 4, 0.1) 100%);
+            border: 2px solid rgba(234, 179, 8, 0.4);
             padding: 1rem;
             border-radius: 8px;
-            margin-top: 2rem;
+            margin-top: 1rem;
+            box-shadow: 0 4px 8px rgba(234, 179, 8, 0.1);
+            text-align: center;
         }
 
         .contact-info h4 {
-            color: #742a2a;
+            color: #EAB308;
             margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 1rem;
         }
 
         .contact-info p {
-            color: #742a2a;
+            color: #D1D5DB;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+            line-height: 1.4;
+        }
+
+        .contact-email {
+            color: #EAB308 !important;
+            font-weight: 700;
+            text-decoration: none;
             font-size: 0.9rem;
+            padding: 0.25rem 0.5rem;
+            background: rgba(234, 179, 8, 0.1);
+            border-radius: 4px;
+            display: inline-block;
+            margin: 0.25rem 0;
+        }
+
+        .contact-email:hover {
+            color: #CA8A04 !important;
+            text-decoration: underline;
         }
 
         .social-links {
@@ -134,34 +207,40 @@
 
         .social-link {
             display: inline-block;
-            padding: 0.5rem 1rem;
-            background: #667eea;
-            color: white;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #EAB308 0%, #CA8A04 100%);
+            color: #111827;
             text-decoration: none;
             border-radius: 25px;
             font-size: 0.9rem;
+            font-weight: 600;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(234, 179, 8, 0.3);
         }
 
         .social-link:hover {
-            background: #5a67d8;
+            background: linear-gradient(135deg, #CA8A04 0%, #EAB308 100%);
             transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(234, 179, 8, 0.4);
         }
 
         .progress-bar {
-            background: #e2e8f0;
+            background: rgba(55, 65, 81, 0.8);
             height: 8px;
             border-radius: 4px;
-            margin: 1.5rem 0;
+            margin: 1rem 0;
             overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .progress-fill {
-            background: linear-gradient(90deg, #667eea, #764ba2);
+            background: linear-gradient(90deg, #EAB308, #CA8A04, #10B981);
             height: 100%;
             width: 75%;
-            border-radius: 4px;
+            border-radius: 6px;
             animation: progress 3s ease-in-out infinite;
+            background-size: 200% 100%;
+            animation: progress 3s ease-in-out infinite, shimmer-progress 2s linear infinite;
         }
 
         @keyframes progress {
@@ -170,9 +249,14 @@
             100% { width: 75%; }
         }
 
+        @keyframes shimmer-progress {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
         .timestamp {
             font-size: 0.8rem;
-            color: #718096;
+            color: #9CA3AF;
             margin-top: 2rem;
             font-style: italic;
         }
@@ -195,50 +279,29 @@
 </head>
 <body>
     <div class="maintenance-container">
-        <div class="logo">KL</div>
+        <div class="logo-container">
+            <img src="/KiwiLankaPrimaryLogo.png" alt="KiwiLanka Events" class="logo">
+        </div>
         
-        <div class="maintenance-icon">🔧</div>
+        <div class="maintenance-icon">🎬</div>
         
         <h1>We'll Be Right Back!</h1>
-        <p class="subtitle">Our event booking platform is currently undergoing scheduled maintenance to bring you an even better experience.</p>
+        <p class="subtitle">Our event booking platform is currently undergoing scheduled maintenance to provide you with an improved service experience.</p>
         
         <div class="progress-bar">
             <div class="progress-fill"></div>
         </div>
         
-        <div class="message">
-            <h3>What's happening?</h3>
-            <p>• System updates and performance improvements</p>
-            <p>• Security enhancements</p>
-            <p>• New features being deployed</p>
-            <p>• Database optimization</p>
-        </div>
-        
         <div class="eta">
-            <strong>Expected completion:</strong> Maintenance typically takes 30-60 minutes
+            <strong>🕒 Expected completion:</strong> Maintenance typically takes 30-60 minutes
         </div>
         
         <div class="contact-info">
-            <h4>Need immediate assistance?</h4>
-            <p>For urgent inquiries, please contact us at:</p>
-            <p><strong>Email:</strong> support@kiwilanka.co.nz</p>
-            <p><strong>Phone:</strong> +64 (0) 21 XXX XXXX</p>
-        </div>
-        
-        <div class="social-links">
-            <a href="#" class="social-link">Facebook</a>
-            <a href="#" class="social-link">Instagram</a>
-            <a href="#" class="social-link">YouTube</a>
-        </div>
-        
-        <div class="timestamp">
-            <script>
-                document.write('Last updated: ' + new Date().toLocaleString('en-NZ', {
-                    timeZone: 'Pacific/Auckland',
-                    dateStyle: 'medium',
-                    timeStyle: 'short'
-                }));
-            </script>
+            <h4>🎪 Need immediate assistance?</h4>
+            <p>For urgent inquiries or event-related questions, please contact us at:</p>
+            <p><strong>📧 Email:</strong> <a href="mailto:support@kiwilanka.co.nz" class="contact-email">support@kiwilanka.co.nz</a></p>
+            <p><strong>📱 Phone:</strong> <a href="tel:+6422544681" class="contact-email">+64 22 5446816</a></p>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.8;">We'll get back to you as soon as possible!</p>
         </div>
     </div>
 
