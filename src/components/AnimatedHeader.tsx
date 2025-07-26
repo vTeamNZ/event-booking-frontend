@@ -38,7 +38,7 @@ const AnimatedHeader: React.FC = () => {
 
   <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row sm:items-center sm:justify-between">
     <Link to="/" className="flex justify-center items-center w-full h-full space-x-3 mb-2 sm:mb-0 sm:justify-start sm:w-auto">
-      <img src="/kiwilanka-logo.png" alt="Logo" className="h-full max-h-14 w-auto object-contain" />
+      <img src={`${process.env.PUBLIC_URL}/kiwilanka-logo.png`} alt="Logo" className="h-full max-h-14 w-auto object-contain" />
       {/* <span className="text-white text-xl font-semibold tracking-wide opacity-80">
         KIWI LANKA Event Booking
       </span> */}

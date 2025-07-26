@@ -21,7 +21,7 @@ const EventHero: React.FC<EventHeroProps> = ({
   organizationName,
   className = "" 
 }) => {
-  const fallbackImage = '/events/fallback.jpg';
+  const fallbackImage = `${process.env.PUBLIC_URL}/events/fallback.jpg`;
   const backgroundImage = imageUrl || fallbackImage;
 
   // Prioritize organizationName over organizerName for display, with better fallback handling

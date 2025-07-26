@@ -455,10 +455,10 @@ const EventsList: React.FC = () => {
                     onClick={() => handleEventClick(event)}
                   >
                     <img
-                      src={event.imageUrl || '/events/fallback.jpg'}
+                      src={event.imageUrl || `${process.env.PUBLIC_URL}/events/fallback.jpg`}
                       alt={event.title}
                       onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = '/events/fallback.jpg';
+                        (e.currentTarget as HTMLImageElement).src = `${process.env.PUBLIC_URL}/events/fallback.jpg`;
                       }}
                       className="w-full h-[450px] object-cover transition duration-300 rounded-t-xl"
                       loading="lazy"

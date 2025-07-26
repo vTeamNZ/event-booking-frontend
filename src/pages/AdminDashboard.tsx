@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import SEO from '../components/SEO';
 import { api } from '../services/api';
+import { afterPayFeeService, AfterPayFeeSettings } from '../services/afterPayFeeService';
 import toast from 'react-hot-toast';
 
 interface DashboardStats {
@@ -37,6 +38,8 @@ const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [pendingOrganizers, setPendingOrganizers] = useState<Organizer[]>([]);
+  const [afterPaySettings, setAfterPaySettings] = useState<AfterPayFeeSettings | null>(null);
+  const [exampleAfterPayFee, setExampleAfterPayFee] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -54,6 +57,19 @@ const AdminDashboard: React.FC = () => {
       // Fetch pending organizers
       const organizersResponse = await api.get('/admin/organizers?verified=false');
       setPendingOrganizers(organizersResponse.data as Organizer[]);
+
+      // Fetch AfterPay settings
+      try {
+        const afterPayResponse = await afterPayFeeService.getSettings();
+        setAfterPaySettings(afterPayResponse);
+        
+        // Calculate example fee for $100
+        const exampleFee = afterPayFeeService.calculateFeeLocally(100, afterPayResponse);
+        setExampleAfterPayFee(exampleFee.afterPayFeeAmount);
+      } catch (afterPayError) {
+        console.error('Error fetching AfterPay settings:', afterPayError);
+        // Don't fail the entire dashboard if AfterPay settings fail
+      }
       
     } catch (error: any) {
       console.error('Error fetching dashboard data:', error);
@@ -293,6 +309,57 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* AfterPay Settings */}
+          <div className="bg-white shadow rounded-lg mb-8">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">💳 AfterPay Configuration</h3>
+              <p className="text-sm text-gray-600 mt-1">Manage AfterPay payment fees and settings</p>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {afterPaySettings ? (
+                  <>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p className="text-sm font-medium text-gray-500">Status</p>
+                      <p className={`text-lg font-semibold ${afterPaySettings.enabled ? 'text-green-600' : 'text-red-600'}`}>
+                        {afterPaySettings.enabled ? '✅ Enabled' : '❌ Disabled'}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p className="text-sm font-medium text-gray-500">Percentage Fee</p>
+                      <p className="text-lg font-semibold text-gray-900">{afterPaySettings.percentage}%</p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p className="text-sm font-medium text-gray-500">Fixed Fee</p>
+                      <p className="text-lg font-semibold text-gray-900">
+                        {afterPaySettings.currency} ${afterPaySettings.fixedAmount}
+                      </p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p className="text-sm font-medium text-gray-500">Example Fee</p>
+                      <p className="text-lg font-semibold text-blue-600">
+                        ${exampleAfterPayFee.toFixed(2)}
+                      </p>
+                      <p className="text-xs text-gray-500">For $100 purchase</p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="col-span-full text-center text-gray-500">
+                    <p>Loading AfterPay settings...</p>
+                  </div>
+                )}
+              </div>
+              
+              {afterPaySettings && (
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>Description:</strong> {afterPaySettings.description}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Pending Events for Review */}
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg shadow mb-8">

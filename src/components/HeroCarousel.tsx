@@ -126,7 +126,7 @@ const HeroCarousel: React.FC = () => {
       {/* Background image layer */}
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/background.jpg')" }}
+        style={{ backgroundImage: `url('${process.env.PUBLIC_URL}/background.jpg')` }}
       >
         <div className="absolute inset-0 bg-black bg-opacity-50" />
       </div>
@@ -229,7 +229,7 @@ const HeroCarousel: React.FC = () => {
                 })()}
                 
                 <img
-                  src={event.imageUrl || '/events/fallback.jpg'}
+                  src={event.imageUrl || `${process.env.PUBLIC_URL}/events/fallback.jpg`}
                   alt={event.title}
                   className="w-full h-[420px] object-cover"
                 />

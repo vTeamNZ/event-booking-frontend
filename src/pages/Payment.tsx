@@ -9,6 +9,7 @@ import { BookingData } from '../types/booking';
 import { qrCodeService, QRCodeGenerationRequest, OrganizerBookingRequest } from '../services/qrCodeService';
 import { seatingAPIService } from '../services/seating-v2/seatingAPIService';
 import { processingFeeService, ProcessingFeeCalculation } from '../services/processingFeeService';
+import { afterPayFeeService, AfterPayFeeSettings, AfterPayFeeCalculation } from '../services/afterPayFeeService';
 import { useEventDetails } from '../contexts/BookingContext';
 import EventHero from '../components/EventHero';
 import SupportPanel from '../components/SupportPanel';
@@ -48,6 +49,10 @@ const Payment: React.FC = () => {
   const { user, isAuthenticated, isOrganizer } = useAuth();
   const [processingFee, setProcessingFee] = useState<ProcessingFeeCalculation | null>(null);
   const [loadingProcessingFee, setLoadingProcessingFee] = useState(true);
+  const [useAfterPay, setUseAfterPay] = useState(false);
+  const [afterPaySettings, setAfterPaySettings] = useState<AfterPayFeeSettings | null>(null);
+  const [afterPayFee, setAfterPayFee] = useState<AfterPayFeeCalculation | null>(null);
+  const [loadingAfterPay, setLoadingAfterPay] = useState(true);
 
   // Extract state - handle both new BookingData and legacy format
   const state = location.state as (BookingData | LegacyPaymentLocationState) | null;
@@ -184,6 +189,54 @@ const Payment: React.FC = () => {
     calculateProcessingFees();
   }, [eventId, amount]);
 
+  // Load AfterPay settings
+  useEffect(() => {
+    const loadAfterPaySettings = async () => {
+      try {
+        setLoadingAfterPay(true);
+        const settings = await afterPayFeeService.getSettings();
+        setAfterPaySettings(settings);
+        
+        // Only set default state if AfterPay is enabled
+        if (settings.enabled) {
+          setUseAfterPay(false); // Default to unchecked
+        }
+      } catch (error) {
+        console.error('Error loading AfterPay settings:', error);
+        setAfterPaySettings(null);
+      } finally {
+        setLoadingAfterPay(false);
+      }
+    };
+
+    loadAfterPaySettings();
+  }, []);
+
+  // Calculate AfterPay fees when checkbox is toggled
+  useEffect(() => {
+    const calculateAfterPayFees = async () => {
+      if (!useAfterPay || !afterPaySettings?.enabled) {
+        setAfterPayFee(null);
+        return;
+      }
+
+      // Calculate based on base amount including processing fees
+      const baseAmount = processingFee && processingFee.processingFeeAmount > 0 
+        ? processingFee.totalAmount 
+        : amount;
+
+      try {
+        const feeCalculation = afterPayFeeService.calculateFeeLocally(baseAmount, afterPaySettings);
+        setAfterPayFee(feeCalculation);
+      } catch (error) {
+        console.error('Error calculating AfterPay fees:', error);
+        setAfterPayFee(null);
+      }
+    };
+
+    calculateAfterPayFees();
+  }, [useAfterPay, afterPaySettings, amount, processingFee]);
+
   // Fetch event details for organizer information
   useEffect(() => {
     if (eventId) {
@@ -192,9 +245,14 @@ const Payment: React.FC = () => {
   }, [eventId, fetchEventDetails]);
 
   // Calculate final amount to use throughout the component
-  const finalAmount = processingFee && processingFee.processingFeeAmount > 0 
+  const baseAmount = processingFee && processingFee.processingFeeAmount > 0 
     ? processingFee.totalAmount 
     : amount;
+  
+  // Add AfterPay fee if selected
+  const finalAmount = useAfterPay && afterPayFee 
+    ? afterPayFee.totalAmount 
+    : baseAmount;
   if (!state || !eventId || !eventTitle) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -281,11 +339,12 @@ const Payment: React.FC = () => {
         firstName: customerDetails.firstName,
         lastName: customerDetails.lastName,
         mobile: customerDetails.mobile || undefined,
-        successUrl: `${window.location.origin}/payment-success`,
-        cancelUrl: `${window.location.origin}/payment-cancelled`,
+        successUrl: `${window.location.origin}${process.env.PUBLIC_URL}/payment-success`,
+        cancelUrl: `${window.location.origin}${process.env.PUBLIC_URL}/payment-cancelled`,
         ticketDetails: ticketLineItems,
         foodDetails: foodLineItems,
         selectedSeats: selectedSeatNumbers.length > 0 ? selectedSeatNumbers : undefined,
+        useAfterPay: useAfterPay,
         // Note: No longer using session ID from localStorage
       });
 
@@ -539,6 +598,37 @@ const Payment: React.FC = () => {
                         placeholder="Enter mobile number (optional)"
                       />
                     </div>
+
+                    {/* AfterPay Option */}
+                    {!loadingAfterPay && afterPaySettings?.enabled && (
+                      <div className="mt-6 p-4 bg-gray-750 border border-gray-600 rounded-lg">
+                        <div className="flex items-start space-x-3">
+                          <input
+                            type="checkbox"
+                            id="useAfterPay"
+                            checked={useAfterPay}
+                            onChange={(e) => setUseAfterPay(e.target.checked)}
+                            className="mt-1 h-4 w-4 text-yellow-500 focus:ring-yellow-500 border-gray-600 rounded bg-gray-700"
+                          />
+                          <div className="flex-1">
+                            <label htmlFor="useAfterPay" className="block text-sm font-medium text-white cursor-pointer">
+                              Use AfterPay
+                            </label>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {afterPaySettings.description}
+                            </p>
+                            {useAfterPay && afterPayFee && (
+                              <div className="mt-2 p-2 bg-yellow-900/20 border border-yellow-700/50 rounded text-xs">
+                                <div className="text-yellow-300">
+                                  <div>AfterPay Fee: ${afterPayFee.afterPayFeeAmount.toFixed(2)}</div>
+                                  <div>New Total: ${afterPayFee.totalAmount.toFixed(2)}</div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {error && (
@@ -662,12 +752,20 @@ const Payment: React.FC = () => {
                         <span>-</span>
                       </div>
                     )}
+
+                    {/* AfterPay Fee */}
+                    {useAfterPay && afterPayFee && (
+                      <div className="flex justify-between text-yellow-400 text-sm">
+                        <span>AfterPay Fee ({afterPaySettings?.percentage}% + ${afterPaySettings?.fixedAmount})</span>
+                        <span>${afterPayFee.afterPayFeeAmount.toFixed(2)}</span>
+                      </div>
+                    )}
                     
                     <div className="border-t border-gray-600 pt-3">
                       <div className="flex justify-between text-xl font-bold text-white">
                         <span>Total Amount</span>
                         <span className="text-primary">
-                          ${processingFee ? processingFee.totalAmount.toFixed(2) : amount.toFixed(2)}
+                          ${finalAmount.toFixed(2)}
                         </span>
                       </div>
                     </div>

@@ -141,7 +141,7 @@ const SeatSelectionPage: React.FC = () => {
       eventTitle: event?.title || eventTitle || '',
       bookingType: 'seats' as const,
       totalAmount: selectionState.totalPrice,
-      imageUrl: event?.imageUrl || '/events/fallback.jpg',
+      imageUrl: event?.imageUrl || `${process.env.PUBLIC_URL}/events/fallback.jpg`,
       selectedSeats: selectionState.selectedSeats.map(seat => ({
         id: seat.id, // Include seat ID for backend calls
         row: seat.row,
