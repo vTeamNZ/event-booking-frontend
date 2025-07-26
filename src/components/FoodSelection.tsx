@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useBookingFlow } from '../hooks/useBookingFlow';
 import { BookingData, FoodItem } from '../types/booking';
 import SupportPanel from './SupportPanel';
+import config from '../config/api';
 
 interface FoodSelectionProps {
   eventId?: number;
@@ -33,7 +34,7 @@ const FoodSelection: React.FC<FoodSelectionProps> = ({ eventId }) => {
     const fetchFoodItems = async () => {
       setLoadingFood(true);
       try {
-        const response = await fetch(`/api/events/${actualEventId}/food-items`);
+        const response = await fetch(`${config.apiBaseUrl}/events/${actualEventId}/food-items`);
         const data = await response.json();
         setFoodItems(data || []);
         

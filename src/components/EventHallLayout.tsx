@@ -7,6 +7,7 @@ import {
 } from '../types/seatSelection';
 import { SeatStatus, getSeatStatusClasses } from '../types/seatStatus';
 import { cn, formatPrice } from '../utils/seatSelection';
+import config from '../config/api';
 
 interface EventHallLayoutProps {
   layout: SeatLayoutResponse;
@@ -70,7 +71,7 @@ const EventHallLayout: React.FC<EventHallLayoutProps> = ({
                 venueName: layout?.venue?.name,
                 ticketTypes: layout?.ticketTypes?.length || 0,
                 mockDataDetected: layout.seats && layout.seats.length > 0 && layout.seats[0].seatNumber === "A1",
-                apiURL: "/api/seats/event/" + layout.eventId + "/layout"
+                apiURL: `${config.apiBaseUrl}/seats/event/${layout.eventId}/layout`
               }, null, 2)}
             </pre>
           </div>

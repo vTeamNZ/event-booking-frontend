@@ -48,8 +48,17 @@ const SEO: React.FC<SEOProps> = ({
     ? [...keywords, ...defaultKeywords].slice(0, 10).join(', ') 
     : defaultKeywords.join(', ');
   
-  // URLs
-  const baseUrl = 'https://kiwilanka.co.nz';
+  // URLs - Use environment-aware base URL
+  const getBaseUrl = () => {
+    // In production build, use environment variable or fallback
+    if (process.env.NODE_ENV === 'production') {
+      return process.env.REACT_APP_BASE_URL || window.location.origin;
+    }
+    // For development, use localhost
+    return window.location.origin;
+  };
+  
+  const baseUrl = getBaseUrl();
   const currentUrl = canonical || `${baseUrl}${location.pathname}`;
   
   // Image - ensure image is not null or undefined before calling startsWith

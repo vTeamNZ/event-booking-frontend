@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { isEventActive, isEventExpired, getEventStatusText, checkEventStatusFromServer } from '../utils/eventUtils';
+import config from '../config/api';
 
 interface EventData {
   id: number;
@@ -21,7 +22,7 @@ const EventDetails: React.FC = () => {
   useEffect(() => {
     const fetchEventDetails = async () => {
       try {
-        const response = await fetch(`/api/events/${id}`);
+        const response = await fetch(`${config.apiBaseUrl}/events/${id}`);
         if (!response.ok) {
           throw new Error('Event not found');
         }

@@ -24,6 +24,16 @@ interface EventStructuredDataProps {
 }
 
 const EventStructuredData: React.FC<EventStructuredDataProps> = ({ event }) => {
+  // Get environment-aware base URL
+  const getBaseUrl = () => {
+    if (process.env.NODE_ENV === 'production') {
+      return process.env.REACT_APP_BASE_URL || window.location.origin;
+    }
+    return window.location.origin;
+  };
+
+  const baseUrl = getBaseUrl();
+
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'Event',
@@ -42,11 +52,11 @@ const EventStructuredData: React.FC<EventStructuredDataProps> = ({ event }) => {
         addressCountry: 'NZ'
       }
     },
-    image: event.imageUrl ? (event.imageUrl.startsWith('http') ? event.imageUrl : `https://kiwilanka.co.nz${event.imageUrl}`) : 'https://kiwilanka.co.nz/kiwilanka-logo-main.png',    offers: {
+    image: event.imageUrl ? (event.imageUrl.startsWith('http') ? event.imageUrl : `${baseUrl}${event.imageUrl}`) : `${baseUrl}/kiwilanka-logo-main.png`,    offers: {
       '@type': 'Offer',
       price: event.price || 0,
       priceCurrency: 'NZD',
-      url: `https://kiwilanka.co.nz/event/${encodeURIComponent(event.title.toLowerCase().replace(/\s+/g, '-'))}`,
+      url: `${baseUrl}/event/${encodeURIComponent(event.title.toLowerCase().replace(/\s+/g, '-'))}`,
       availability: (event.ticketsAvailable && event.ticketsAvailable > 0) 
         ? 'https://schema.org/InStock' 
         : 'https://schema.org/SoldOut'
@@ -54,7 +64,7 @@ const EventStructuredData: React.FC<EventStructuredDataProps> = ({ event }) => {
     organizer: {
       '@type': 'Organization',
       name: event.organizer || 'KiwiLanka Events',
-      url: 'https://kiwilanka.co.nz'
+      url: baseUrl
     }
   };  useEffect(() => {
     // Add or update schema.org script tag for structured data

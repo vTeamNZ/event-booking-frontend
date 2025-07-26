@@ -27,10 +27,12 @@ export const isEventExpired = (eventDate: string | null): boolean => {
   return eventDay < today;
 };
 
+import config from '../config/api';
+
 // API call to check event status from server (most reliable)
 export const checkEventStatusFromServer = async (eventId: number) => {
   try {
-    const response = await fetch(`/api/payment/check-event-status/${eventId}`);
+    const response = await fetch(`${config.apiBaseUrl}/payment/check-event-status/${eventId}`);
     if (!response.ok) {
       throw new Error('Failed to check event status');
     }
