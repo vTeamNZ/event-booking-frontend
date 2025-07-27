@@ -1,0 +1,22 @@
+{
+  "maintenanceNotice": {
+    "enabled": true,
+    "startTime": "10:00 PM",
+    "endTime": "11:00 PM",
+    "date": "today",
+    "message": {
+      "title": "Scheduled Maintenance Notice",
+      "description": "Our system will undergo scheduled maintenance",
+      "interruption": "During this time, you may experience brief service interruptions.",
+      "apology": "We apologize for any inconvenience and appreciate your patience."
+    },
+    "styling": {
+      "backgroundColor": "bg-yellow-50",
+      "borderColor": "border-yellow-400",
+      "textColor": "text-yellow-700",
+      "titleColor": "text-yellow-800",
+      "iconColor": "text-yellow-400",
+      "badgeColor": "bg-yellow-100 text-yellow-600"
+    }
+  }
+}

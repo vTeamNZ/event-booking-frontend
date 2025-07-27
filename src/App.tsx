@@ -33,6 +33,7 @@ import ManageFoodItems from './pages/ManageFoodItems';
 import EventPage from './pages/EventPage';
 import MyBookings from './pages/MyBookings';
 import BookingDetail from './pages/BookingDetail';
+import MaintenanceNotice from './components/MaintenanceNotice';
 
 const App: React.FC = () => {
   return (
@@ -49,10 +50,15 @@ const App: React.FC = () => {
           <SimpleGlobalTimer />
         </div>
         
+        {/* Maintenance Notice - Below timer */}
+        <div className="fixed top-0 left-0 right-0 z-[55]" style={{ paddingTop: 'var(--timer-height, 0px)' }}>
+          <MaintenanceNotice />
+        </div>
+        
         {/* Top Ribbon - Positioned below timer */}
         <div className="bg-red-900 h-1 w-full" />
         
-        {/* Page Content - Add top padding for both timer and header */}
+        {/* Page Content - Add top padding for timer, maintenance notice, and header */}
         <div className="pt-24" style={{ paddingTop: 'calc(var(--timer-height, 0px) + 96px)' }}>
           <AnimatedHeader />
           <ConditionalCarousel />      
