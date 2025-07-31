@@ -200,7 +200,7 @@ const OrganizerDashboard: React.FC = () => {
       <SEO 
         title="Organizer Dashboard" 
         description="Manage your events, view analytics, and organize bookings from your organizer dashboard." 
-        keywords={["Organizer Dashboard", "Event Management", "Event Analytics"]}
+        keywords={["Organizer Dashboard", "Event Organization", "Event Analytics", "Ticketing Management"]}
       />
       <div className="min-h-screen bg-gray-900">
         {/* Header */}

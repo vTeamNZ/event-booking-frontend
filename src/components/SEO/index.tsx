@@ -19,29 +19,29 @@ const SEO: React.FC<SEOProps> = ({
   article = false,
 }) => {
   const location = useLocation();
-  const siteTitle = title ? `${title} | KiwiLanka Events` : 'Book NZ Events Easily Online | KiwiLanka Events';
+  const siteTitle = title ? `${title} | KiwiLanka Tickets` : 'Professional Ticketing Platform | KiwiLanka Tickets';
   
   // Default description from your provided text
-  const defaultDescription = 'Discover and book Sri Lankan community events across New Zealand. Pay online with Stripe. Get instant email confirmations after your booking.';
+  const defaultDescription = 'Professional ticketing platform for Sri Lankan community events across New Zealand. Secure online ticket sales with Stripe. Instant confirmations and digital tickets.';
   const metaDescription = description || defaultDescription;
   
   // Default keywords from your provided list
   const defaultKeywords = [
-    'Book NZ Events Easily Online',
-    'Find Sri Lankan Events NZ',
-    'Secure Your Event Tickets',
-    'Instant Ticket Booking',
+    'Professional Ticketing Services',
+    'Ticket Sales Platform', 
+    'Digital Ticketing Services',
+    'Sri Lankan Event Tickets NZ',
+    'Secure Ticket Sales',
+    'Professional Event Ticketing',
     'Pay Securely With Stripe',
-    'Book Food With Your Ticket',
-    'New Zealand Events Hub',
-    'Easy Event Ticketing',
-    'Browse Local Events Now',
-    'Events You\'ll Love',
-    'Enjoy Food + Entertainment',
-    'Events for Everyone in NZ',
-    'Hassle-Free Booking',
-    'Get Notified of Top Events',
-    'Support Community Events'
+    'Secure Online Tickets',
+    'Event Ticket Solutions',
+    'Ticketing Partner',
+    'Professional Ticketing Platform',
+    'Digital Event Tickets',
+    'Online Ticketing Services',
+    'Event Ticketing Support',
+    'Sri Lankan Community Events NZ'
   ];
   
   const metaKeywords = keywords 
@@ -112,7 +112,7 @@ const SEO: React.FC<SEOProps> = ({
     // Standard meta tags
     setMetaTag('language', 'English');
     setMetaTag('revisit-after', '7 days');
-    setMetaTag('author', 'KiwiLanka Events');
+    setMetaTag('author', 'KiwiLanka Tickets');
     
     // Canonical URL
     setCanonical(currentUrl);
@@ -123,7 +123,7 @@ const SEO: React.FC<SEOProps> = ({
     setMetaProperty('og:title', siteTitle);
     setMetaProperty('og:description', metaDescription);
     setMetaProperty('og:image', seoImage);
-    setMetaProperty('og:site_name', 'KiwiLanka Events');
+    setMetaProperty('og:site_name', 'KiwiLanka Tickets');
     
     // Twitter Card
     setMetaTag('twitter:card', 'summary_large_image');

@@ -46,8 +46,8 @@ const Login: React.FC = () => {
     <>
       <SEO 
         title="Sign In" 
-        description="Sign in to your KiwiLanka Events account to manage your event bookings, view your tickets, and access exclusive member benefits." 
-        keywords={["Sign In", "Account Login", "Event Booking Login", "Member Access"]}
+        description="Sign in to your KiwiLanka Tickets account to manage your ticket orders, view your bookings, and access exclusive member benefits." 
+        keywords={["Sign In", "Account Login", "Ticket Booking Login", "Member Access"]}
       />
       <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">

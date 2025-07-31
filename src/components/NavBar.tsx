@@ -17,7 +17,7 @@ const NavBar: React.FC = () => {
   return (
     <nav className="bg-gray-900 text-white px-6 py-4 flex justify-between items-center shadow">
       <h1 className="text-xl font-bold">
-        <Link to="/">🎫 Event Booking</Link>
+        <Link to="/">🎫 Ticketing Platform</Link>
       </h1>
       <ul className="flex space-x-6 items-center">
         <li>

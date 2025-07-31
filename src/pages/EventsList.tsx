@@ -344,17 +344,17 @@ const EventsList: React.FC = () => {
       <SEO 
         title={organizerSlug 
           ? `${events.find(e => createOrganizerSlug(e.organizerName || '') === organizerSlug)?.organizerName || 'Events'}`
-          : "Browse Local Events Now"
+          : "Professional Ticketing Platform"
         }
         description={organizerSlug
-          ? `Book tickets for events organized by ${events.find(e => createOrganizerSlug(e.organizerName || '') === organizerSlug)?.organizerName}. Simple and secure ticket booking with optional food ordering.`
-          : "KiwiLanka brings you the best events from Christchurch to Auckland. Find your next event today."
+          ? `Buy tickets for events organized by ${events.find(e => createOrganizerSlug(e.organizerName || '') === organizerSlug)?.organizerName}. Professional ticketing platform with secure payment processing.`
+          : "KiwiLanka professional ticketing platform brings you the best events from Christchurch to Auckland. Secure ticket sales for Sri Lankan community events."
         }
         keywords={[
-          'Find Sri Lankan Events NZ', 
-          'Events for Everyone in NZ', 
-          'Browse Local Events Now',
-          selectedCity !== 'all' ? `Events in ${selectedCity}` : ''
+          'Professional Ticketing Services', 
+          'Sri Lankan Event Tickets NZ', 
+          'Secure Ticket Sales',
+          selectedCity !== 'all' ? `Event Tickets ${selectedCity}` : ''
         ].filter(Boolean)}
       />
       <div className="min-h-screen bg-gray-900">
@@ -386,8 +386,8 @@ const EventsList: React.FC = () => {
               
               {!organizerSlug && (
                 <div className="text-center mb-8">
-                  <h1 className="text-4xl font-bold text-white mb-4">Discover Amazing Events</h1>
-                  <p className="text-gray-400 text-lg">Find and book tickets for the best events in New Zealand</p>
+                  <h1 className="text-4xl font-bold text-white mb-4">Professional Ticketing Services</h1>
+                  <p className="text-gray-400 text-lg">Secure ticket sales for Sri Lankan community events across New Zealand</p>
                 </div>
               )}
 

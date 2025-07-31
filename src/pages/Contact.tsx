@@ -7,14 +7,14 @@ const Contact: React.FC = () => {
     <>
       <SEO 
         title="Contact Us"
-        description="Get in touch with KiwiLanka Events. List your event, ask questions, or provide feedback. We'd love to hear from you!"
-        keywords={['Get Notified of Top Events', 'Support Community Events', 'List Your Sri Lankan Event']}
+        description="Partner with KiwiLanka Tickets for professional ticketing services. Get professional support for your Sri Lankan cultural event ticketing needs."
+        keywords={['Professional Ticketing Services', 'Ticketing Partner Support', 'Event Ticketing Solutions']}
       />
       <div className="max-w-4xl mx-auto mt-6">
         <div className="bg-white rounded-xl shadow-lg p-8">
           <div className="border-b pb-4 mb-6">
             <h1 className="text-3xl font-bold text-gray-800 mb-2">Contact Us</h1>
-            <p className="text-gray-600">List Your Event with Kiwi Lanka or Get in Touch</p>
+            <p className="text-gray-600">Partner with KiwiLanka Tickets for Professional Event Ticketing</p>
           </div>
 
         <div className="grid gap-6 md:grid-cols-2">
@@ -53,29 +53,29 @@ const Contact: React.FC = () => {
             </div>
 
             <div className="bg-primary/10 rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-3">Quick Links</h2>
+              <h2 className="text-xl font-semibold text-gray-800 mb-3">Explore Our Platform</h2>
               <div className="space-y-2">
                 <a href="/about" className="block text-primary hover:text-red-600 transition-colors duration-200">
-                  → About Us
+                  → About Our Ticketing Services
                 </a>
                 <a href="/" className="block text-primary hover:text-red-600 transition-colors duration-200">
-                  → Upcoming Events
+                  → Browse Current Events
                 </a>
               </div>
             </div>
           </div>
 
-          {/* Right Column - List Your Event */}
+          {/* Right Column - Ticketing Partnership */}
           <div className="bg-gray-50 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">List Your Event</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">Professional Ticketing Partnership</h2>
             <div className="space-y-4">
               <p className="text-gray-600">
-                Are you organizing an event for the Sri Lankan community in New Zealand? 
-                We'd love to feature it on our platform.
+                Are you organizing a Sri Lankan cultural event and need professional ticketing services? 
+                Partner with us for secure, reliable ticket sales solutions.
               </p>
               
               <div className="space-y-4 mt-6">
-                <h3 className="font-medium text-gray-800">Why List with Us?</h3>
+                <h3 className="font-medium text-gray-800">Why Partner with Us?</h3>
                 <ul className="space-y-3">
                   <li className="flex items-center text-gray-600">
                     <span className="text-primary mr-2">✓</span>
@@ -83,7 +83,7 @@ const Contact: React.FC = () => {
                   </li>
                   <li className="flex items-center text-gray-600">
                     <span className="text-primary mr-2">✓</span>
-                    Professional event management platform
+                    Professional ticketing platform
                   </li>
                   <li className="flex items-center text-gray-600">
                     <span className="text-primary mr-2">✓</span>
@@ -91,7 +91,7 @@ const Contact: React.FC = () => {
                   </li>
                   <li className="flex items-center text-gray-600">
                     <span className="text-primary mr-2">✓</span>
-                    Marketing and promotion support
+                    Dedicated ticketing support team
                   </li>
                 </ul>
               </div>

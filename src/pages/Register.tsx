@@ -94,8 +94,8 @@ const Register: React.FC = () => {
     <>
       <SEO 
         title="Register" 
-        description="Create your KiwiLanka Events account to book tickets or organize events." 
-        keywords={["Register", "Sign Up", "Ticketing Account", "Organizer Registration"]}
+        description="Create your KiwiLanka Tickets account to book tickets, access exclusive events, and manage your bookings. Professional ticketing platform registration." 
+        keywords={["Register", "Sign Up", "Ticketing Account", "Event Ticket Account", "KiwiLanka Registration"]}
       />
       <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">

@@ -14,7 +14,7 @@ const PaymentCancelled: React.FC = () => {
       <SEO 
         title="Payment Cancelled" 
         description="Your payment was cancelled. You can try again or browse other events. No charges have been made to your card." 
-        keywords={["Payment Cancelled", "Payment Interrupted", "Retry Payment", "Event Booking"]}
+        keywords={["Payment Cancelled", "Payment Interrupted", "Retry Payment", "Ticket Booking"]}
       />
       <div className="min-h-screen bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">

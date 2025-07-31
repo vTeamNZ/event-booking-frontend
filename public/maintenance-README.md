@@ -1,4 +1,4 @@
-# KiwiLanka Events - Maintenance Page Configuration
+# KiwiLanka Tickets - Maintenance Page Configuration
 
 ## Quick Setup Instructions
 

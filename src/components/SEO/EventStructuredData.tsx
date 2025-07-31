@@ -63,7 +63,7 @@ const EventStructuredData: React.FC<EventStructuredDataProps> = ({ event }) => {
     },
     organizer: {
       '@type': 'Organization',
-      name: event.organizer || 'KiwiLanka Events',
+      name: event.organizer || 'KiwiLanka Tickets',
       url: baseUrl
     }
   };  useEffect(() => {
