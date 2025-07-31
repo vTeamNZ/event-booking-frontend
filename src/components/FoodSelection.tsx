@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useBookingFlow } from '../hooks/useBookingFlow';
 import { BookingData, FoodItem } from '../types/booking';
-import SupportPanel from './SupportPanel';
 import config from '../config/api';
 
 interface FoodSelectionProps {
@@ -192,7 +191,6 @@ const FoodSelection: React.FC<FoodSelectionProps> = ({ eventId }) => {
             >
               Continue to Payment
             </button>
-            <SupportPanel />
           </div>
         ) : (
           <div>
@@ -286,9 +284,6 @@ const FoodSelection: React.FC<FoodSelectionProps> = ({ eventId }) => {
             </div>
           </div>
         )}
-
-        {/* Support Panel */}
-        <SupportPanel className="mt-6" />
       </div>
     </div>
   );

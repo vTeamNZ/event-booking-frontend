@@ -4,7 +4,6 @@ import { BookingData } from '../types/booking';
 import { useEventDetails } from '../contexts/BookingContext';
 import SEO from '../components/SEO';
 import EventHero from '../components/EventHero';
-import SupportPanel from '../components/SupportPanel';
 import TrustIndicators from '../components/TrustIndicators';
 import BusinessInfo from '../components/BusinessInfo';
 
@@ -248,11 +247,6 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = () => {
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Support Panel */}
-            <div className="mt-8">
-              <SupportPanel />
             </div>
           </div>
         </div>

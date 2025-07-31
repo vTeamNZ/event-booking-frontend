@@ -12,7 +12,6 @@ import { processingFeeService, ProcessingFeeCalculation } from '../services/proc
 import { afterPayFeeService, AfterPayFeeSettings, AfterPayFeeCalculation } from '../services/afterPayFeeService';
 import { useEventDetails } from '../contexts/BookingContext';
 import EventHero from '../components/EventHero';
-import SupportPanel from '../components/SupportPanel';
 import TrustIndicators from '../components/TrustIndicators';
 import LegalConsent from '../components/LegalConsent';
 import BusinessInfo from '../components/BusinessInfo';
@@ -309,7 +308,7 @@ const Payment: React.FC = () => {
 
       // Validate legal consent
       if (!legalConsentValid) {
-        setError('Please accept the Terms and Conditions and Privacy Policy to continue');
+        setError('Please accept all legal agreements (Terms and Conditions, Privacy Policy, and Refund Policy) to continue');
         setLoading(false);
         return;
       }
@@ -622,8 +621,13 @@ const Payment: React.FC = () => {
                             className="mt-1 h-4 w-4 text-yellow-500 focus:ring-yellow-500 border-gray-600 rounded bg-gray-700"
                           />
                           <div className="flex-1">
-                            <label htmlFor="useAfterPay" className="block text-sm font-medium text-white cursor-pointer">
-                              Use AfterPay
+                            <label htmlFor="useAfterPay" className="flex items-center text-sm font-medium text-white cursor-pointer">
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-4 bg-teal-400 rounded flex items-center justify-center">
+                                  <span className="text-white text-xs font-bold">A</span>
+                                </div>
+                                <span>Use AfterPay</span>
+                              </div>
                             </label>
                             <p className="text-xs text-gray-400 mt-1">
                               {afterPaySettings.description}
@@ -694,17 +698,26 @@ const Payment: React.FC = () => {
                         </p>
                       </div>
                     ) : (
-                      <button
-                        type="submit"
-                        disabled={loading || !legalConsentValid}
-                        className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors duration-200 ${
-                          loading || !legalConsentValid
-                            ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
-                            : 'bg-primary hover:bg-primary-dark text-black'
-                        }`}
-                      >
-                        {loading ? 'Creating Checkout...' : `Pay $${finalAmount.toFixed(2)}`}
-                      </button>
+                      <div className="space-y-3">
+                        <button
+                          type="submit"
+                          disabled={loading || !legalConsentValid}
+                          className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors duration-200 ${
+                            loading || !legalConsentValid
+                              ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                              : 'bg-primary hover:bg-primary-dark text-black'
+                          }`}
+                        >
+                          {loading ? 'Creating Checkout...' : `Pay $${finalAmount.toFixed(2)}`}
+                        </button>
+                        
+                        <div className="flex items-center justify-center space-x-2 text-xs text-gray-400">
+                          <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          <span>You will be securely redirected to Stripe to complete your payment.</span>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </form>
@@ -805,11 +818,6 @@ const Payment: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Support Panel */}
-            <div className="mt-8">
-              <SupportPanel />
             </div>
           </div>
         </div>

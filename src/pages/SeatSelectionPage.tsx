@@ -311,15 +311,6 @@ const SeatSelectionPage: React.FC = () => {
             </div>
           )}
         </div>
-
-        {/* Footer */}
-        <div className="bg-gray-800 border-t border-gray-700">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="text-center text-gray-500 text-sm">
-              Need help? Contact our support team at support@example.com
-            </div>
-          </div>
-        </div>
       </div>
     </>
   );

@@ -58,6 +58,11 @@ const EventPage: React.FC = () => {
         const response = await api.get<Event>(`/Events/by-title/${encodeURIComponent(searchTerm)}`);
         const event = response.data;
 
+        // Verify we have valid event data
+        if (!event || !event.title) {
+          throw new Error('Event not found or missing title');
+        }
+
         // Verify the slug matches (to handle exact matching)
         const expectedSlug = createEventSlug(event.title);
         if (expectedSlug !== eventTitle) {

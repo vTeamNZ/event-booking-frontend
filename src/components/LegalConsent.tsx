@@ -27,8 +27,8 @@ const LegalConsent: React.FC<LegalConsentProps> = ({ onConsentChange, className 
   };
 
   const updateConsent = (terms: boolean, privacy: boolean, refund: boolean) => {
-    // Terms and Privacy are mandatory; Refund policy acknowledgment is recommended but not required
-    const isValid = terms && privacy;
+    // All three documents are now mandatory for event ticketing compliance
+    const isValid = terms && privacy && refund;
     onConsentChange(isValid);
   };
 
@@ -86,14 +86,15 @@ const LegalConsent: React.FC<LegalConsentProps> = ({ onConsentChange, className 
             </label>
           </div>
 
-          {/* Refund Policy - Recommended */}
+          {/* Refund Policy - Required */}
           <div className="flex items-start space-x-3">
             <input
               type="checkbox"
               id="refund-consent"
               checked={refundPolicyRead}
               onChange={(e) => handleRefundPolicyChange(e.target.checked)}
-              className="mt-1 h-4 w-4 text-yellow-500 focus:ring-yellow-500 border-gray-600 rounded bg-gray-700"
+              className="mt-1 h-4 w-4 text-primary focus:ring-primary border-gray-600 rounded bg-gray-700"
+              required
             />
             <label htmlFor="refund-consent" className="flex-1 text-sm text-gray-300">
               I have read and understand the{' '}
@@ -105,7 +106,7 @@ const LegalConsent: React.FC<LegalConsentProps> = ({ onConsentChange, className 
               >
                 Refund Policy
               </Link>
-              <span className="text-yellow-400 ml-1 text-xs">(Recommended)</span>
+              <span className="text-red-400 ml-1">*</span>
             </label>
           </div>
         </div>

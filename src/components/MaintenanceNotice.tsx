@@ -44,12 +44,19 @@ const MaintenanceNotice: React.FC<MaintenanceNoticeProps> = ({
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const response = await fetch('/config/maintenance.json');
+        // Use the correct path for subdirectory deployment
+        const configPath = process.env.PUBLIC_URL ? `${process.env.PUBLIC_URL}/config/maintenance.json` : '/config/maintenance.json';
+        const response = await fetch(configPath);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
         setConfig(data.maintenanceNotice);
       } catch (error) {
         console.error('Failed to load maintenance config:', error);
-        // Fallback config
+        // Fallback config - disable maintenance notice if config can't be loaded
         setConfig({
           enabled: false,
           startTime: "10:00 PM",

@@ -8,6 +8,11 @@
  * @returns URL-friendly slug
  */
 export const createEventSlug = (title: string): string => {
+  // Handle null, undefined, or empty strings
+  if (!title || typeof title !== 'string') {
+    return '';
+  }
+  
   return title
     .toLowerCase()
     .replace(/\s+/g, '-')     // Replace spaces with -

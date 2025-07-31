@@ -5,7 +5,6 @@ import { BookingData } from '../types/booking';
 import { useEventDetails } from '../contexts/BookingContext';
 import SEO from '../components/SEO';
 import EventHero from '../components/EventHero';
-import SupportPanel from '../components/SupportPanel';
 
 interface LocationState {
   eventId: number;
@@ -430,9 +429,6 @@ const FoodSelectionEnhanced: React.FC = () => {
                 Continue to Payment <span className="ml-2">→</span>
               </button>
             </div>
-
-            {/* Support Panel */}
-            <SupportPanel className="mt-6" />
           </div>
         </div>
       </>
@@ -752,9 +748,6 @@ const FoodSelectionEnhanced: React.FC = () => {
             Continue to Payment <span className="ml-2">→</span>
           </button>
         </div>
-
-        {/* Support Panel */}
-        <SupportPanel className="mt-6" />
           </div>
         </div>
       </div>
