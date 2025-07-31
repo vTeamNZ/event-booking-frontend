@@ -34,6 +34,12 @@ import EventPage from './pages/EventPage';
 import MyBookings from './pages/MyBookings';
 import BookingDetail from './pages/BookingDetail';
 import MaintenanceNotice from './components/MaintenanceNotice';
+import Footer from './components/Footer';
+import CookieConsentBanner from './components/CookieConsentBanner';
+import TermsAndConditions from './pages/TermsAndConditions';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import RefundPolicy from './pages/RefundPolicy';
+import CookiePolicy from './pages/CookiePolicy';
 
 const App: React.FC = () => {
   return (
@@ -79,6 +85,12 @@ const App: React.FC = () => {
             <Route path="/payment-failed" element={<PaymentFailed />} />
             <Route path="/payment-cancelled" element={<PaymentCancelled />} />
             <Route path="/contact" element={<Contact />} />
+            
+            {/* Legal Document Routes */}
+            <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/refund-policy" element={<RefundPolicy />} />
+            <Route path="/cookie-policy" element={<CookiePolicy />} />
             
             {/* Booking Management Routes */}
             <Route path="/my-bookings" element={
@@ -148,6 +160,12 @@ const App: React.FC = () => {
             />
         </Routes>
         </ConditionalMain>
+        
+        {/* Footer */}
+        <Footer />
+        
+        {/* Cookie Consent Banner */}
+        <CookieConsentBanner />
         </div>
     </div>
     </BookingProvider>

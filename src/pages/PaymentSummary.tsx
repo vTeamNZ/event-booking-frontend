@@ -5,6 +5,8 @@ import { useEventDetails } from '../contexts/BookingContext';
 import SEO from '../components/SEO';
 import EventHero from '../components/EventHero';
 import SupportPanel from '../components/SupportPanel';
+import TrustIndicators from '../components/TrustIndicators';
+import BusinessInfo from '../components/BusinessInfo';
 
 interface PaymentSummaryProps {}
 
@@ -221,6 +223,12 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Trust Indicators */}
+                  <TrustIndicators variant="checkout" className="mt-6" />
+
+                  {/* Business Information */}
+                  <BusinessInfo variant="compact" className="mt-6" />
 
                   {/* Action Buttons */}
                   <div className="mt-8 space-y-3">

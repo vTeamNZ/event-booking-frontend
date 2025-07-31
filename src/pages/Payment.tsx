@@ -13,6 +13,9 @@ import { afterPayFeeService, AfterPayFeeSettings, AfterPayFeeCalculation } from 
 import { useEventDetails } from '../contexts/BookingContext';
 import EventHero from '../components/EventHero';
 import SupportPanel from '../components/SupportPanel';
+import TrustIndicators from '../components/TrustIndicators';
+import LegalConsent from '../components/LegalConsent';
+import BusinessInfo from '../components/BusinessInfo';
 
 interface LegacyPaymentLocationState {
   amount: number;
@@ -53,6 +56,7 @@ const Payment: React.FC = () => {
   const [afterPaySettings, setAfterPaySettings] = useState<AfterPayFeeSettings | null>(null);
   const [afterPayFee, setAfterPayFee] = useState<AfterPayFeeCalculation | null>(null);
   const [loadingAfterPay, setLoadingAfterPay] = useState(true);
+  const [legalConsentValid, setLegalConsentValid] = useState(false);
 
   // Extract state - handle both new BookingData and legacy format
   const state = location.state as (BookingData | LegacyPaymentLocationState) | null;
@@ -260,7 +264,7 @@ const Payment: React.FC = () => {
           <h2 className="text-2xl font-bold text-warning mb-4">Invalid Payment State</h2>
           <p className="text-gray-300 mb-6">
             We couldn't process your payment because some required information is missing.
-            Please try again from the event booking page.
+            Please try again from the event details page.
           </p>
           <button
             onClick={() => navigate('/')}
@@ -299,6 +303,13 @@ const Payment: React.FC = () => {
       // Validate required fields
       if (!customerDetails.firstName || !customerDetails.lastName || !customerDetails.email) {
         setError('Please fill in all required fields');
+        setLoading(false);
+        return;
+      }
+
+      // Validate legal consent
+      if (!legalConsentValid) {
+        setError('Please accept the Terms and Conditions and Privacy Policy to continue');
         setLoading(false);
         return;
       }
@@ -637,15 +648,21 @@ const Payment: React.FC = () => {
                     </div>
                   )}
 
+                  {/* Legal Consent */}
+                  <LegalConsent onConsentChange={setLegalConsentValid} className="mb-6" />
+
+                  {/* Trust Indicators */}
+                  <TrustIndicators variant="payment" className="mb-6" />
+
                   {/* Action Buttons */}
                   <div className="border-t border-gray-700 pt-6">
                     {isAuthenticated && isOrganizer() ? (
                       <div className="space-y-4">
                         <button
                           type="submit"
-                          disabled={loading}
+                          disabled={loading || !legalConsentValid}
                           className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors duration-200 ${
-                            loading 
+                            loading || !legalConsentValid
                               ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
                               : 'bg-primary hover:bg-primary-dark text-black'
                           }`}
@@ -655,7 +672,7 @@ const Payment: React.FC = () => {
                         
                         <button
                           type="button"
-                          disabled={loading}
+                          disabled={loading || !legalConsentValid}
                           onClick={() => {
                             const form = document.querySelector('form') as HTMLFormElement;
                             const formData = new FormData(form);
@@ -679,9 +696,9 @@ const Payment: React.FC = () => {
                     ) : (
                       <button
                         type="submit"
-                        disabled={loading}
+                        disabled={loading || !legalConsentValid}
                         className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors duration-200 ${
-                          loading 
+                          loading || !legalConsentValid
                             ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
                             : 'bg-primary hover:bg-primary-dark text-black'
                         }`}
@@ -770,6 +787,12 @@ const Payment: React.FC = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Checkout Security Indicator */}
+                  <TrustIndicators variant="checkout" className="mt-6" />
+
+                  {/* Business Information */}
+                  <BusinessInfo variant="compact" className="mt-6" />
 
                   {/* Back Button */}
                   <div className="mt-8">

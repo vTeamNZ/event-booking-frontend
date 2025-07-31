@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import SupportPanel from '../components/SupportPanel';
+import BusinessInfo from '../components/BusinessInfo';
 
 interface LocationState {
   error?: string;
@@ -22,7 +23,7 @@ const PaymentFailed: React.FC = () => {
       <SEO 
         title="Payment Failed" 
         description="Something went wrong with your payment. Don't worry, your card has not been charged. Please try again or contact support for assistance." 
-        keywords={["Payment Failed", "Payment Error", "Retry Payment", "Event Booking Issue"]}
+        keywords={["Payment Failed", "Payment Error", "Retry Payment", "Ticketing Issue"]}
       />
       <div className="min-h-screen bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
@@ -65,6 +66,27 @@ const PaymentFailed: React.FC = () => {
                   Return to Home
                 </Link>
               </div>
+
+              {/* Security Assurance */}
+              <div className="mt-6 p-4 bg-blue-900/20 border border-blue-600/30 rounded-lg text-left">
+                <div className="flex items-start space-x-3">
+                  <svg className="w-5 h-5 text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                  <div className="flex-1">
+                    <h4 className="text-blue-200 font-medium mb-2">🔒 Your Security is Protected</h4>
+                    <div className="text-blue-100 text-sm space-y-1">
+                      <p>• No charges were made to your card</p>
+                      <p>• Your card details remain secure</p>
+                      <p>• All payment attempts are SSL encrypted</p>
+                      <p>• Safe to retry or try a different payment method</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Business Information */}
+              <BusinessInfo variant="compact" className="mt-4" />
 
               {/* Support Panel */}
               <SupportPanel className="mt-6" />

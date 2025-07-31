@@ -104,7 +104,7 @@ const AdminDashboard: React.FC = () => {
   return (
     <>
       <SEO 
-        title="Admin Dashboard - Event Booking"
+        title="Admin Dashboard - Ticketing Platform"
         description="Admin dashboard for managing events, organizers, and users"
       />
       
