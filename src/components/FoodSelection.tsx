@@ -204,7 +204,7 @@ const FoodSelection: React.FC<FoodSelectionProps> = ({ eventId }) => {
                         <h3 className="font-semibold text-lg">{item.name}</h3>
                         {isFree ? (
                           <div className="flex items-center space-x-2">
-                            <p className="text-green-600 font-bold">FREE</p>
+                            <p className="text-green-600 font-bold">Complimentary</p>
                             <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full border border-green-300">
                               Auto-included
                             </span>

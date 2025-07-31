@@ -524,7 +524,7 @@ const FoodSelectionEnhanced: React.FC = () => {
                         <p className="text-sm text-gray-400">{food.description}</p>
                         {isFree ? (
                           <div className="flex items-center space-x-2">
-                            <p className="text-green-400 font-bold">FREE</p>
+                            <p className="text-green-400 font-bold">Complimentary</p>
                             <span className="text-xs bg-green-900/30 text-green-300 px-2 py-1 rounded-full border border-green-500/30">
                               Auto-included
                             </span>
@@ -639,7 +639,7 @@ const FoodSelectionEnhanced: React.FC = () => {
                                 <p className="text-sm text-gray-400 mb-2">{food.description}</p>
                                 {isFree ? (
                                   <div className="flex items-center space-x-2">
-                                    <p className="text-green-400 font-bold">FREE</p>
+                                    <p className="text-green-400 font-bold">Complimentary</p>
                                     <span className="text-xs bg-green-900/30 text-green-300 px-2 py-1 rounded-full border border-green-500/30">
                                       Auto-included
                                     </span>

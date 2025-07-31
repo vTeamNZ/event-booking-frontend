@@ -356,7 +356,9 @@ const TicketSelection: React.FC = () => {
                   <div className="flex-1">
                     <div className="flex items-baseline">
                       <span className="text-lg font-semibold text-white capitalize">{ticket.name}</span>
-                      <span className="ml-2 text-sm text-gray-400">ticket</span>
+                      {!ticket.name.toLowerCase().includes('table') && (
+                        <span className="ml-2 text-sm text-gray-400">ticket</span>
+                      )}
                       {isSoldOut && (
                         <span className="ml-2 px-2 py-1 text-xs bg-red-600 text-white rounded">SOLD OUT</span>
                       )}
@@ -369,10 +371,12 @@ const TicketSelection: React.FC = () => {
                       <div className="text-sm text-gray-400 mt-1">
                         {ticketAvailability.hasLimit ? (
                           isSoldOut ? (
-                            <span className="text-red-400">No tickets available</span>
+                            <span className="text-red-400">
+                              {ticket.name.toLowerCase().includes('table') ? 'No tables available' : 'No tickets available'}
+                            </span>
                           ) : (
                             <span>
-                              {ticketAvailability.available} ticket{ticketAvailability.available !== 1 ? 's' : ''} available
+                              {ticketAvailability.available} {ticket.name.toLowerCase().includes('table') ? 'table' : 'ticket'}{ticketAvailability.available !== 1 ? 's' : ''} available
                             </span>
                           )
                         ) : (
