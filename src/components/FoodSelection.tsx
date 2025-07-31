@@ -106,6 +106,10 @@ const FoodSelection: React.FC<FoodSelectionProps> = ({ eventId }) => {
     return calculateCurrentTicketTotal() + calculateCurrentFoodTotal();
   };
 
+  // Check if all food items are free (complimentary)
+  const allFoodItemsAreFree = foodItems.length > 0 && foodItems.every(item => item.price === 0);
+  const hasPaidFoodItems = foodItems.some(item => item.price > 0);
+
   const handleContinue = () => {
     if (!bookingData) return;
 
@@ -194,6 +198,34 @@ const FoodSelection: React.FC<FoodSelectionProps> = ({ eventId }) => {
           </div>
         ) : (
           <div>
+            {/* Simplified view for all-free items */}
+            {allFoodItemsAreFree ? (
+              <div className="mb-6">
+                <div className="bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-lg p-6">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <span className="text-2xl">🎁</span>
+                    <h3 className="text-lg font-semibold text-green-800">Complimentary Items Included</h3>
+                  </div>
+                  <p className="text-green-700 text-sm mb-4">
+                    The following items are included with your booking at no additional charge.
+                  </p>
+                  <div className="space-y-3">
+                    {foodItems.map(item => (
+                      <div key={item.id} className="flex items-center space-x-3 bg-green-100 rounded-lg p-3 border border-green-200">
+                        <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-green-800">{item.name}</h4>
+                          {item.description && (
+                            <p className="text-sm text-green-600">{item.description}</p>
+                          )}
+                          <p className="text-xs text-green-600 font-medium">Complimentary</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
             <div className="space-y-4 mb-6">
               {foodItems.map(item => {
                 const isFree = item.price === 0;
@@ -251,6 +283,7 @@ const FoodSelection: React.FC<FoodSelectionProps> = ({ eventId }) => {
                 );
               })}
             </div>
+            )}
             
             {/* Total Summary */}
             <div className="border-t pt-4 space-y-2">

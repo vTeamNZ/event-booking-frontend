@@ -274,6 +274,10 @@ const FoodSelectionEnhanced: React.FC = () => {
   }, 0);
   const grandTotal = ticketTotal + foodTotal;
 
+  // Check if all food items are free (complimentary)
+  const allFoodItemsAreFree = foodItems.length > 0 && foodItems.every(item => item.price === 0);
+  const hasPaidFoodItems = foodItems.some(item => item.price > 0);
+
   // Get total food quantity across all seats/tickets
   const getTotalFoodQuantity = (foodId: number): number => {
     return seatTicketItems.reduce((sum, item) => sum + (item.foodSelections[foodId] || 0), 0);
@@ -460,13 +464,56 @@ const FoodSelectionEnhanced: React.FC = () => {
             <div className="border-b border-gray-600 pb-6 mb-8">
               <h1 className="text-3xl font-bold text-yellow-400 mb-2">Food & Beverage Selection</h1>
               <h2 className="text-xl text-gray-300 mb-4">{locationState?.eventTitle}</h2>
-              <p className="text-gray-400">
-                Select food and beverages for each {seatTicketItems[0]?.type === 'seat' ? 'seat' : 'ticket'}. 
-                You can order different items for each person.
-              </p>
+              {allFoodItemsAreFree ? (
+                <div className="bg-gradient-to-r from-green-900/30 to-green-800/30 border border-green-500/30 rounded-lg p-4">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <span className="text-2xl">🎁</span>
+                    <h3 className="text-lg font-semibold text-green-300">Complimentary Items Included</h3>
+                  </div>
+                  <p className="text-green-200 text-sm">
+                    The following items are included with your {seatTicketItems[0]?.type === 'seat' ? 'seats' : 'tickets'} at no additional charge.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-gray-400">
+                  Select food and beverages for each {seatTicketItems[0]?.type === 'seat' ? 'seat' : 'ticket'}. 
+                  You can order different items for each person.
+                </p>
+              )}
             </div>
 
-        {/* Control Bar */}
+        {/* Simplified view for all-free items */}
+        {allFoodItemsAreFree ? (
+          <div className="space-y-6 mb-8">
+            {/* Complimentary Items List */}
+            <div className="bg-gradient-to-r from-green-900/20 to-green-800/20 border border-green-500/30 rounded-lg p-6">
+              <h3 className="text-xl font-semibold text-green-300 mb-4 flex items-center">
+                <span className="mr-2">✓</span> Included with Your Booking
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {foodItems.map(food => (
+                  <div key={food.id} className="flex items-center space-x-3 bg-green-900/20 rounded-lg p-3 border border-green-500/20">
+                    <div className="w-2 h-2 bg-green-400 rounded-full flex-shrink-0"></div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-green-200">{food.name}</h4>
+                      {food.description && (
+                        <p className="text-sm text-green-300/70">{food.description}</p>
+                      )}
+                      <p className="text-xs text-green-400 font-medium">Complimentary</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 p-3 bg-green-800/30 rounded-lg border border-green-500/20">
+                <p className="text-sm text-green-200 text-center">
+                  <span className="font-medium">Total items:</span> {foodItems.length} complimentary item{foodItems.length !== 1 ? 's' : ''} × {seatTicketItems.length} {seatTicketItems[0]?.type === 'seat' ? 'seat' : 'ticket'}{seatTicketItems.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+        {/* Control Bar - Only show for paid items */}
         <div className="bg-gray-800 border border-gray-600 rounded-lg p-4 mb-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center space-x-4">
@@ -691,9 +738,11 @@ const FoodSelectionEnhanced: React.FC = () => {
             );
           })}
         </div>
+        </>
+        )}
 
-        {/* Food Summary */}
-        {hasFoodSelections && (
+        {/* Food Summary - Only show for paid items or when there are paid selections */}
+        {hasFoodSelections && hasPaidFoodItems && (
           <div className="bg-gradient-to-r from-yellow-900/30 to-yellow-800/30 border border-yellow-600/50 rounded-lg p-6 mb-6">
             <h3 className="text-lg font-semibold text-yellow-400 mb-4">Food Order Summary</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -721,10 +770,18 @@ const FoodSelectionEnhanced: React.FC = () => {
               <span>Tickets Total ({seatTicketItems.length} {seatTicketItems[0]?.type === 'seat' ? 'seats' : 'tickets'})</span>
               <span>${ticketTotal.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-gray-300">
-              <span>Food & Beverages</span>
-              <span>${foodTotal.toFixed(2)}</span>
-            </div>
+            {!allFoodItemsAreFree && (
+              <div className="flex justify-between text-gray-300">
+                <span>Food & Beverages</span>
+                <span>${foodTotal.toFixed(2)}</span>
+              </div>
+            )}
+            {allFoodItemsAreFree && foodItems.length > 0 && (
+              <div className="flex justify-between text-green-300">
+                <span>Complimentary Items</span>
+                <span>Included</span>
+              </div>
+            )}
             <div className="flex justify-between text-xl font-bold text-yellow-400 pt-3 border-t border-gray-600">
               <span>Grand Total</span>
               <span>${grandTotal.toFixed(2)}</span>
@@ -745,7 +802,7 @@ const FoodSelectionEnhanced: React.FC = () => {
             onClick={proceed}
             className="flex-1 px-8 py-3 rounded-lg bg-gradient-to-r from-yellow-600 to-yellow-500 text-black hover:from-yellow-500 hover:to-yellow-400 transition-all duration-200 flex items-center justify-center font-bold shadow-lg"
           >
-            Continue to Payment <span className="ml-2">→</span>
+            {allFoodItemsAreFree ? 'Continue to Payment' : 'Continue to Payment'} <span className="ml-2">→</span>
           </button>
         </div>
           </div>
