@@ -7,7 +7,6 @@ import ConditionalMain from './components/ConditionalMain';
 import { PrivateRoute } from './components/PrivateRoute';
 import { BookingProvider } from './contexts/BookingContext';
 import RouteTracker from './components/RouteTracker';
-import SimpleGlobalTimer from './components/SimpleGlobalTimer';
 import EventsList from './pages/EventsList';
 import About from './pages/About';
 import FoodSelectionEnhanced from './pages/FoodSelectionEnhanced';
@@ -51,21 +50,16 @@ const App: React.FC = () => {
         {/* Toast Notifications */}
         <Toaster />
         
-        {/* 🎯 INDUSTRY STANDARD: Global Reservation Timer - Fixed above everything */}
-        <div className="fixed top-0 left-0 right-0 z-[60]">
-          <SimpleGlobalTimer />
-        </div>
-        
-        {/* Maintenance Notice - Below timer */}
-        <div className="fixed top-0 left-0 right-0 z-[55]" style={{ paddingTop: 'var(--timer-height, 0px)' }}>
+        {/* Maintenance Notice */}
+        <div className="fixed top-0 left-0 right-0 z-[55]">
           <MaintenanceNotice />
         </div>
         
-        {/* Top Ribbon - Positioned below timer */}
+        {/* Top Ribbon */}
         <div className="bg-red-900 h-1 w-full" />
         
-        {/* Page Content - Add top padding for timer, maintenance notice, and header */}
-        <div className="pt-24" style={{ paddingTop: 'calc(var(--timer-height, 0px) + 96px)' }}>
+        {/* Page Content */}
+        <div className="pt-24">
           <AnimatedHeader />
           <ConditionalCarousel />      
           <ConditionalMain>

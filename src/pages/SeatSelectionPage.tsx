@@ -290,7 +290,7 @@ const SeatSelectionPage: React.FC = () => {
               <div className="max-w-4xl mx-auto">
                 {/* Event Details Section */}
                 <div className="mb-6">
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-2">Select Your Seats</h2>
+                  <h2 className="text-2xl font-semibold text-white mb-2">Select Your Seats</h2>
                 </div>
                 
                 <SeatingLayoutV2 

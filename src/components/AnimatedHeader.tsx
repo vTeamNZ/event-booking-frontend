@@ -31,9 +31,6 @@ const AnimatedHeader: React.FC = () => {
       ? 'bg-black/80 backdrop-blur-md shadow-md py-2 top-0'
       : 'bg-black/30 backdrop-blur-sm py-4 top-0'
     }`}
-  style={{ 
-    top: 'var(--timer-height, 0px)'
-  }}
 >
 
   <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row sm:items-center sm:justify-between">
