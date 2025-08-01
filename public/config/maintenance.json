@@ -1,6 +1,6 @@
 {
   "maintenanceNotice": {
-    "enabled": true,
+    "enabled": false,
     "startTime": "10:00 PM",
     "endTime": "11:00 PM",
     "date": "today",
