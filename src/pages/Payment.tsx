@@ -476,13 +476,24 @@ const Payment: React.FC = () => {
         return;
       }
 
+      // Validate customer details for organizer booking
+      if (!customerDetails.email || customerDetails.email.trim() === '') {
+        setError('Email address is required for organizer booking');
+        return;
+      }
+
+      if (!customerDetails.firstName || customerDetails.firstName.trim() === '') {
+        setError('First name is required for organizer booking');
+        return;
+      }
+
       // Create organizer direct booking using internal API
       const bookingRequest: OrganizerBookingRequest = {
         eventId: eventId,
-        firstName: customerDetails.firstName,
-        lastName: customerDetails.lastName,
-        buyerEmail: customerDetails.email,
-        mobile: customerDetails.mobile || undefined,
+        firstName: customerDetails.firstName.trim(),
+        lastName: customerDetails.lastName?.trim() || undefined,
+        buyerEmail: customerDetails.email.trim(),
+        mobile: customerDetails.mobile?.trim() || undefined,
         seatNumbers: seatNumbers
       };
 
