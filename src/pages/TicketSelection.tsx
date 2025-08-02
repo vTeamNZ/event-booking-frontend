@@ -154,14 +154,16 @@ const TicketSelection: React.FC = () => {
   // Handle loading ticket types and availability
   useEffect(() => {
     const fetchTicketTypesAndAvailability = async () => {
-      if (!state?.eventId) return;
+      const eventId = state?.eventId || event?.id;
+      if (!eventId) return;
+      
       try {
         setLoading(true);
         
         // Fetch ticket types and availability
         const [types, availabilityData] = await Promise.all([
-          getTicketTypesForEvent(state.eventId),
-          ticketAvailabilityService.getEventTicketAvailability(state.eventId)
+          getTicketTypesForEvent(eventId),
+          ticketAvailabilityService.getEventTicketAvailability(eventId)
         ]);
         
         setTicketTypes(types || []);
@@ -182,7 +184,7 @@ const TicketSelection: React.FC = () => {
     };
 
     fetchTicketTypesAndAvailability();
-  }, [state?.eventId]);
+  }, [state?.eventId, event?.id]);
 
   // Update selected tickets whenever quantities change
   useEffect(() => {
@@ -254,8 +256,8 @@ const TicketSelection: React.FC = () => {
 
     // Build unified booking data
     const bookingData: BookingData = {
-      eventId: state?.eventId,
-      eventTitle: state?.eventTitle,
+      eventId: state?.eventId || event?.id,
+      eventTitle: state?.eventTitle || event?.title,
       bookingType: eventSeatSelectionMode === SEAT_SELECTION_MODE.EVENT_HALL ? 'seats' : 'tickets',
       totalAmount: total,
       selectedTickets,
@@ -299,15 +301,15 @@ const TicketSelection: React.FC = () => {
         keywords={['Secure Your Event Tickets', 'Instant Ticket Booking', 'Easy Event Ticketing']}
         article={true}
       />
-      {state?.eventId && (
+      {(state?.eventId || event?.id) && (
         <EventStructuredData event={{
-          id: state.eventId,
-          title: state.eventTitle || 'Event',
-          description: state.eventDescription || 'Join us for this exciting event',
-          startDate: state.eventDate || new Date().toISOString(),
-          location: state.eventLocation,
-          price: state.eventPrice,
-          organizer: state.organizerName
+          id: state?.eventId || event?.id,
+          title: state?.eventTitle || event?.title || 'Event',
+          description: state?.eventDescription || event?.description || 'Join us for this exciting event',
+          startDate: state?.eventDate || event?.date || new Date().toISOString(),
+          location: state?.eventLocation || event?.location,
+          price: state?.eventPrice || event?.price,
+          organizer: state?.organizerName || eventDetails?.organizationName
         }} />
       )}
       

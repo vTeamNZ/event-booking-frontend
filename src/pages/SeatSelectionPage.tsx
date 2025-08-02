@@ -260,7 +260,7 @@ const SeatSelectionPage: React.FC = () => {
             date={event.date}
             location={event.location}
             description={event.description}
-            organizationName={eventDetails?.organizationName}
+            organizationName={eventDetails?.organizationName || (event as any)?.organizer?.organizationName || (event as any)?.organizer?.name}
           />
           
           {/* Back Button Overlay */}
@@ -285,7 +285,7 @@ const SeatSelectionPage: React.FC = () => {
 
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {state?.eventId ? (
+          {(state?.eventId || event?.id) ? (
             <div className="bg-gray-800 rounded-xl shadow-2xl p-6">
               <div className="max-w-4xl mx-auto">
                 {/* Event Details Section */}
@@ -295,7 +295,7 @@ const SeatSelectionPage: React.FC = () => {
                 
                 <SeatingLayoutV2 
                   key={refreshKey}
-                  eventId={state.eventId}
+                  eventId={state?.eventId || event?.id}
                   onSelectionComplete={handleSelectionComplete}
                   maxSeats={8}
                   showLegend={true}
@@ -305,9 +305,18 @@ const SeatSelectionPage: React.FC = () => {
                 />
               </div>
             </div>
+          ) : loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+              <div className="text-gray-300">Loading event details...</div>
+            </div>
+          ) : error ? (
+            <div className="bg-error/20 text-error p-4 rounded-lg">
+              {error}
+            </div>
           ) : (
             <div className="bg-error/20 text-error p-4 rounded-lg">
-              Missing eventId in state. Please return to the events page and try again.
+              Missing event information. Please return to the events page and try again.
             </div>
           )}
         </div>

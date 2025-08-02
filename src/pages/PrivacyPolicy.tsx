@@ -9,168 +9,164 @@ const PrivacyPolicy: React.FC = () => {
         description="Privacy policy and data protection information for our ticketing platform."
         keywords={['privacy', 'policy', 'data protection', 'GDPR']}
       />
-      <div className="min-h-screen bg-gray-900 py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gray-800 rounded-xl shadow-2xl overflow-hidden">
-            <div className="p-8">
-              <h1 className="text-3xl font-bold text-white mb-6">Privacy Policy</h1>
-              <p className="text-gray-400 mb-8">Last updated: July 31, 2025</p>
-              
-              <div className="space-y-8 text-gray-300">
-                <section>
-                  <h2 className="text-xl font-semibold text-white mb-4">1. Information We Collect</h2>
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-lg font-medium text-white mb-2">Personal Information</h3>
-                      <div className="space-y-2">
-                        <p>• Name and contact details (email address, phone number)</p>
-                        <p>• Booking and payment information</p>
-                        <p>• Event preferences and attendance history</p>
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-white mb-2">Technical Information</h3>
-                      <div className="space-y-2">
-                        <p>• IP address and browser information</p>
-                        <p>• Website usage data and analytics</p>
-                        <p>• Device and session information</p>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-white mb-4">2. How We Use Your Information</h2>
-                  <div className="space-y-3">
-                    <p>• Process your bookings and payments</p>
-                    <p>• Send booking confirmations and tickets</p>
-                    <p>• Provide customer support and assistance</p>
-                    <p>• Improve our platform and services</p>
-                    <p>• Send important updates about your bookings</p>
-                    <p>• Comply with legal obligations</p>
-                  </div>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-white mb-4">3. Information Sharing</h2>
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-lg font-medium text-white mb-2">With Event Organizers</h3>
-                      <p>We share necessary booking information (name, email, ticket details) with event organizers to facilitate your attendance.</p>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-white mb-2">With Service Providers</h3>
-                      <div className="space-y-2">
-                        <p>• Stripe (payment processing) - PCI DSS compliant</p>
-                        <p>• Email service providers (for sending confirmations)</p>
-                        <p>• Analytics services (anonymized data only)</p>
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-white mb-2">Legal Requirements</h3>
-                      <p>We may disclose information when required by law or to protect our rights and users' safety.</p>
-                    </div>
-                  </div>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-white mb-4">4. Data Security</h2>
-                  <div className="space-y-3">
-                    <p>• All data transmission is encrypted using SSL/TLS</p>
-                    <p>• Payment information is processed by Stripe (PCI DSS Level 1 compliant)</p>
-                    <p>• We never store your full credit card details</p>
-                    <p>• Regular security audits and updates</p>
-                    <p>• Access controls and staff training on data protection</p>
-                  </div>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-white mb-4">5. Cookies and Tracking</h2>
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-lg font-medium text-white mb-2">Essential Cookies</h3>
-                      <p>Required for basic website functionality, user authentication, and shopping cart operations.</p>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-white mb-2">Analytics Cookies</h3>
-                      <p>Help us understand how users interact with our site to improve user experience.</p>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-white mb-2">Managing Cookies</h3>
-                      <p>You can control cookies through your browser settings, though this may affect site functionality.</p>
-                    </div>
-                  </div>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-white mb-4">6. Your Rights</h2>
-                  <div className="space-y-3">
-                    <p>• <strong>Access:</strong> Request a copy of your personal data</p>
-                    <p>• <strong>Correction:</strong> Update or correct your information</p>
-                    <p>• <strong>Deletion:</strong> Request deletion of your account and data</p>
-                    <p>• <strong>Portability:</strong> Receive your data in a portable format</p>
-                    <p>• <strong>Objection:</strong> Object to processing for marketing purposes</p>
-                    <p>• <strong>Withdrawal:</strong> Withdraw consent for data processing</p>
-                  </div>
-                  <p className="mt-4 text-sm">
-                    To exercise these rights, contact us at <a href="mailto:support@kiwilanka.co.nz" className="text-blue-400 hover:text-blue-300">support@kiwilanka.co.nz</a>
-                  </p>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-white mb-4">7. Data Retention</h2>
-                  <div className="space-y-3">
-                    <p>• Booking data: Retained for 7 years for tax and legal purposes</p>
-                    <p>• Account data: Retained while account is active, plus 2 years</p>
-                    <p>• Marketing data: Retained until you unsubscribe</p>
-                    <p>• Technical data: Typically retained for 2 years</p>
-                  </div>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-white mb-4">8. International Transfers</h2>
-                  <p>
-                    Your data is primarily processed in New Zealand. When we use international service providers, 
-                    we ensure appropriate safeguards are in place to protect your data.
-                  </p>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-white mb-4">9. Children's Privacy</h2>
-                  <p>
-                    Our service is not intended for children under 16. We do not knowingly collect personal 
-                    information from children under 16. If we become aware of such data collection, 
-                    we will delete it promptly.
-                  </p>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-white mb-4">10. Contact Us</h2>
-                  <div className="space-y-3">
-                    <p>For privacy-related questions or requests:</p>
-                    <p><strong>Company:</strong> APPIDEA LIMITED</p>
-                    <p><strong>NZBN:</strong> 9429048533461</p>
-                    <p><strong>Address:</strong> 50b Merton Road, St. Johns, Auckland, 1072, New Zealand</p>
-                    <p>• Email: <a href="mailto:support@kiwilanka.co.nz" className="text-blue-400 hover:text-blue-300">support@kiwilanka.co.nz</a></p>
-                    <p>• Subject: "Privacy Policy Inquiry"</p>
-                    <p>• We will respond within 30 days</p>
-                  </div>
-                </section>
-
-                <section>
-                  <h2 className="text-xl font-semibold text-white mb-4">11. Changes to This Policy</h2>
-                  <p>
-                    We may update this privacy policy from time to time. We will notify you of any significant 
-                    changes by email or through our website. Your continued use of our services after changes 
-                    constitutes acceptance of the updated policy.
-                  </p>
-                </section>
+      <div className="min-h-screen bg-white py-12">
+        <div className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-10">
+          <div className="bg-white border border-gray-300 shadow-lg">
+            <div className="p-12">
+              <div className="text-center mb-16">
+                <h1 className="text-4xl font-serif text-gray-900 mb-4">PRIVACY POLICY</h1>
+                <div className="w-24 h-0.5 bg-gray-400 mx-auto mb-6"></div>
+                <p className="text-gray-600 font-medium">Last Updated: 31 July 2025</p>
               </div>
+              
+              <div className="space-y-12 text-gray-800 leading-relaxed">
+                <section>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">1. Introduction</h2>
+                  <p>
+                    This Privacy Policy describes how KiwiLanka, operated by AppIdea Limited, collects, uses, and protects personal information obtained through our event ticketing platform. We are committed to complying with the New Zealand Privacy Act 2020 and relevant obligations under the General Data Protection Regulation (GDPR), where applicable.
+                  </p>
+                </section>
 
-              <div className="mt-8 pt-6 border-t border-gray-700">
-                <p className="text-gray-400 text-sm">
-                  This policy complies with New Zealand Privacy Act 2020 and GDPR requirements.
-                </p>
+                <section>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">2. Data Controller</h2>
+                  <p className="mb-4">AppIdea Limited is the data controller for all personal information collected via the KiwiLanka platform.</p>
+                  <div className="bg-gray-50 p-6 border border-gray-300">
+                    <p className="mb-1"><strong>NZBN:</strong> 9429048533461</p>
+                    <p className="mb-1"><strong>Address:</strong> 50b Merton Road, St Johns, Auckland 1072, New Zealand</p>
+                    <p><strong>Email:</strong> <a href="mailto:support@kiwilanka.co.nz" className="text-blue-600 hover:text-blue-800 underline">support@kiwilanka.co.nz</a></p>
+                  </div>
+                </section>
+
+                <section>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">3. Information We Collect</h2>
+                  <p className="mb-4">We collect the following types of information when you use our platform:</p>
+                  
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-3">a. Personal Information:</h3>
+                    <ul className="list-disc list-inside space-y-2 ml-4">
+                      <li>Full name</li>
+                      <li>Email address</li>
+                      <li>Phone number</li>
+                      <li>Billing and event booking details</li>
+                    </ul>
+                  </div>
+
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-3">b. Technical Information:</h3>
+                    <ul className="list-disc list-inside space-y-2 ml-4">
+                      <li>IP address and browser type</li>
+                      <li>Device identifiers</li>
+                      <li>Usage and interaction data (e.g., clicks, pages viewed)</li>
+                    </ul>
+                  </div>
+
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-3">c. Payment Information:</h3>
+                    <p className="ml-4">We do not store credit or debit card details. All payments are processed securely by Stripe, a PCI DSS Level 1 certified provider.</p>
+                  </div>
+                </section>
+
+                <section>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">4. How We Use Your Information</h2>
+                  <p className="mb-3">We use your information for the following purposes:</p>
+                  <ul className="list-disc list-inside space-y-2">
+                    <li>To process event bookings and issue e-tickets</li>
+                    <li>To send order confirmations and event reminders</li>
+                    <li>To provide customer support</li>
+                    <li>To detect, investigate, and prevent fraud or system abuse</li>
+                    <li>To meet our legal obligations</li>
+                    <li>To analyze usage patterns and improve our services</li>
+                  </ul>
+                </section>
+
+                <section>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">5. Sharing of Information</h2>
+                  <p className="mb-3">We may share your information as follows:</p>
+                  <ul className="list-disc list-inside space-y-2">
+                    <li><strong>With event organizers:</strong> only for events you've booked</li>
+                    <li><strong>With service providers:</strong> such as Stripe (payments), email delivery services, and analytics tools</li>
+                    <li><strong>When legally required:</strong> to comply with court orders, law enforcement, or regulatory obligations</li>
+                    <li><strong>In connection with a merger, acquisition, or business restructuring,</strong> subject to standard confidentiality requirements</li>
+                  </ul>
+                </section>
+
+                <section>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">6. Data Security</h2>
+                  <p className="mb-4">We take reasonable steps to protect your data from unauthorized access, disclosure, alteration, or destruction. Security measures include:</p>
+                  <ul className="list-disc list-inside space-y-2 mb-4">
+                    <li>SSL/TLS encryption</li>
+                    <li>Secure hosting infrastructure</li>
+                    <li>Role-based access controls</li>
+                    <li>Staff training and internal data handling policies</li>
+                  </ul>
+                  <p className="italic">Payment information is not stored on our servers and is managed entirely by Stripe.</p>
+                </section>
+
+                <section>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">7. Cookies and Tracking Technologies</h2>
+                  <p className="mb-3">We use cookies to enhance user experience, including:</p>
+                  <ul className="list-disc list-inside space-y-2 mb-4">
+                    <li>Essential cookies for session management and login</li>
+                    <li>Analytical cookies (e.g., Google Analytics) to understand site performance</li>
+                  </ul>
+                  <p>You may disable cookies in your browser, but some features of the site may not function properly.</p>
+                </section>
+
+                <section>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">8. Your Rights</h2>
+                  <p className="mb-3">Under the Privacy Act and GDPR (where applicable), you have the following rights:</p>
+                  <ul className="list-disc list-inside space-y-2 mb-4">
+                    <li><strong>Access:</strong> Request a copy of your personal data</li>
+                    <li><strong>Correction:</strong> Update or amend your information</li>
+                    <li><strong>Deletion:</strong> Request deletion of your data (subject to retention laws)</li>
+                    <li><strong>Objection:</strong> Object to certain processing activities</li>
+                    <li><strong>Withdrawal:</strong> Withdraw consent where processing is based on consent</li>
+                  </ul>
+                  <p>To exercise these rights, please contact us at <a href="mailto:support@kiwilanka.co.nz" className="text-blue-600 hover:text-blue-800 underline">support@kiwilanka.co.nz</a>.</p>
+                </section>
+
+                <section>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">9. Data Retention</h2>
+                  <p className="mb-3">We retain personal information as follows:</p>
+                  <ul className="list-disc list-inside space-y-2">
+                    <li><strong>Booking and transaction data:</strong> for 7 years to comply with tax and legal requirements</li>
+                    <li><strong>Account information:</strong> for as long as the account is active and up to 2 years thereafter</li>
+                    <li><strong>Marketing data:</strong> until you opt out or unsubscribe</li>
+                    <li><strong>Technical logs:</strong> generally retained for 24 months for analytics and security monitoring</li>
+                  </ul>
+                </section>
+
+                <section>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">10. International Transfers</h2>
+                  <p>
+                    We primarily store and process data in New Zealand. Where service providers operate outside New Zealand (e.g. cloud infrastructure), we ensure appropriate safeguards such as contractual data protection clauses are in place.
+                  </p>
+                </section>
+
+                <section>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">11. Children's Privacy</h2>
+                  <p>
+                    Our services are not intended for use by individuals under the age of 16. We do not knowingly collect personal data from children. If we learn that we have collected information from a child under 16, we will delete it promptly.
+                  </p>
+                </section>
+
+                <section>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">12. Changes to this Policy</h2>
+                  <p>
+                    We may update this Privacy Policy from time to time to reflect changes to our practices or for legal or regulatory reasons. Any updates will be posted on this page with a revised effective date. We encourage users to review the policy periodically.
+                  </p>
+                </section>
+
+                <section>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">13. Contact</h2>
+                  <p className="mb-4">If you have questions or concerns about this Privacy Policy or your personal information, please contact:</p>
+                  <div className="bg-gray-50 p-6 border border-gray-300">
+                    <p className="font-semibold text-lg mb-2">KiwiLanka / AppIdea Limited</p>
+                    <p className="mb-1"><strong>Email:</strong> <a href="mailto:support@kiwilanka.co.nz" className="text-blue-600 hover:text-blue-800 underline">support@kiwilanka.co.nz</a></p>
+                    <p className="mb-1"><strong>Address:</strong> 50b Merton Road, St Johns, Auckland 1072, New Zealand</p>
+                    <p><strong>Business Hours:</strong> Monday to Friday, 9:00 AM – 5:00 PM NZST</p>
+                  </div>
+                </section>
               </div>
             </div>
           </div>

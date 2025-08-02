@@ -15,6 +15,7 @@ import EventHero from '../components/EventHero';
 import TrustIndicators from '../components/TrustIndicators';
 import LegalConsent from '../components/LegalConsent';
 import BusinessInfo from '../components/BusinessInfo';
+import afterpayLogo from '../assets/images/payment-methods/afterpay-logo.png';
 
 interface LegacyPaymentLocationState {
   amount: number;
@@ -634,9 +635,11 @@ const Payment: React.FC = () => {
                           <div className="flex-1">
                             <label htmlFor="useAfterPay" className="flex items-center text-sm font-medium text-white cursor-pointer">
                               <div className="flex items-center gap-2">
-                                <div className="w-8 h-4 bg-teal-400 rounded flex items-center justify-center">
-                                  <span className="text-white text-xs font-bold">A</span>
-                                </div>
+                                <img 
+                                  src={afterpayLogo} 
+                                  alt="Afterpay" 
+                                  className="h-6 w-auto rounded-lg"
+                                />
                                 <span>Use AfterPay</span>
                               </div>
                             </label>
@@ -665,6 +668,33 @@ const Payment: React.FC = () => {
 
                   {/* Legal Consent */}
                   <LegalConsent onConsentChange={setLegalConsentValid} className="mb-6" />
+
+                  {/* Payment Policy Summary */}
+                  <div className="mb-6 space-y-4">
+                    {/* Refund Policy Summary */}
+                    <div className="bg-amber-900/20 border border-amber-600/30 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          <span className="text-2xl">💡</span>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-amber-200 text-sm">
+                            <strong>Note:</strong> All ticket sales are final unless the event is cancelled or as required under NZ consumer law. See our{' '}
+                            <a 
+                              href="/refund-policy" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-amber-300 hover:text-amber-100 underline"
+                            >
+                              Refund Policy
+                            </a>{' '}
+                            for more details.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
 
                   {/* Trust Indicators */}
                   <TrustIndicators variant="payment" className="mb-6" />
@@ -707,6 +737,10 @@ const Payment: React.FC = () => {
                         <p className="text-xs text-gray-400 text-center">
                           As an organizer, you can generate QR tickets directly using your details.
                         </p>
+                        
+                        <p className="text-xs text-gray-400 text-center mt-3">
+                          Payments securely processed via Stripe. We do not store card details. You will be securely redirected to complete your payment.
+                        </p>
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -722,12 +756,9 @@ const Payment: React.FC = () => {
                           {loading ? 'Creating Checkout...' : `Pay $${finalAmount.toFixed(2)}`}
                         </button>
                         
-                        <div className="flex items-center justify-center space-x-2 text-xs text-gray-400">
-                          <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                          <span>You will be securely redirected to Stripe to complete your payment.</span>
-                        </div>
+                        <p className="text-xs text-gray-400 text-center">
+                          Payments securely processed via Stripe. We do not store card details. You will be securely redirected to complete your payment.
+                        </p>
                       </div>
                     )}
                   </div>

@@ -1,5 +1,13 @@
 import React from 'react';
-import { FaCcVisa, FaCcMastercard, FaCcAmex, FaCcApplePay, FaGooglePay } from 'react-icons/fa';
+
+// Import payment method icons
+import visaLogo from '../assets/images/payment-methods/visa-logo.png';
+import mastercardLogo from '../assets/images/payment-methods/mastercard-logo.png';
+import amexLogo from '../assets/images/payment-methods/amex-logo.png';
+import jcbLogo from '../assets/images/payment-methods/jcb-logo.png';
+import applePayLogo from '../assets/images/payment-methods/apple-pay-logo.png';
+import googlePayLogo from '../assets/images/payment-methods/google-pay-logo.png';
+import afterpayLogo from '../assets/images/payment-methods/afterpay-logo.png';
 
 interface TrustIndicatorsProps {
   variant?: 'payment' | 'checkout' | 'footer';
@@ -26,8 +34,6 @@ const TrustIndicators: React.FC<TrustIndicatorsProps> = ({
               <div className="space-y-1 text-green-100 text-sm">
                 <p>• SSL encrypted connection</p>
                 <p>• PCI DSS compliant payment processing</p>
-                <p>• Money-back guarantee for cancelled events</p>
-                <p>• Secure data handling & privacy protection</p>
               </div>
             </div>
           </div>
@@ -42,16 +48,15 @@ const TrustIndicators: React.FC<TrustIndicatorsProps> = ({
               </svg>
             </div>
             <div className="flex-1">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <span className="text-gray-200 font-medium text-sm">We accept:</span>
-                <FaCcVisa className="text-2xl text-blue-600" title="Visa" />
-                <FaCcMastercard className="text-2xl text-red-500" title="Mastercard" />
-                <FaCcAmex className="text-2xl text-blue-500" title="American Express" />
-                <FaCcApplePay className="text-2xl text-gray-300" title="Apple Pay" />
-                <FaGooglePay className="text-2xl text-blue-400" title="Google Pay" />
-                <div className="w-10 h-5 bg-teal-400 rounded flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">After</span>
-                </div>
+                <img src={visaLogo} alt="Visa" className="h-6 w-auto bg-white rounded px-1 py-0.5" title="Visa" />
+                <img src={mastercardLogo} alt="Mastercard" className="h-6 w-auto bg-white rounded px-1 py-0.5" title="Mastercard" />
+                <img src={amexLogo} alt="American Express" className="h-6 w-auto bg-white rounded px-1 py-0.5" title="American Express" />
+                <img src={jcbLogo} alt="JCB" className="h-6 w-auto bg-white rounded px-1 py-0.5" title="JCB" />
+                <img src={applePayLogo} alt="Apple Pay" className="h-6 w-auto bg-white rounded px-1 py-0.5" title="Apple Pay" />
+                <img src={googlePayLogo} alt="Google Pay" className="h-6 w-auto bg-white rounded px-1 py-0.5" title="Google Pay" />
+                <img src={afterpayLogo} alt="Afterpay" className="h-6 w-auto bg-white rounded px-1 py-0.5" title="Afterpay" />
               </div>
             </div>
           </div>
