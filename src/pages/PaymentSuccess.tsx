@@ -4,7 +4,6 @@ import { verifyPaymentWithPolling } from '../services/checkoutService';
 import SEO from '../components/SEO';
 import SupportPanel from '../components/SupportPanel';
 import TrustIndicators from '../components/TrustIndicators';
-import BusinessInfo from '../components/BusinessInfo';
 import { safeBookingCompletionCleanup, completeBookingCleanup } from '../utils/seating-v2/sessionStorage';
 import { reservationTimer } from '../services/reservationTimerService';
 
@@ -303,20 +302,20 @@ const PaymentSuccess: React.FC = () => {
         description="Thank you for your booking! Your payment has been processed successfully. A confirmation email has been sent to your inbox."
         keywords={['Booking Confirmation', 'Payment Success', 'Event Tickets Booked']}
       />
-      <div className="max-w-2xl mx-auto mt-20 p-8 bg-white rounded-xl shadow-lg text-center">
+      <div className="max-w-2xl mx-auto mt-20 p-8 bg-gray-900 rounded-xl shadow-lg text-center border border-gray-700">
         <div className="mb-6">
-          <div className="w-16 h-16 bg-success/20 rounded-full mx-auto flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-16 h-16 bg-primary/20 rounded-full mx-auto flex items-center justify-center mb-4">
+            <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Booking Confirmed!</h1>
-          <p className="text-gray-600 mb-4">
+          <h1 className="text-3xl font-bold text-white mb-2">Booking Confirmed!</h1>
+          <p className="text-gray-300 mb-4">
             {sessionData?.eventTitle ? `Your tickets for ${sessionData.eventTitle} have been booked and your e-ticket has been emailed to you.` : 'Thank you for your purchase.'}
           </p>
           
-          <div className="text-sm text-gray-600 bg-success/20 p-4 rounded-lg inline-flex items-center">
-            <svg className="w-5 h-5 text-success mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="text-sm text-white bg-primary/10 p-4 rounded-lg inline-flex items-center border border-primary/30">
+            <svg className="w-5 h-5 text-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2v10a2 2 0 002 2z"></path>
             </svg>
             A payment receipt has been sent to your email. Please note that it may take a short while for the email to arrive in your inbox.
@@ -324,53 +323,53 @@ const PaymentSuccess: React.FC = () => {
         </div>
 
         {sessionData && (
-          <div className="bg-gray-50 rounded-lg p-6 mb-6">
-            <div className="space-y-2">
+          <div className="bg-black rounded-lg p-6 mb-6 border border-gray-700">
+            <div className="space-y-3">
               {sessionData.customerName && (
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Customer Name:</span>
-                  <span className="font-medium">{sessionData.customerName}</span>
+                  <span className="text-gray-400">Customer Name:</span>
+                  <span className="font-medium text-white">{sessionData.customerName}</span>
                 </div>
               )}
               
               {sessionData.paymentId && (
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Payment Reference:</span>
-                  <span className="font-mono text-sm">{sessionData.paymentId}</span>
+                  <span className="text-gray-400">Payment Reference:</span>
+                  <span className="font-mono text-sm text-white">{sessionData.paymentId}</span>
                 </div>
               )}
 
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Amount Paid:</span>
+                <span className="text-gray-400">Amount Paid:</span>
                 <span className="font-bold text-primary">
                   ${sessionData.amountTotal ? (typeof sessionData.amountTotal === 'number' ? sessionData.amountTotal.toFixed(2) : (sessionData.amountTotal / 100).toFixed(2)) : '0.00'}
                 </span>
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Email:</span>
-                <span className="text-sm">{sessionData.customerEmail}</span>
+                <span className="text-gray-400">Email:</span>
+                <span className="text-sm text-white">{sessionData.customerEmail}</span>
               </div>
               
               {sessionData.bookedSeats && Array.isArray(sessionData.bookedSeats) && sessionData.bookedSeats.length > 0 && (
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Seat(s):</span>
-                  <span className="text-sm font-medium">{sessionData.bookedSeats.join(', ')}</span>
+                  <span className="text-gray-400">Seat(s):</span>
+                  <span className="text-sm font-medium text-white">{sessionData.bookedSeats.join(', ')}</span>
                 </div>
               )}
               
               {/* ✅ Show QR ticket generation status */}
               {sessionData.qrTicketsGenerated && Array.isArray(sessionData.qrTicketsGenerated) && sessionData.qrTicketsGenerated.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">QR Ticket Status:</h4>
-                  <div className="space-y-1">
+                <div className="mt-4 pt-4 border-t border-gray-700">
+                  <h4 className="text-sm font-medium text-primary mb-2">QR Ticket Status:</h4>
+                  <div className="space-y-2">
                     {sessionData.qrTicketsGenerated.map((qr: any, index: number) => (
                       <div key={index} className="flex justify-between items-center text-sm">
-                        <span className="text-gray-600">Seat {qr.seatNumber}:</span>
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                        <span className="text-gray-300">Seat {qr.seatNumber}:</span>
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-md ${
                           qr.success 
-                            ? 'bg-success/20 text-success' 
-                            : 'bg-error/20 text-error'
+                            ? 'bg-green-900/30 text-green-400 border border-green-800' 
+                            : 'bg-red-900/30 text-red-400 border border-red-800'
                         }`}>
                           {qr.success ? '✓ Generated' : '✗ Failed'}
                         </span>
@@ -382,9 +381,9 @@ const PaymentSuccess: React.FC = () => {
               
               {/* ✅ Show booking ID if available */}
               {sessionData.bookingId && sessionData.bookingId !== 0 && (
-                <div className="flex justify-between items-center text-xs text-gray-500">
+                <div className="flex justify-between items-center text-xs text-gray-500 mt-3">
                   <span>Booking ID:</span>
-                  <span className="font-mono">{sessionData.bookingId}</span>
+                  <span className="font-mono text-gray-400">{sessionData.bookingId}</span>
                 </div>
               )}
             </div>
@@ -393,21 +392,21 @@ const PaymentSuccess: React.FC = () => {
         <div className="space-y-4">
           <button
             onClick={() => navigate('/')}
-            className="w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+            className="w-full px-6 py-3 bg-primary text-black font-semibold rounded-lg hover:bg-primary-dark transition-colors duration-200 shadow-lg"
           >
             Back to Events
           </button>
         </div>
 
-        {/* Security & Trust Information */}
-        <div className="mt-6 p-4 bg-green-900/20 border border-green-600/30 rounded-lg">
+        {/* Security & Trust Information - Cinema Style */}
+        <div className="mt-6 p-4 bg-black border border-gray-700 rounded-lg shadow-md">
           <div className="flex items-start space-x-3">
-            <svg className="w-5 h-5 text-green-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-primary mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
             <div className="flex-1">
-              <h4 className="text-green-200 font-medium mb-2">✅ Your Payment is Secure</h4>
-              <div className="text-green-100 text-sm space-y-1">
+              <h4 className="text-primary font-medium mb-2">✓ Your Payment is Secure</h4>
+              <div className="text-white text-sm space-y-1">
                 <p>• Payment processed securely via Stripe (PCI DSS Level 1)</p>
                 <p>• Your card details were never stored on our servers</p>
                 <p>• Transaction encrypted with 256-bit SSL encryption</p>
@@ -415,13 +414,25 @@ const PaymentSuccess: React.FC = () => {
               </div>
             </div>
           </div>
+          
+          {/* Contact Information */}
+          <div className="mt-4 pt-4 border-t border-gray-700">
+            <div className="flex items-start space-x-3">
+              <svg className="w-5 h-5 text-primary mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2v10a2 2 0 002 2z" />
+              </svg>
+              <div className="flex-1">
+                <h4 className="text-primary font-medium mb-2">Contact Support</h4>
+                <div className="text-white text-sm space-y-1">
+                  <p>• Email: <a href="mailto:support@kiwilanka.co.nz" className="text-primary hover:text-primary-dark">support@kiwilanka.co.nz</a></p>
+                  <p>• Phone: <a href="tel:+64225446816" className="text-primary hover:text-primary-dark">+64 22 544 6816</a></p>
+                  <p>• Hours: Mon-Fri 9AM-5PM NZST</p>
+                  <p>• 50b Merton Road, St. Johns, Auckland, 1072, New Zealand</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-
-        {/* Business Information */}
-        <BusinessInfo variant="compact" className="mt-4" />
-
-        {/* Support Panel */}
-        <SupportPanel className="mt-6" />
       </div>
     </>
   );

@@ -638,7 +638,7 @@ const Payment: React.FC = () => {
                                 <img 
                                   src={afterpayLogo} 
                                   alt="Afterpay" 
-                                  className="h-6 w-auto rounded-lg"
+                                  className="h-6 w-auto bg-white rounded-lg"
                                 />
                                 <span>Use AfterPay</span>
                               </div>
