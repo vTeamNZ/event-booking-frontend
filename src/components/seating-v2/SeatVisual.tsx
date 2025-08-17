@@ -88,7 +88,9 @@ const SeatVisual: React.FC<SeatVisualProps> = ({
         title={isUnavailableForNonAdmin ? '' : tooltip}
         aria-label={isUnavailableForNonAdmin ? '' : tooltip}
       >
-        {isUnavailableForNonAdmin ? '' : seat.number}
+        {isUnavailableForNonAdmin ? '' : (
+          seat.ticketType?.name?.toLowerCase().includes('standing') ? '' : seat.number
+        )}
       </button>
       
       {/* Admin Toggle Button */}
