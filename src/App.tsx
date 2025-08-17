@@ -27,6 +27,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminOrganizers from './pages/AdminOrganizers';
 import AdminEvents from './pages/AdminEvents';
 import AdminUsers from './pages/AdminUsers';
+import AdminRevenueDashboard from './pages/AdminRevenueDashboard';
 import { VenueManagement } from './pages/VenueManagement';
 import ManageFoodItems from './pages/ManageFoodItems';
 import EventPage from './pages/EventPage';
@@ -142,6 +143,11 @@ const App: React.FC = () => {
           <Route path="/admin/venues" element={
             <PrivateRoute>
               <VenueManagement />
+            </PrivateRoute>
+          } />
+          <Route path="/admin/revenue" element={
+            <PrivateRoute>
+              <AdminRevenueDashboard />
             </PrivateRoute>
           } />
           <Route 
