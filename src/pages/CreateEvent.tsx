@@ -143,7 +143,9 @@ const CreateEvent: React.FC = () => {
               description: 'VIP seating with best view',
               maxTickets: 0,
               seatRows: [],
-              color: '#DC2626'
+              color: '#DC2626',
+              isStanding: false, // Default to seated
+              standingCapacity: 0
             },
             {
               type: 'Premium',
@@ -152,7 +154,9 @@ const CreateEvent: React.FC = () => {
               description: 'Premium seating with great view',
               maxTickets: 0,
               seatRows: [],
-              color: '#2563EB'
+              color: '#2563EB',
+              isStanding: false, // Default to seated
+              standingCapacity: 0
             },
             {
               type: 'Standard',
@@ -161,7 +165,9 @@ const CreateEvent: React.FC = () => {
               description: 'Standard seating',
               maxTickets: 0,
               seatRows: [],
-              color: '#4B5563'
+              color: '#4B5563',
+              isStanding: false, // Default to seated
+              standingCapacity: 0
             }
           ]);
         }
@@ -241,6 +247,32 @@ const CreateEvent: React.FC = () => {
     return color;
   };
 
+  // 🎯 HYBRID MODE AUTO-DETECTION: Helper function to determine correct seat selection mode
+  const autoDetectSeatSelectionMode = (currentTicketTypes: TicketTypeData[]) => {
+    const selectedVenueData = venues.find(v => v.id === formik.values.venueId);
+    const isAllocatedSeatVenue = selectedVenueData?.layoutType === 'Allocated Seating';
+    
+    // Check ticket type composition
+    const hasStandingTickets = currentTicketTypes.some(t => t.isStanding === true);
+    const hasSeatedTickets = currentTicketTypes.some(t => t.isStanding === false);
+    
+    if (isAllocatedSeatVenue) {
+      if (hasStandingTickets && hasSeatedTickets) {
+        // Hybrid: Allocated venue with both standing and seated tickets
+        return '4';
+      } else if (hasStandingTickets && !hasSeatedTickets) {
+        // All standing tickets in allocated venue = General Admission
+        return '3';
+      } else {
+        // All seated tickets in allocated venue = Event Hall
+        return '1';
+      }
+    } else {
+      // Non-allocated venue = always General Admission
+      return '3';
+    }
+  };
+
   // Ticket type management functions
   const addTicketType = () => {
     // Generate a unique color based on the current number of ticket types
@@ -253,7 +285,9 @@ const CreateEvent: React.FC = () => {
       description: '',
       maxTickets: 0,
       seatRows: [],
-      color
+      color,
+      isStanding: false, // New: Default to seated ticket
+      standingCapacity: 0 // New: Standing capacity field
     }]);
   };
 
@@ -274,10 +308,31 @@ const CreateEvent: React.FC = () => {
       return ticket;
     });
     setTicketTypes(updated);
+    
+    // 🎯 AUTO-DETECT: Update seat selection mode when isStanding field changes
+    if (field === 'isStanding') {
+      const newMode = autoDetectSeatSelectionMode(updated);
+      const currentMode = formik.values.seatSelectionMode;
+      
+      if (newMode !== currentMode) {
+        console.log(`🔄 AUTO-UPDATING seat mode: ${currentMode} → ${newMode} (${field} changed to ${value})`);
+        formik.setFieldValue('seatSelectionMode', newMode);
+      }
+    }
   };
 
   const removeTicketType = (index: number) => {
-    setTicketTypes(ticketTypes.filter((_, i) => i !== index));
+    const updated = ticketTypes.filter((_, i) => i !== index);
+    setTicketTypes(updated);
+    
+    // 🎯 AUTO-DETECT: Update seat selection mode when ticket types are removed
+    const newMode = autoDetectSeatSelectionMode(updated);
+    const currentMode = formik.values.seatSelectionMode;
+    
+    if (newMode !== currentMode) {
+      console.log(`🔄 AUTO-UPDATING seat mode: ${currentMode} → ${newMode} (ticket type removed)`);
+      formik.setFieldValue('seatSelectionMode', newMode);
+    }
   };
 
   const addSeatRow = (ticketIndex: number) => {
@@ -467,6 +522,42 @@ const CreateEvent: React.FC = () => {
           return;
         }
 
+        // 🎯 HYBRID MODE DETECTION: Automatically determine seat selection mode based on venue and ticket types
+        const selectedVenueData = venues.find(v => v.id === values.venueId);
+        const isAllocatedSeatVenue = selectedVenueData?.layoutType === 'Allocated Seating';
+        
+        // Check ticket type composition
+        const hasStandingTickets = ticketTypes.some(t => t.isStanding === true);
+        const hasSeatedTickets = ticketTypes.some(t => t.isStanding === false);
+        
+        let correctSeatMode = values.seatSelectionMode; // Keep current value as default
+        
+        if (isAllocatedSeatVenue) {
+          if (hasStandingTickets && hasSeatedTickets) {
+            // Hybrid: Allocated venue with both standing and seated tickets
+            correctSeatMode = '4';
+            console.log('🎯 AUTO-DETECTED: Hybrid mode - Allocated venue with mixed ticket types');
+          } else if (hasStandingTickets && !hasSeatedTickets) {
+            // All standing tickets in allocated venue = General Admission
+            correctSeatMode = '3';
+            console.log('🎯 AUTO-DETECTED: General Admission mode - Allocated venue with only standing tickets');
+          } else {
+            // All seated tickets in allocated venue = Event Hall
+            correctSeatMode = '1';
+            console.log('🎯 AUTO-DETECTED: Event Hall mode - Allocated venue with only seated tickets');
+          }
+        } else {
+          // Non-allocated venue = always General Admission
+          correctSeatMode = '3';
+          console.log('🎯 AUTO-DETECTED: General Admission mode - Non-allocated venue');
+        }
+        
+        // Update the form value with the detected mode
+        if (correctSeatMode !== values.seatSelectionMode) {
+          console.log(`🔄 SEAT MODE CORRECTION: ${values.seatSelectionMode} → ${correctSeatMode}`);
+          values.seatSelectionMode = correctSeatMode;
+        }
+
         // Create event first
         const formData = new FormData();
         Object.keys(values).forEach(key => {
@@ -529,6 +620,8 @@ const CreateEvent: React.FC = () => {
               description: ticketType.description,
               color: color,
               maxTickets: ticketType.maxTickets, // Include max tickets for General Admission events
+              isStanding: ticketType.isStanding || false, // New: Standing ticket flag
+              standingCapacity: ticketType.standingCapacity || undefined, // New: Standing capacity
               seatRows: ticketType.seatRows.map(row => ({
                 rowStart: row.rowStart,
                 rowEnd: row.rowEnd,
@@ -569,6 +662,8 @@ const CreateEvent: React.FC = () => {
                 description: ticketType.description,
                 color: color,
                 maxTickets: ticketType.maxTickets, // Include max tickets for General Admission events
+                isStanding: ticketType.isStanding || false, // New: Standing ticket flag
+                standingCapacity: ticketType.standingCapacity || undefined, // New: Standing capacity
                 seatRows: ticketType.seatRows.map(row => ({
                   rowStart: row.rowStart,
                   rowEnd: row.rowEnd,

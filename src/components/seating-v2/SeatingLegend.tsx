@@ -6,14 +6,17 @@ import { formatPrice } from '../../utils/seating-v2/seatingUtils';
 const SeatingLegend: React.FC<SeatingLegendProps> = ({
   ticketTypes
 }) => {
+  // Filter out standing tickets to show only seated ticket types
+  const seatedTicketTypes = ticketTypes.filter(type => !type.isStanding);
+  
   return (
     <div className="bg-white p-4 rounded-lg shadow space-y-4">
       {/* Ticket Types */}
-      {ticketTypes.length > 0 && (
+      {seatedTicketTypes.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold mb-3">Ticket Types</h3>
           <div className="flex flex-wrap gap-4">
-            {ticketTypes.map(type => (
+            {seatedTicketTypes.map(type => (
               <div key={type.id} className="flex items-center">
                 <div 
                   className="w-4 h-4 rounded mr-2" 

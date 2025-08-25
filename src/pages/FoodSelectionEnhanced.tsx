@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FoodItem, getFoodItemsForEvent } from '../services/foodItemService';
 import { BookingData } from '../types/booking';
-import { useEventDetails } from '../contexts/BookingContext';
+import { useEventDetails, useBooking } from '../contexts/BookingContext';
 import SEO from '../components/SEO';
 import EventHero from '../components/EventHero';
+import { createEventSlug } from '../utils/slugUtils';
 
 interface LocationState {
   eventId: number;
@@ -46,6 +47,7 @@ const FoodSelectionEnhanced: React.FC = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
   const { fetchEventDetails, eventDetails } = useEventDetails();
+  const { state: bookingState } = useBooking() ?? {};
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
@@ -54,15 +56,16 @@ const FoodSelectionEnhanced: React.FC = () => {
   const [globalFoodMode, setGlobalFoodMode] = useState(false);
   const [globalSelections, setGlobalSelections] = useState<Record<number, number>>({});
 
-  const locationState = state as EnhancedLocationState;
+  // Use navigation state first, fallback to BookingContext
+  const locationState = (state as EnhancedLocationState) || bookingState?.bookingData;
 
-  // Check for direct page access
+  // Check for direct page access - redirect if no data available
   useEffect(() => {
-    if (!state) {
+    if (!state && !bookingState?.bookingData) {
       navigate('/');
       return;
     }
-  }, [state, navigate]);
+  }, [state, bookingState?.bookingData, navigate]);
 
   // Fetch event details for organizer information
   useEffect(() => {
@@ -80,10 +83,13 @@ const FoodSelectionEnhanced: React.FC = () => {
   useEffect(() => {
     if (!locationState) return;
 
+    console.log('🔍 FoodSelectionEnhanced - Processing locationState:', locationState);
+
     const items: SeatTicketItem[] = [];
 
-    // Handle allocated seating mode
-    if (locationState.bookingType === 'seats' && locationState.selectedSeats) {
+    // Handle allocated seating mode (always process if seats exist)
+    if (locationState.selectedSeats && locationState.selectedSeats.length > 0) {
+      console.log('📍 Processing selectedSeats:', locationState.selectedSeats);
       locationState.selectedSeats.forEach((seat, index) => {
         items.push({
           id: `seat-${seat.row}-${seat.number}`,
@@ -95,14 +101,16 @@ const FoodSelectionEnhanced: React.FC = () => {
         });
       });
     }
-    // Handle general admission tickets
-    else if (locationState.bookingType === 'tickets' && locationState.selectedTickets) {
+    
+    // Handle standing tickets (process if tickets exist, regardless of bookingType)
+    if (locationState.selectedTickets && locationState.selectedTickets.length > 0) {
+      console.log('🎫 Processing selectedTickets:', locationState.selectedTickets);
       locationState.selectedTickets.forEach((ticket) => {
         // Create individual entries for each ticket in the quantity
         for (let i = 1; i <= ticket.quantity; i++) {
           items.push({
-            id: `ticket-${ticket.type}-${i}`,
-            displayName: `${ticket.type} Ticket #${i}`,
+            id: `standing-${ticket.type}-${i}`,
+            displayName: `${ticket.name || ticket.type} Ticket #${i}`,
             type: 'ticket',
             ticketType: ticket.type,
             price: ticket.price / ticket.quantity, // Unit price per ticket
@@ -111,21 +119,8 @@ const FoodSelectionEnhanced: React.FC = () => {
         }
       });
     }
-    // Legacy ticket flow support
-    else if (locationState.ticketDetails) {
-      locationState.ticketDetails.forEach((ticket) => {
-        for (let i = 1; i <= ticket.quantity; i++) {
-          items.push({
-            id: `legacy-${ticket.type}-${i}`,
-            displayName: `${ticket.type} #${i}`,
-            type: 'ticket',
-            ticketType: ticket.type,
-            price: ticket.unitPrice,
-            foodSelections: {}
-          });
-        }
-      });
-    }
+    
+    console.log('✅ Final seatTicketItems created:', items);
 
     setSeatTicketItems(items);
     // Auto-expand first item for better UX
@@ -283,6 +278,16 @@ const FoodSelectionEnhanced: React.FC = () => {
     return seatTicketItems.reduce((sum, item) => sum + (item.foodSelections[foodId] || 0), 0);
   };
 
+  // Helper functions for hybrid events - separate seat and ticket calculations
+  const seatItems = seatTicketItems.filter(item => item.type === 'seat');
+  const ticketItems = seatTicketItems.filter(item => item.type === 'ticket');
+  const hasSeats = seatItems.length > 0;
+  const hasTickets = ticketItems.length > 0;
+  const isHybridEvent = hasSeats && hasTickets;
+
+  const seatTotal = seatItems.reduce((sum, item) => sum + item.price, 0);
+  const ticketTotal_standing = ticketItems.reduce((sum, item) => sum + item.price, 0);
+
   // Check if any food items are selected
   const hasFoodSelections = seatTicketItems.some(item => 
     Object.values(item.foodSelections).some(qty => qty > 0)
@@ -385,7 +390,19 @@ const FoodSelectionEnhanced: React.FC = () => {
           keywords={["Food Selection", "Per-Seat Food", "Event Catering", "Individual Food Orders"]}
         />
         
-        <div className="max-w-6xl mx-auto bg-gradient-to-br from-gray-900 via-gray-800 to-black rounded-xl shadow-2xl p-8 mt-6 border border-yellow-500/20">
+        <div className="min-h-screen bg-gray-900">
+          {/* Event Hero Section - Same as normal food selection */}
+          <EventHero 
+            title={locationState?.eventTitle || 'Food Selection'}
+            imageUrl={locationState?.imageUrl || eventDetails?.imageUrl}
+            description="Food and beverage selection for your booking"
+            organizationName={eventDetails?.organizationName}
+            className="mb-8"
+          />
+
+          {/* Main Content */}
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+            <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black rounded-xl shadow-2xl p-8 border border-yellow-500/20">
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-yellow-400 mb-2">Food & Beverage Selection</h1>
@@ -406,10 +423,27 @@ const FoodSelectionEnhanced: React.FC = () => {
             {/* Total Summary */}
             <div className="bg-gray-900 rounded-lg p-6 mb-6 border border-gray-600">
               <div className="space-y-3">
-                <div className="flex justify-between text-gray-300">
-                  <span>Tickets Total ({seatTicketItems.length} {seatTicketItems[0]?.type === 'seat' ? 'seats' : 'tickets'})</span>
-                  <span>${ticketTotal.toFixed(2)}</span>
-                </div>
+                {isHybridEvent ? (
+                  <>
+                    {hasSeats && (
+                      <div className="flex justify-between text-gray-300">
+                        <span>Seats Total ({seatItems.length} seats)</span>
+                        <span>${seatTotal.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {hasTickets && (
+                      <div className="flex justify-between text-gray-300">
+                        <span>Standing Tickets Total ({ticketItems.length} tickets)</span>
+                        <span>${ticketTotal_standing.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex justify-between text-gray-300">
+                    <span>Tickets Total ({seatTicketItems.length} {seatTicketItems[0]?.type === 'seat' ? 'seats' : 'tickets'})</span>
+                    <span>${ticketTotal.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-xl font-bold text-yellow-400 pt-3 border-t border-gray-600">
                   <span>Total</span>
                   <span>${ticketTotal.toFixed(2)}</span>
@@ -420,7 +454,20 @@ const FoodSelectionEnhanced: React.FC = () => {
             {/* Navigation */}
             <div className="flex justify-between space-x-4">
               <button
-                onClick={() => navigate(-1)}
+                onClick={() => {
+                  // Navigate back to hybrid selection page with current event
+                  if (locationState?.eventId && locationState?.eventTitle) {
+                    const eventSlug = createEventSlug(locationState.eventTitle);
+                    navigate(`/event/${eventSlug}/hybrid`, { 
+                      state: {
+                        eventId: locationState.eventId,
+                        eventTitle: locationState.eventTitle
+                      }
+                    });
+                  } else {
+                    navigate(-1);
+                  }
+                }}
                 className="px-8 py-3 rounded-lg bg-gray-700 text-gray-200 hover:bg-gray-600 transition-colors duration-200 flex items-center font-medium border border-gray-500"
               >
                 <span className="mr-2">←</span> Back
@@ -432,6 +479,8 @@ const FoodSelectionEnhanced: React.FC = () => {
               >
                 Continue to Payment <span className="ml-2">→</span>
               </button>
+            </div>
+          </div>
             </div>
           </div>
         </div>
@@ -471,13 +520,20 @@ const FoodSelectionEnhanced: React.FC = () => {
                     <h3 className="text-lg font-semibold text-green-300">Complimentary Items Included</h3>
                   </div>
                   <p className="text-green-200 text-sm">
-                    The following items are included with your {seatTicketItems[0]?.type === 'seat' ? 'seats' : 'tickets'} at no additional charge.
+                    {isHybridEvent ? (
+                      'The following items are included with your seats and tickets at no additional charge.'
+                    ) : (
+                      `The following items are included with your ${seatTicketItems[0]?.type === 'seat' ? 'seats' : 'tickets'} at no additional charge.`
+                    )}
                   </p>
                 </div>
               ) : (
                 <p className="text-gray-400">
-                  Select food and beverages for each {seatTicketItems[0]?.type === 'seat' ? 'seat' : 'ticket'}. 
-                  You can order different items for each person.
+                  {isHybridEvent ? (
+                    'Select food and beverages for each seat and ticket. You can order different items for each person.'
+                  ) : (
+                    `Select food and beverages for each ${seatTicketItems[0]?.type === 'seat' ? 'seat' : 'ticket'}. You can order different items for each person.`
+                  )}
                 </p>
               )}
             </div>
@@ -506,7 +562,7 @@ const FoodSelectionEnhanced: React.FC = () => {
               </div>
               <div className="mt-4 p-3 bg-green-800/30 rounded-lg border border-green-500/20">
                 <p className="text-sm text-green-200 text-center">
-                  <span className="font-medium">Total items:</span> {foodItems.length} complimentary item{foodItems.length !== 1 ? 's' : ''} × {seatTicketItems.length} {seatTicketItems[0]?.type === 'seat' ? 'seat' : 'ticket'}{seatTicketItems.length !== 1 ? 's' : ''}
+                  <span className="font-medium">Total items:</span> {foodItems.length} complimentary item{foodItems.length !== 1 ? 's' : ''} × {seatTicketItems.length} {isHybridEvent ? 'items (seats + tickets)' : `${seatTicketItems[0]?.type === 'seat' ? 'seat' : 'ticket'}${seatTicketItems.length !== 1 ? 's' : ''}`}
                 </p>
               </div>
             </div>
@@ -541,8 +597,19 @@ const FoodSelectionEnhanced: React.FC = () => {
               </button>
             </div>
             <div className="text-sm text-gray-400">
-              {seatTicketItems.length} {seatTicketItems[0]?.type === 'seat' ? 'seats' : 'tickets'} • 
-              {foodItems.length} food options available
+              {isHybridEvent ? (
+                <>
+                  {hasSeats && <span>{seatItems.length} seats</span>}
+                  {hasSeats && hasTickets && <span> • </span>}
+                  {hasTickets && <span>{ticketItems.length} standing tickets</span>}
+                  <span> • {foodItems.length} food options available</span>
+                </>
+              ) : (
+                <>
+                  {seatTicketItems.length} {seatTicketItems[0]?.type === 'seat' ? 'seats' : 'tickets'} • 
+                  {foodItems.length} food options available
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -615,7 +682,11 @@ const FoodSelectionEnhanced: React.FC = () => {
               onClick={applyGlobalSelections}
               className="w-full px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-500 text-black rounded-lg hover:from-yellow-500 hover:to-yellow-400 font-bold"
             >
-              Apply to All {seatTicketItems.length} {seatTicketItems[0]?.type === 'seat' ? 'Seats' : 'Tickets'}
+              {isHybridEvent ? (
+                `Apply to All ${seatTicketItems.length} Items (${seatItems.length} Seats + ${ticketItems.length} Tickets)`
+              ) : (
+                `Apply to All ${seatTicketItems.length} ${seatTicketItems[0]?.type === 'seat' ? 'Seats' : 'Tickets'}`
+              )}
             </button>
           </div>
         )}
@@ -766,10 +837,27 @@ const FoodSelectionEnhanced: React.FC = () => {
         {/* Total Summary */}
         <div className="bg-gray-800 border border-gray-600 rounded-lg p-6 mb-6">
           <div className="space-y-3">
-            <div className="flex justify-between text-gray-300">
-              <span>Tickets Total ({seatTicketItems.length} {seatTicketItems[0]?.type === 'seat' ? 'seats' : 'tickets'})</span>
-              <span>${ticketTotal.toFixed(2)}</span>
-            </div>
+            {isHybridEvent ? (
+              <>
+                {hasSeats && (
+                  <div className="flex justify-between text-gray-300">
+                    <span>Seats Total ({seatItems.length} seats)</span>
+                    <span>${seatTotal.toFixed(2)}</span>
+                  </div>
+                )}
+                {hasTickets && (
+                  <div className="flex justify-between text-gray-300">
+                    <span>Standing Tickets Total ({ticketItems.length} tickets)</span>
+                    <span>${ticketTotal_standing.toFixed(2)}</span>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex justify-between text-gray-300">
+                <span>Tickets Total ({seatTicketItems.length} {seatTicketItems[0]?.type === 'seat' ? 'seats' : 'tickets'})</span>
+                <span>${ticketTotal.toFixed(2)}</span>
+              </div>
+            )}
             {!allFoodItemsAreFree && (
               <div className="flex justify-between text-gray-300">
                 <span>Food & Beverages</span>
@@ -792,7 +880,20 @@ const FoodSelectionEnhanced: React.FC = () => {
         {/* Navigation */}
         <div className="flex justify-between space-x-4">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => {
+              // Navigate back to hybrid selection page with current event
+              if (locationState?.eventId && locationState?.eventTitle) {
+                const eventSlug = createEventSlug(locationState.eventTitle);
+                navigate(`/event/${eventSlug}/hybrid`, { 
+                  state: {
+                    eventId: locationState.eventId,
+                    eventTitle: locationState.eventTitle
+                  }
+                });
+              } else {
+                navigate(-1);
+              }
+            }}
             className="px-8 py-3 rounded-lg bg-gray-700 text-gray-200 hover:bg-gray-600 transition-colors duration-200 flex items-center font-medium border border-gray-500"
           >
             <span className="mr-2">←</span> Back

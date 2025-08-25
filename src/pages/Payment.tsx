@@ -81,31 +81,49 @@ const Payment: React.FC = () => {
         price: ticket.price,
       }));
     }
-    // For seat-based bookings
-    else if (bookingData.bookingType === 'seats' && bookingData.selectedSeats) {
-      // Group seats by ticket type for better display
-      const seatsByTicketType = bookingData.selectedSeats.reduce((acc, seat) => {
-        const typeKey = seat.ticketTypeId.toString();
-        if (!acc[typeKey]) {
-          acc[typeKey] = {
-            ticketTypeId: seat.ticketTypeId,
-            count: 0,
-            totalPrice: 0,
-            seatNumbers: []
-          };
-        }
-        acc[typeKey].count++;
-        acc[typeKey].totalPrice += seat.price;
-        acc[typeKey].seatNumbers.push(`${seat.row}${seat.number}`);
-        return acc;
-      }, {} as Record<string, { ticketTypeId: number, count: number, totalPrice: number, seatNumbers: string[] }>);
+    // For seat-based bookings (including hybrid events)
+    else if (bookingData.bookingType === 'seats') {
+      ticketDetails = [];
       
-      // Convert grouped seats to ticket details
-      ticketDetails = Object.values(seatsByTicketType).map(group => ({
-        type: `Seat${group.count > 1 ? 's' : ''} (${group.seatNumbers.join(', ')})`,
-        quantity: group.count,
-        price: group.totalPrice,
-      }));
+      // Process selected seats if they exist
+      if (bookingData.selectedSeats && bookingData.selectedSeats.length > 0) {
+        // Group seats by ticket type for better display
+        const seatsByTicketType = bookingData.selectedSeats.reduce((acc, seat) => {
+          const typeKey = seat.ticketTypeId.toString();
+          if (!acc[typeKey]) {
+            acc[typeKey] = {
+              ticketTypeId: seat.ticketTypeId,
+              count: 0,
+              totalPrice: 0,
+              seatNumbers: []
+            };
+          }
+          acc[typeKey].count++;
+          acc[typeKey].totalPrice += seat.price;
+          acc[typeKey].seatNumbers.push(`${seat.row}${seat.number}`);
+          return acc;
+        }, {} as Record<string, { ticketTypeId: number, count: number, totalPrice: number, seatNumbers: string[] }>);
+        
+        // Convert grouped seats to ticket details
+        const seatTicketDetails = Object.values(seatsByTicketType).map(group => ({
+          type: `Seat${group.count > 1 ? 's' : ''} (${group.seatNumbers.join(', ')})`,
+          quantity: group.count,
+          price: group.totalPrice,
+        }));
+        
+        ticketDetails.push(...seatTicketDetails);
+      }
+      
+      // 🎯 HYBRID EVENT FIX: Also process standing tickets if they exist
+      if (bookingData.selectedTickets && bookingData.selectedTickets.length > 0) {
+        const standingTicketDetails = bookingData.selectedTickets.map(ticket => ({
+          type: ticket.name || ticket.type,
+          quantity: ticket.quantity,
+          price: ticket.price,
+        }));
+        
+        ticketDetails.push(...standingTicketDetails);
+      }
     } else {
       ticketDetails = [];
     }

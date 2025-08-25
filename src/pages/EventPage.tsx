@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
-import { createEventSlug, slugToSearchTerm } from '../utils/slugUtils';
+import { createEventSlug } from '../utils/slugUtils';
 import { authService } from '../services/authService';
 
 interface Event {
@@ -16,7 +16,7 @@ interface Event {
   imageUrl: string | null;
   isActive: boolean;
   status?: number;
-  seatSelectionMode?: 1 | 3; // 1=EventHall, 3=GeneralAdmission
+  seatSelectionMode?: 1 | 3 | 4; // 1=EventHall, 3=GeneralAdmission, 4=Hybrid
   venueId?: number | null;
   venue?: {
     id: number;
@@ -51,11 +51,8 @@ const EventPage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        // Convert slug back to search term
-        const searchTerm = slugToSearchTerm(eventTitle);
-        
-        // Try to get event by title
-        const response = await api.get<Event>(`/Events/by-title/${encodeURIComponent(searchTerm)}`);
+        // Send slug directly to backend (backend expects slug, not search term)
+        const response = await api.get<Event>(`/Events/by-title/${encodeURIComponent(eventTitle)}`);
         const event = response.data;
 
         // Verify we have valid event data
@@ -92,9 +89,18 @@ const EventPage: React.FC = () => {
 
         // Determine the appropriate route based on seat selection mode
         const seatMode = event.seatSelectionMode ?? 3;
-        const targetRoute = seatMode === 1 
-          ? `/event/${eventTitle}/seats` 
-          : `/event/${eventTitle}/tickets`;
+        let targetRoute: string;
+        
+        if (seatMode === 1) {
+          // EventHall mode - regular seated venue
+          targetRoute = `/event/${eventTitle}/seats`;
+        } else if (seatMode === 4) {
+          // Hybrid mode - both seated and standing options
+          targetRoute = `/event/${eventTitle}/hybrid`;
+        } else {
+          // GeneralAdmission mode (3) or default - standing/general admission only
+          targetRoute = `/event/${eventTitle}/tickets`;
+        }
 
         // Navigate to the appropriate booking page with event data
         navigate(targetRoute, {

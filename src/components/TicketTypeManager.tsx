@@ -134,25 +134,59 @@ const TicketTypeManager: React.FC<TicketTypeManagerProps> = ({
                 />
               </div>
 
-              {!isVenueWithSeats && (
+              {/* Standing Ticket Option */}
+              <div className="md:col-span-3 border-t pt-4 mt-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`standing-${index}`}
+                    checked={ticketType.isStanding || false}
+                    onChange={(e) => onUpdateTicketType(index, 'isStanding', e.target.checked)}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                  />
+                  <label htmlFor={`standing-${index}`} className="text-sm font-medium text-gray-700">
+                    Standing Ticket (No seat assignment)
+                  </label>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Check this if this ticket type is for standing room only with no specific seat assignment
+                </p>
+              </div>
+
+              {/* Maximum Tickets - For non-seated venues or standing tickets */}
+              {(!isVenueWithSeats || ticketType.isStanding) && (
                 <div className="md:col-span-3">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Maximum Tickets *
+                    {ticketType.isStanding ? 'Standing Capacity *' : 'Maximum Tickets *'}
                   </label>
                   <input
                     type="number"
                     min="1"
-                    value={ticketType.maxTickets}
-                    onChange={(e) => onUpdateTicketType(index, 'maxTickets', parseInt(e.target.value) || 0)}
+                    value={ticketType.isStanding ? (ticketType.standingCapacity || 0) : (ticketType.maxTickets || 0)}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      if (ticketType.isStanding) {
+                        // For standing tickets, update both standingCapacity and maxTickets
+                        onUpdateTicketType(index, 'standingCapacity', value);
+                        onUpdateTicketType(index, 'maxTickets', value);
+                      } else {
+                        onUpdateTicketType(index, 'maxTickets', value);
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                    placeholder="Enter maximum tickets"
+                    placeholder={ticketType.isStanding ? "Enter standing capacity" : "Enter maximum tickets"}
                   />
                   <p className="mt-1 text-xs text-gray-500">
-                    Maximum number of tickets available for this type
+                    {ticketType.isStanding 
+                      ? 'Maximum number of standing tickets available for this type'
+                      : 'Maximum number of tickets available for this type'
+                    }
                   </p>
                 </div>
               )}
-              {isVenueWithSeats && (
+              
+              {/* Available Tickets Display - For seated tickets in venues with seats */}
+              {isVenueWithSeats && !ticketType.isStanding && (
                 <div className="md:col-span-3">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Available Tickets
@@ -166,8 +200,8 @@ const TicketTypeManager: React.FC<TicketTypeManagerProps> = ({
                 </div>
               )}
 
-              {/* Seat Row Assignments - Only for venues with seats */}
-              {isVenueWithSeats && (
+              {/* Seat Row Assignments - Only for seated tickets in venues with seats */}
+              {isVenueWithSeats && !ticketType.isStanding && (
                 <div className="md:col-span-2 border-t pt-4 mt-2">
                   <div className="flex justify-between items-center mb-2">
                     <label className="block text-sm font-medium text-gray-700">
@@ -239,14 +273,18 @@ const TicketTypeManager: React.FC<TicketTypeManagerProps> = ({
                 </div>
               )}
 
-              {/* General Admission Note - For venues without seats */}
-              {!isVenueWithSeats && (
+              {/* Standing/General Admission Note */}
+              {(!isVenueWithSeats || ticketType.isStanding) && (
                 <div className="md:col-span-2 border-t pt-4 mt-2">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <h5 className="text-sm font-medium text-blue-900 mb-1">General Admission</h5>
+                    <h5 className="text-sm font-medium text-blue-900 mb-1">
+                      {ticketType.isStanding ? 'Standing Room' : 'General Admission'}
+                    </h5>
                     <p className="text-xs text-blue-700">
-                      This ticket type will provide general admission access without specific seat assignments. 
-                      Set the maximum tickets to control how many of this type can be sold.
+                      {ticketType.isStanding 
+                        ? 'This ticket type provides standing room access without specific seat assignments. Set the standing capacity to control how many of this type can be sold.'
+                        : 'This ticket type will provide general admission access without specific seat assignments. Set the maximum tickets to control how many of this type can be sold.'
+                      }
                     </p>
                   </div>
                 </div>

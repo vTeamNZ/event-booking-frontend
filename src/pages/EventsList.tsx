@@ -30,7 +30,7 @@ interface EventFromAPI {
   imageUrl: string | null;
   isActive: boolean;
   status?: number; // 0=Draft, 1=Pending, 2=Active, 3=Inactive
-  seatSelectionMode?: 1 | 3; // 1=EventHall, 3=GeneralAdmission
+  seatSelectionMode?: 1 | 3 | 4; // 1=EventHall, 3=GeneralAdmission, 4=Hybrid
   venueId?: number | null;
   venue?: {
     id: number;
@@ -52,7 +52,7 @@ interface Event extends Omit<EventFromAPI, 'seatSelectionMode'> {
   facebookUrl: string | null;
   youtubeUrl: string | null;
   organizerSlug: string;
-  seatSelectionMode?: 1 | 3; // Only EventHall or GeneralAdmission
+  seatSelectionMode?: 1 | 3 | 4; // EventHall, GeneralAdmission, or Hybrid
 }
 
 const EventsList: React.FC = () => {

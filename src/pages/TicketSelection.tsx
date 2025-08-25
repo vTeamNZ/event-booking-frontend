@@ -47,7 +47,8 @@ interface TicketDetail {
 const SEAT_SELECTION_MODE = {
   EVENT_HALL: 1,
   TABLE_SEATING: 2,
-  GENERAL_ADMISSION: 3
+  GENERAL_ADMISSION: 3,
+  HYBRID: 4
 }
 
 const TicketSelection: React.FC = () => {
@@ -258,7 +259,7 @@ const TicketSelection: React.FC = () => {
     const bookingData: BookingData = {
       eventId: state?.eventId || event?.id,
       eventTitle: state?.eventTitle || event?.title,
-      bookingType: eventSeatSelectionMode === SEAT_SELECTION_MODE.EVENT_HALL ? 'seats' : 'tickets',
+      bookingType: eventSeatSelectionMode === SEAT_SELECTION_MODE.EVENT_HALL || eventSeatSelectionMode === SEAT_SELECTION_MODE.HYBRID ? 'seats' : 'tickets',
       totalAmount: total,
       selectedTickets,
       selectedFoodItems: [],
@@ -268,6 +269,9 @@ const TicketSelection: React.FC = () => {
     if (eventSeatSelectionMode === SEAT_SELECTION_MODE.EVENT_HALL) {
       // For events with allocated seating, we need to go through the seat selection
       navigate(`/event/${eventTitle}/seats`, { state: bookingData });
+    } else if (eventSeatSelectionMode === SEAT_SELECTION_MODE.HYBRID) {
+      // For hybrid events, go to the hybrid selection page
+      navigate(`/event/${eventTitle}/hybrid`, { state: bookingData });
     } else {
       // For general admission, go directly to food selection
       BookingNavigator.toFoodSelection(navigate, bookingData);

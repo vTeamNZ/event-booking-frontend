@@ -1,10 +1,12 @@
 // New types for Seating System V2
+import React from 'react';
 import { SeatStatus } from '../seatStatus';
 import { TicketType } from '../ticketTypes';
 
 export enum SeatSelectionMode {
   EventHall = 1,
-  GeneralAdmission = 3
+  GeneralAdmission = 3,
+  Hybrid = 4
 }
 
 export interface SeatingVenue {
@@ -95,9 +97,14 @@ export interface SeatingLayoutProps {
   onSelectionComplete: (state: SeatingSelectionState) => void;
   maxSeats?: number;
   showLegend?: boolean;
+  showSummary?: boolean;
   className?: string;
   isAdmin?: boolean;
   onAdminToggle?: (seat: SeatingLayoutSeat) => void;
+  standingTickets?: any[];
+  onClearStandingTickets?: () => void;
+  onProceed?: () => void;
+  standingTicketsComponent?: any;
 }
 
 export interface SeatVisualProps {
@@ -130,6 +137,10 @@ export interface SeatingSummaryProps {
   onProceed: () => void;
   onClear: () => void;
   onRemoveSeat?: (seat: SeatingSelectedSeat) => void;
+  standingTickets?: any[];
+  onRemoveStandingTicket?: () => void;
+  hideStandingTickets?: boolean;
+  onRefresh?: () => void;
 }
 
 export interface SeatingSelectedSeat extends Omit<SeatingLayoutSeat, 'ticketType' | 'reservedUntil'> {

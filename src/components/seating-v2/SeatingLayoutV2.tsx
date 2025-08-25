@@ -12,7 +12,6 @@ import {
 } from '../../types/seating-v2';
 import { 
   generateSessionId, 
-  calculateTotalPrice, 
   canSelectSeat,
   validateSelectionState,
   toggleSeatSelection
@@ -21,10 +20,7 @@ import {
   getSessionId, 
   storeSessionId, 
   storeSelectedSeats, 
-  storeSeatReservation, 
-  removeSeatReservation,
-  isSeatReservedBySession,
-  getSessionSeatReservations
+  isSeatReservedBySession
 } from '../../utils/seating-v2/sessionStorage';
 import { SeatStatus } from '../../types/seatStatus';
 import SeatingGrid from './SeatingGrid';
@@ -33,14 +29,19 @@ import SeatingSummary from './SeatingSummary';
 import SeatingLoadingSpinner from './SeatingLoadingSpinner';
 import SeatingErrorMessage from './SeatingErrorMessage';
 
-const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
+const SeatingLayoutV2: React.FC<SeatingLayoutProps & { standingTicketsComponent?: any }> = ({
   eventId,
   onSelectionComplete,
   maxSeats = 8,
   showLegend = true,
+  showSummary = true,
   className = '',
   isAdmin = false,
-  onAdminToggle
+  onAdminToggle,
+  standingTickets = [],
+  onClearStandingTickets,
+  onProceed,
+  standingTicketsComponent = null
 }) => {
   // Initialize selection state with memoized session ID (restore from storage if available)
   const initialSelectionState = useMemo<SeatingSelectionState>(() => {
@@ -258,6 +259,21 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
       }
     }
   }, [layout, eventId, selectionState.sessionId, setSelectionState]);
+
+  // 🎯 Call onSelectionComplete for hybrid events only (when standingTicketsComponent is provided)
+  useEffect(() => {
+    // Only call onSelectionComplete automatically if this is a hybrid event
+    // For regular seat selection pages, onSelectionComplete should only be called on user actions (proceed button)
+    if (standingTicketsComponent !== null) {
+      console.log('[SeatingLayoutV2] 🔄 Hybrid event - Selection state changed, calling onSelectionComplete:', {
+        selectedSeats: selectionState.selectedSeats.length,
+        seatNumbers: selectionState.selectedSeats.map(s => s.seatNumber),
+        totalPrice: selectionState.totalPrice
+      });
+      
+      onSelectionComplete(selectionState);
+    }
+  }, [selectionState.selectedSeats, selectionState.totalPrice, onSelectionComplete, standingTicketsComponent]);
 
   // Function to refresh seat layout from backend
   const refreshSeatLayout = useCallback(async () => {
@@ -598,13 +614,24 @@ const SeatingLayoutV2: React.FC<SeatingLayoutProps> = ({
         />
       </div>
       
-      <SeatingSummary
-        selectedSeats={selectionState.selectedSeats}
-        totalPrice={selectionState.totalPrice}
-        onProceed={handleReservation}
-        onClear={handleClearSelection}
-        onRemoveSeat={handleRemoveSeat}
-      />
+      {/* Standing Tickets Component - Inserted between seating grid and summary */}
+      {standingTicketsComponent}
+      
+      {showSummary && (
+        <SeatingSummary
+          selectedSeats={selectionState.selectedSeats}
+          totalPrice={selectionState.totalPrice + (standingTickets?.reduce((sum, ticket) => sum + (ticket.quantity * ticket.ticketType.price), 0) || 0)}
+          onProceed={onProceed || handleReservation}
+          onClear={() => {
+            handleClearSelection();
+            if (onClearStandingTickets) onClearStandingTickets();
+          }}
+          onRemoveSeat={handleRemoveSeat}
+          standingTickets={standingTickets}
+          onRemoveStandingTicket={onClearStandingTickets}
+          hideStandingTickets={false}
+        />
+      )}
     </div>
   );
 };

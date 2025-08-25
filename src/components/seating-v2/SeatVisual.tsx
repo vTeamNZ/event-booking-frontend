@@ -1,7 +1,7 @@
 // Individual Seat Visual Component
 import React from 'react';
 import { SeatingLayoutSeat, SeatingSelectedSeat } from '../../types/seating-v2';
-import { getSeatColor, getSeatTooltip } from '../../utils/seating-v2/seatingUtils';
+import { getSeatColor, getSeatTooltip, isStandingTicketType } from '../../utils/seating-v2/seatingUtils';
 import { SeatStatus } from '../../types/seatStatus';
 
 interface SeatVisualProps {
@@ -44,11 +44,26 @@ const SeatVisual: React.FC<SeatVisualProps> = ({
   // Hide unavailable seats completely for non-admin users
   const isUnavailableForNonAdmin = seat.status === SeatStatus.Unavailable && !isAdmin;
 
+  // Check if this is a standing area seat (unclickable)
+  const isStandingArea = isStandingTicketType(seat.ticketType);
+
+  // Override canSelect for standing areas - they should not be clickable
+  const effectiveCanSelect = canSelect && !isStandingArea;
+
   // Get background color from ticket type for available seats
   const getBackgroundStyle = () => {
     if (isUnavailableForNonAdmin) return {};
     if (isSelected) return { backgroundColor: '#3B82F6' }; // bg-blue-500
     if (seat.status === SeatStatus.Booked) return { backgroundColor: '#EF4444' }; // bg-red-500
+    
+    // Standing areas get a special pattern/style
+    if (isStandingArea) {
+      return { 
+        backgroundColor: seat.ticketType?.color || '#8B5CF6', // Default to purple for standing
+        backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.1) 2px, rgba(255,255,255,0.1) 4px)',
+        opacity: 0.7
+      };
+    }
     
     // For reserved seats, check if it's reserved by current session
     if (seat.status === SeatStatus.Reserved) {
@@ -75,21 +90,23 @@ const SeatVisual: React.FC<SeatVisualProps> = ({
         className={`
           w-6 h-6 rounded 
           ${seatColor}
-          ${canSelect ? 'cursor-pointer hover:opacity-80' : 'cursor-not-allowed'}
+          ${effectiveCanSelect ? 'cursor-pointer hover:opacity-80' : 'cursor-not-allowed'}
+          ${isStandingArea ? 'cursor-default' : ''}
           transition-colors duration-200
           flex items-center justify-center
           text-xs font-medium
           ${className}
           ${isUnavailableForNonAdmin ? 'pointer-events-none' : ''}
+          ${isStandingArea ? 'pointer-events-none' : ''}
         `}
         style={getBackgroundStyle()}
-        onClick={onClick}
-        disabled={!canSelect}
+        onClick={isStandingArea ? undefined : onClick}
+        disabled={!effectiveCanSelect}
         title={isUnavailableForNonAdmin ? '' : tooltip}
         aria-label={isUnavailableForNonAdmin ? '' : tooltip}
       >
         {isUnavailableForNonAdmin ? '' : (
-          seat.ticketType?.name?.toLowerCase().includes('standing') ? '' : seat.number
+          isStandingArea ? '' : seat.number
         )}
       </button>
       

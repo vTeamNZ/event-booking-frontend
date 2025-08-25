@@ -15,6 +15,8 @@ export interface TicketType {
     seatRowAssignments?: string; // JSON string storing seat row assignments
     color: string;     // Color for UI representation
     maxTickets?: number; // Maximum number of tickets available (for General Admission)
+    isStanding?: boolean; // New: Whether this is a standing ticket type
+    standingCapacity?: number; // New: Standing capacity for this ticket type
 }
 
 // Interface used in CreateEvent and other form components for managing ticket types
@@ -28,6 +30,8 @@ export interface TicketTypeData {
     maxTickets: number;
     seatRows: SeatRowAssignment[];
     color: string;
+    isStanding?: boolean; // New: Whether this is a standing ticket type
+    standingCapacity?: number; // New: Standing capacity for this ticket type
 }
 
 // Interface used in components that display ticket types
@@ -40,6 +44,8 @@ export interface TicketTypeDisplay {
     eventId: number;
     color: string;     // Color for UI representation
     seatRowAssignments?: string; // JSON string storing seat row assignments
+    isStanding?: boolean; // New: Whether this is a standing ticket type
+    standingCapacity?: number; // New: Standing capacity for this ticket type
 }
 
 // Helper function to convert backend TicketType to TicketTypeDisplay

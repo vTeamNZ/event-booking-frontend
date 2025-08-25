@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Minus, Ticket, Users, AlertTriangle } from 'lucide-react';
 import { 
-  GeneralTicketSelection, 
-  PricingResponse 
+  GeneralTicketSelection
 } from '../types/seatSelection';
 import { TicketType } from '../types/ticketTypes';
-import { seatingAPIService } from '../services/seating-v2/seatingAPIService';
+import { getTicketTypesForEvent } from '../services/ticketTypeService';
 import { ticketAvailabilityService, TicketAvailabilityInfo } from '../services/ticketAvailabilityService';
 import { formatPrice } from '../utils/seatSelection';
 import { cn } from '../utils/seatSelection';
@@ -14,11 +13,17 @@ import { cn } from '../utils/seatSelection';
 interface GeneralAdmissionTicketsProps {
   eventId: number;
   onTicketChange: (selections: GeneralTicketSelection[]) => void;
+  standingOnly?: boolean; // New prop to filter for standing tickets only
+  embedded?: boolean; // New prop to render without outer container
+  clearSelections?: boolean; // New prop to trigger clearing selections
 }
 
 const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
   eventId,
-  onTicketChange
+  onTicketChange,
+  standingOnly = false,
+  embedded = false,
+  clearSelections = false
 }) => {
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [selections, setSelections] = useState<GeneralTicketSelection[]>([]);
@@ -32,23 +37,28 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
       try {
         setLoading(true);
         
-        // Load ticket types
-        const pricing = await seatingAPIService.getEventPricing(eventId);
+        // Load ticket types using the proper service
+        const fetchedTicketTypes = await getTicketTypesForEvent(eventId);
+        console.log('[GeneralAdmissionTickets] Fetched ticket types:', fetchedTicketTypes);
+        console.log('[GeneralAdmissionTickets] standingOnly mode:', standingOnly);
         
-        // Transform seating-v2 ticket types to include eventId for compatibility
-        const transformedTicketTypes = pricing.ticketTypes.map((ticketType: any) => ({
-          ...ticketType,
-          eventId: eventId // Add eventId property for legacy compatibility
-        }));
+        // Filter for standing tickets only if in hybrid mode
+        const filteredTicketTypes = standingOnly 
+          ? fetchedTicketTypes.filter((tt: any) => {
+              console.log(`[GeneralAdmissionTickets] Checking ticket ${tt.name}: isStanding=${tt.isStanding}`);
+              return tt.isStanding === true;
+            })
+          : fetchedTicketTypes;
         
-        setTicketTypes(transformedTicketTypes);
+        console.log('[GeneralAdmissionTickets] Filtered ticket types:', filteredTicketTypes);
+        setTicketTypes(filteredTicketTypes);
         
         // Load ticket availability
         const availabilityData = await ticketAvailabilityService.getEventTicketAvailability(eventId);
         setAvailability(availabilityData);
         
         // Initialize selections with 0 quantity for each ticket type
-        const initialSelections = transformedTicketTypes.map((ticketType: any) => ({
+        const initialSelections = filteredTicketTypes.map((ticketType: any) => ({
           ticketType,
           quantity: 0
         }));
@@ -62,13 +72,25 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
     };
 
     loadTicketTypes();
-  }, [eventId]);
+  }, [eventId, standingOnly]);
 
   // Notify parent when selections change
   useEffect(() => {
     const activeSelections = selections.filter(s => s.quantity > 0);
     onTicketChange(activeSelections);
   }, [selections, onTicketChange]);
+
+  // Handle clearing selections when parent requests it
+  useEffect(() => {
+    if (clearSelections && ticketTypes.length > 0) {
+      // Reset all selections to 0 quantity
+      const clearedSelections = ticketTypes.map(ticketType => ({
+        ticketType,
+        quantity: 0
+      }));
+      setSelections(clearedSelections);
+    }
+  }, [clearSelections, ticketTypes]);
 
   const updateQuantity = (ticketTypeId: number, newQuantity: number) => {
     // Get availability info for this ticket type
@@ -129,24 +151,30 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
-      <div className="mb-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">
-          Select Tickets
-        </h3>
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Ticket size={16} />
-          <span>General Admission - No seat assignment</span>
+      {ticketTypes.length === 0 ? (
+        <div className="text-center py-8">
+          <div className="text-gray-400 mb-3">
+            <AlertTriangle size={48} className="mx-auto" />
+          </div>
+          <h4 className="text-lg font-medium text-gray-600 mb-2">
+            {standingOnly ? 'No Standing Tickets Available' : 'No Tickets Available'}
+          </h4>
+          <p className="text-gray-500">
+            {standingOnly 
+              ? 'This event does not offer standing room tickets.' 
+              : 'No tickets are available for this event at this time.'
+            }
+          </p>
         </div>
-      </div>
-
-      <div className="space-y-4">
-        {ticketTypes.map(ticketType => {
-          const selection = selections.find(s => s.ticketType.id === ticketType.id);
-          const quantity = selection?.quantity || 0;
-          const availabilityInfo = availability[ticketType.id];
-          const isAvailable = !availabilityInfo?.hasLimit || (availabilityInfo.available > 0);
-          const isSoldOut = availabilityInfo?.hasLimit && availabilityInfo.available === 0;
-          const canIncrease = !availabilityInfo?.hasLimit || quantity < availabilityInfo.available;
+      ) : (
+        <>
+          <div className="space-y-4">
+            {ticketTypes.map(ticketType => {
+              const selection = selections.find(s => s.ticketType.id === ticketType.id);
+              const quantity = selection?.quantity || 0;
+              const availabilityInfo = availability[ticketType.id];
+              const isSoldOut = availabilityInfo?.hasLimit && availabilityInfo.available === 0;
+              const canIncrease = !availabilityInfo?.hasLimit || quantity < availabilityInfo.available;
           
           return (
             <motion.div
@@ -170,11 +198,15 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
                     {ticketType.type}
                     {isSoldOut && <span className="ml-2 text-red-600 text-sm">(SOLD OUT)</span>}
                   </h4>
-                  {ticketType.description && (
+                  {/* Availability indicator */}
+                  {availabilityInfo && availabilityInfo.hasLimit && (
                     <p className={cn(
-                      "text-sm mt-1",
-                      isSoldOut ? "text-red-600" : "text-gray-600"
-                    )}>{ticketType.description}</p>
+                      "text-xs mt-1 font-medium",
+                      isSoldOut ? "text-red-600" : 
+                      availabilityInfo.available <= 5 ? "text-orange-600" : "text-green-600"
+                    )}>
+                      {isSoldOut ? "Sold Out" : `${availabilityInfo.available} tickets available`}
+                    </p>
                   )}
                 </div>
                 <div className="text-right">
@@ -226,35 +258,8 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
           );
         })}
       </div>
-
-      {/* Summary */}
-      {getTotalTickets() > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-6 p-4 bg-gray-50 rounded-lg border"
-        >
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Users size={16} className="text-gray-600" />
-              <span className="font-medium text-gray-900">
-                Total: {getTotalTickets()} ticket{getTotalTickets() !== 1 ? 's' : ''}
-              </span>
-            </div>
-            <div className="text-xl font-bold text-gray-900">
-              {formatPrice(getTotalPrice())}
-            </div>
-          </div>
-        </motion.div>
+        </>
       )}
-
-      {/* Help text */}
-      <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-        <div className="text-sm text-blue-700">
-          <strong>General Admission:</strong> Your tickets provide entry to the event. 
-          Seating is first-come, first-served basis.
-        </div>
-      </div>
     </div>
   );
 };

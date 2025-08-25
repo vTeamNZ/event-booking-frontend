@@ -11,6 +11,17 @@ export const generateSessionId = (): string => {
 };
 
 /**
+ * Check if a ticket type represents a standing area
+ */
+export const isStandingTicketType = (ticketType?: { isStanding?: boolean; name?: string; type?: string }): boolean => {
+  if (!ticketType) return false;
+  
+  return ticketType.isStanding || 
+    ticketType.name?.toLowerCase().includes('standing') || 
+    ticketType.type?.toLowerCase().includes('standing') || false;
+};
+
+/**
  * Format time remaining for reservation
  */
 export const formatTimeRemaining = (reservedUntil: Date): string => {
@@ -126,6 +137,11 @@ export const canSelectSeat = (
   eventId?: number,
   sessionId?: string
 ): boolean => {
+  // Check if this is a standing area - standing areas cannot be selected
+  if (isStandingTicketType(seat.ticketType)) {
+    return false; // Standing areas are never selectable
+  }
+
   // Can't select if already selected (allow deselection)
   // Use consistent seat identification with row and number to match toggleSeatSelection
   if (selectedSeats.some(s => s.row === seat.row && s.number === seat.number)) {
@@ -215,11 +231,19 @@ export const getSeatColor = (
   canSelect: boolean,
   isAdmin: boolean = false
 ): string => {
+  // Check if this is a standing area
+  const isStandingArea = isStandingTicketType(seat.ticketType);
+
   // Handle special status cases first
   if (seat.status === SeatStatus.Unavailable) {
     return isAdmin 
       ? 'bg-gray-500 text-white' 
       : 'bg-transparent text-transparent border-transparent';
+  }
+
+  // Standing areas have special styling - they're not selectable
+  if (isStandingArea) {
+    return 'text-white opacity-70 cursor-default';
   }
 
   if (isSelected) {
@@ -257,6 +281,11 @@ export const getSeatTooltip = (
   seat: SeatingLayoutSeat,
   selectedSeat?: SeatingSelectedSeat
 ): string => {
+  // Check if this is a standing area
+  if (isStandingTicketType(seat.ticketType)) {
+    return 'Standing area';
+  }
+
   const base = `Seat ${seat.row}${seat.number}`;
   
   if (selectedSeat) {

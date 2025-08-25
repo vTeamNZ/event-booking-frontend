@@ -1,13 +1,27 @@
 import { SeatStatus } from './seatStatus';
 
+export interface GeneralTicketSelection {
+    ticketType: {
+        id: number;
+        name: string;
+        price: number;
+        type: string;
+    };
+    quantity: number;
+}
+
 export interface SeatingLayoutProps {
     eventId: number;
     onSelectionComplete: (state: SeatingSelectionState) => void;
     maxSeats?: number;
     showLegend?: boolean;
+    showSummary?: boolean; // New prop to control summary display
     className?: string;
     isAdmin?: boolean;
     onAdminToggle?: (seatId: number) => void;
+    standingTickets?: GeneralTicketSelection[]; // Standing tickets for hybrid events
+    onClearStandingTickets?: () => void; // Callback to clear standing tickets
+    onProceed?: () => void; // Custom proceed handler for hybrid events
 }
 
 export interface SeatingGridProps {
@@ -31,6 +45,8 @@ export interface TicketType {
     price: number;
     description?: string;
     seatRowAssignments?: string; // JSON string storing seat row assignments
+    isStanding?: boolean; // New: Whether this is a standing ticket type
+    standingCapacity?: number; // New: Standing capacity for this ticket type
 }
 
 export interface SeatingLayoutSeat {
@@ -97,12 +113,15 @@ export interface SeatingSummaryProps {
     onRemoveSeat?: (seat: SeatingSelectedSeat) => void;
     onRefresh?: () => void;
     className?: string;
+    standingTickets?: GeneralTicketSelection[];
+    onRemoveStandingTicket?: () => void;
 }
 
 export enum SeatSelectionMode {
     EventHall = 'event-hall',
     Tables = 'tables',
-    GeneralAdmission = 'general-admission'
+    GeneralAdmission = 'general-admission',
+    Hybrid = 'hybrid'
 }
 
 // API request/response interfaces

@@ -17,6 +17,7 @@ import PaymentFailed from './pages/PaymentFailed';
 import PaymentCancelled from './pages/PaymentCancelled';
 import TicketSelection from './pages/TicketSelection';
 import SeatSelectionPage from './pages/SeatSelectionPage';
+import HybridSeatSelectionPage from './pages/HybridSeatSelectionPage';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -68,6 +69,7 @@ const App: React.FC = () => {
             <Route path="/" element={<EventsList />} />
             <Route path="/event/:eventTitle/tickets" element={<TicketSelection />} />
             <Route path="/event/:eventTitle/seats" element={<SeatSelectionPage />} />
+            <Route path="/event/:eventTitle/hybrid" element={<HybridSeatSelectionPage />} />
             <Route path="/event/:eventTitle/food" element={<FoodSelectionEnhanced />} />
             <Route path="/food-selection" element={<FoodSelectionEnhanced />} />
             <Route path="/payment-summary" element={<PaymentSummary />} />

@@ -3,7 +3,8 @@ import { SeatStatus } from './seatStatus';
 
 export enum SeatSelectionMode {
   EventHall = 1,
-  GeneralAdmission = 3
+  GeneralAdmission = 3,
+  Hybrid = 4
 }
 
 export interface Venue {
