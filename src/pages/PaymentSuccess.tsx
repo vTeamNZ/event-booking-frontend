@@ -213,25 +213,37 @@ const PaymentSuccess: React.FC = () => {
             <div className="bg-gray-750 rounded-lg p-6 mb-6">
               <h3 className="text-lg font-medium text-white mb-4">Generated Tickets</h3>
               <div className="space-y-2">
-                {qrResults.map((qrResult: any, index: number) => (
-                  <div key={index} className="flex justify-between items-center p-3 bg-gray-700 rounded border border-gray-600">
-                    <span className="text-gray-300">Seat {qrResult.seatNo}:</span>
-                    <div className="text-right">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        qrResult.result.isDuplicate 
-                          ? 'bg-warning/20 text-warning' 
-                          : 'bg-success/20 text-success'
-                      }`}>
-                        {qrResult.result.isDuplicate ? 'Already Existed' : 'Generated'}
-                      </span>
-                      {qrResult.result.bookingId && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          Booking ID: {qrResult.result.bookingId}
-                        </div>
-                      )}
+                {qrResults.map((qrResult: any, index: number) => {
+                  // Detect if this is a General Admission ticket
+                  const seatNo = qrResult.seatNo || '';
+                  const isGeneralAdmission = 
+                    // Booking-based identifiers (organizer bookings): B123-1, B123-2
+                    (seatNo.startsWith('B') && seatNo.includes('-')) ||
+                    // Ticket-type identifiers (user purchases): Adult-1, Student-2, etc.
+                    (seatNo.includes('-') && !seatNo.match(/^[A-Z]\d+$/));
+                  
+                  const displayLabel = isGeneralAdmission ? 'Ticket' : 'Seat';
+                  
+                  return (
+                    <div key={index} className="flex justify-between items-center p-3 bg-gray-700 rounded border border-gray-600">
+                      <span className="text-gray-300">{displayLabel} {seatNo}:</span>
+                      <div className="text-right">
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                          qrResult.result.isDuplicate 
+                            ? 'bg-warning/20 text-warning' 
+                            : 'bg-success/20 text-success'
+                        }`}>
+                          {qrResult.result.isDuplicate ? 'Already Existed' : 'Generated'}
+                        </span>
+                        {qrResult.result.bookingId && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            Booking ID: {qrResult.result.bookingId}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -353,7 +365,19 @@ const PaymentSuccess: React.FC = () => {
               
               {sessionData.bookedSeats && Array.isArray(sessionData.bookedSeats) && sessionData.bookedSeats.length > 0 && (
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Seat(s):</span>
+                  <span className="text-gray-400">
+                    {(() => {
+                      // Detect if any seat follows General Admission patterns
+                      const hasGeneralAdmissionSeats = sessionData.bookedSeats.some((seatNo: string) => 
+                        // Booking-based identifiers (organizer bookings): B123-1, B123-2
+                        (seatNo.startsWith('B') && seatNo.includes('-')) ||
+                        // Ticket-type identifiers (user purchases): Adult-1, Student-2, etc.
+                        (seatNo.includes('-') && !seatNo.match(/^[A-Z]\d+$/))
+                      );
+                      
+                      return hasGeneralAdmissionSeats ? 'Ticket(s):' : 'Seat(s):';
+                    })()}
+                  </span>
                   <span className="text-sm font-medium text-white">{sessionData.bookedSeats.join(', ')}</span>
                 </div>
               )}
@@ -363,18 +387,30 @@ const PaymentSuccess: React.FC = () => {
                 <div className="mt-4 pt-4 border-t border-gray-700">
                   <h4 className="text-sm font-medium text-primary mb-2">QR Ticket Status:</h4>
                   <div className="space-y-2">
-                    {sessionData.qrTicketsGenerated.map((qr: any, index: number) => (
-                      <div key={index} className="flex justify-between items-center text-sm">
-                        <span className="text-gray-300">Seat {qr.seatNumber}:</span>
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-md ${
-                          qr.success 
-                            ? 'bg-green-900/30 text-green-400 border border-green-800' 
-                            : 'bg-red-900/30 text-red-400 border border-red-800'
-                        }`}>
-                          {qr.success ? '✓ Generated' : '✗ Failed'}
-                        </span>
-                      </div>
-                    ))}
+                    {sessionData.qrTicketsGenerated.map((qr: any, index: number) => {
+                      // Detect if this is a General Admission ticket
+                      const seatNumber = qr.seatNumber || '';
+                      const isGeneralAdmission = 
+                        // Booking-based identifiers (organizer bookings): B123-1, B123-2
+                        (seatNumber.startsWith('B') && seatNumber.includes('-')) ||
+                        // Ticket-type identifiers (user purchases): Adult-1, Student-2, etc.
+                        (seatNumber.includes('-') && !seatNumber.match(/^[A-Z]\d+$/));
+                      
+                      const displayLabel = isGeneralAdmission ? 'Ticket' : 'Seat';
+                      
+                      return (
+                        <div key={index} className="flex justify-between items-center text-sm">
+                          <span className="text-gray-300">{displayLabel} {seatNumber}:</span>
+                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-md ${
+                            qr.success 
+                              ? 'bg-green-900/30 text-green-400 border border-green-800' 
+                              : 'bg-red-900/30 text-red-400 border border-red-800'
+                          }`}>
+                            {qr.success ? '✓ Generated' : '✗ Failed'}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
