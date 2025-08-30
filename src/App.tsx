@@ -22,6 +22,7 @@ import Contact from './pages/Contact';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import OrganizerDashboard from './pages/OrganizerDashboard';
+import OrganizerSalesDashboard from './pages/OrganizerSalesDashboard';
 import CreateEvent from './pages/CreateEvent';
 import EventPreview from './pages/EventPreview';
 import AdminDashboard from './pages/AdminDashboard';
@@ -108,6 +109,11 @@ const App: React.FC = () => {
           <Route path="/organizer/dashboard" element={
             <PrivateRoute>
               <OrganizerDashboard />
+            </PrivateRoute>
+          } />
+          <Route path="/organizer/sales" element={
+            <PrivateRoute>
+              <OrganizerSalesDashboard />
             </PrivateRoute>
           } />
           <Route path="/organizer/events/create" element={

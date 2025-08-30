@@ -12,7 +12,7 @@ export const api = axios.create({
 // Add request interceptor to include auth token
 api.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('authToken');
         if (token) {
             config.headers = config.headers || {};
             config.headers.Authorization = `Bearer ${token}`;
@@ -30,7 +30,7 @@ api.interceptors.response.use(
     (error) => {
         if (error.response?.status === 401) {
             // Clear token and redirect to login if unauthorized
-            localStorage.removeItem('token');
+            localStorage.removeItem('authToken');
             localStorage.removeItem('user');
             window.location.href = '/login';
         }

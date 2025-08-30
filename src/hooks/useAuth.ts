@@ -36,7 +36,7 @@ export function useAuth() {
   const logout = useCallback(() => {
     setUser(null);
     localStorage.removeItem('user');
-    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
   }, []);
 
   const isOrganizer = useCallback(() => {
