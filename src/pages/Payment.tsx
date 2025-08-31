@@ -461,15 +461,39 @@ const Payment: React.FC = () => {
     setLoading(true);
     
     try {
-      // Generate seat numbers based on booking data
+      // Generate ticket requests based on booking data
+      let ticketRequests: Array<{ticketTypeId: number, quantity: number, ticketTypeName?: string}> = [];
       let seatNumbers: string[] = [];
       
       if (isNewFormat) {
         const bookingData = state as BookingData;
         if (bookingData.bookingType === 'seats' && bookingData.selectedSeats) {
+          // Group seats by ticket type ID and count quantities
+          const seatsByTicketType = bookingData.selectedSeats.reduce((acc, seat) => {
+            const ticketTypeId = seat.ticketTypeId;
+            if (!acc[ticketTypeId]) {
+              acc[ticketTypeId] = {
+                ticketTypeId,
+                quantity: 0,
+                ticketTypeName: `Seat Ticket` // Generic name for seat tickets
+              };
+            }
+            acc[ticketTypeId].quantity++;
+            return acc;
+          }, {} as Record<number, {ticketTypeId: number, quantity: number, ticketTypeName: string}>);
+          
+          ticketRequests = Object.values(seatsByTicketType);
+          
           // Use actual selected seats
           seatNumbers = bookingData.selectedSeats.map(seat => `${seat.row}${seat.number}`);
         } else if (bookingData.bookingType === 'tickets' && bookingData.selectedTickets) {
+          // Use the actual ticket types from the booking data
+          ticketRequests = bookingData.selectedTickets.map(ticket => ({
+            ticketTypeId: ticket.ticketTypeId,
+            quantity: ticket.quantity,
+            ticketTypeName: ticket.name || ticket.type
+          }));
+          
           // Generate sequential seat numbers for ticket-based bookings
           let seatCounter = 1;
           bookingData.selectedTickets.forEach(ticket => {
@@ -480,6 +504,34 @@ const Payment: React.FC = () => {
           });
         }
       } else {
+        // Legacy format - need to get ticket type information from the event
+        // We'll try to fetch the first available ticket type for this event
+        try {
+          const response = await fetch(`/api/TicketTypes/event/${eventId}`);
+          if (response.ok) {
+            const eventTicketTypes = await response.json();
+            if (eventTicketTypes && eventTicketTypes.length > 0) {
+              // Use the first available ticket type for legacy bookings
+              const defaultTicketType = eventTicketTypes[0];
+              const totalQuantity = ticketDetails.reduce((sum, detail) => sum + detail.quantity, 0);
+              
+              ticketRequests = [{
+                ticketTypeId: defaultTicketType.id,
+                quantity: totalQuantity,
+                ticketTypeName: defaultTicketType.name || defaultTicketType.type || 'General Admission'
+              }];
+            } else {
+              throw new Error('No ticket types found for this event');
+            }
+          } else {
+            throw new Error('Failed to fetch ticket types');
+          }
+        } catch (error) {
+          console.error('Error fetching ticket types for legacy booking:', error);
+          setError('Unable to determine ticket types for this event. Please refresh and try again.');
+          return;
+        }
+        
         // Legacy format - generate seats based on ticket details
         let seatCounter = 1;
         ticketDetails.forEach(ticket => {
@@ -492,6 +544,11 @@ const Payment: React.FC = () => {
 
       if (seatNumbers.length === 0) {
         setError('No seats selected for booking');
+        return;
+      }
+
+      if (ticketRequests.length === 0) {
+        setError('No ticket types available for booking');
         return;
       }
 
@@ -513,7 +570,8 @@ const Payment: React.FC = () => {
         lastName: customerDetails.lastName?.trim() || undefined,
         buyerEmail: customerDetails.email.trim(),
         mobile: customerDetails.mobile?.trim() || undefined,
-        seatNumbers: seatNumbers
+        seatNumbers: seatNumbers,
+        ticketRequests: ticketRequests // Include the required ticket requests
       };
 
       try {

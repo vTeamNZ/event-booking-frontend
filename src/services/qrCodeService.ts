@@ -1,5 +1,11 @@
 import { api } from './api';
 
+export interface OrganizerTicketRequest {
+  ticketTypeId: number;
+  quantity: number;
+  ticketTypeName?: string; // For display purposes
+}
+
 export interface OrganizerBookingRequest {
   eventId: number;
   firstName: string;
@@ -7,6 +13,7 @@ export interface OrganizerBookingRequest {
   buyerEmail: string;
   mobile?: string;
   seatNumbers: string[];
+  ticketRequests: OrganizerTicketRequest[]; // New required field to match backend
 }
 
 export interface OrganizerBookingResponse {

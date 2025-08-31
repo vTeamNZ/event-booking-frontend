@@ -169,7 +169,7 @@ const SimpleGlobalTimer: React.FC = () => {
       clearInterval(interval);
       console.log('🎯 SimpleGlobalTimer: Cleaned up event listeners');
     };
-  }, [handleWarning, handleExpired, updateTimer]);
+  }, []); // Fixed: Remove circular dependencies
 
   // ========== HEADER POSITIONING ==========
   useEffect(() => {
