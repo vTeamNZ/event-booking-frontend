@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useNavigate, Link } from 'react-router-dom';
@@ -47,6 +47,37 @@ const RegisterSchema = Yup.object().shape({
 const Register: React.FC = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Auto-scroll to register form on page load
+  useEffect(() => {
+    const scrollToRegister = () => {
+      const registerContainer = document.getElementById('register-container');
+      if (registerContainer) {
+        // Use different scroll behavior for mobile vs desktop
+        const isMobile = window.innerWidth < 768;
+        if (isMobile) {
+          // On mobile, scroll with smaller offset to show the heading
+          const headerHeight = 150; // Further reduced to show the "Create your account" heading
+          const elementTop = registerContainer.offsetTop - headerHeight;
+          window.scrollTo({
+            top: elementTop,
+            behavior: 'smooth'
+          });
+        } else {
+          // On desktop, use center positioning
+          registerContainer.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center',
+            inline: 'nearest'
+          });
+        }
+      }
+    };
+
+    // Small delay to ensure the page is fully loaded
+    const timeoutId = setTimeout(scrollToRegister, 150);
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   const formik = useFormik<RegisterFormValues>({
     initialValues: {
@@ -97,10 +128,10 @@ const Register: React.FC = () => {
         description="Create your KiwiLanka Tickets account to book tickets, access exclusive events, and manage your bookings. Professional ticketing platform registration." 
         keywords={["Register", "Sign Up", "Ticketing Account", "Event Ticket Account", "KiwiLanka Registration"]}
       />
-      <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
+      <div className="min-h-screen flex items-start justify-center bg-gray-900 px-4 sm:px-6 lg:px-8 pt-16">
+        <div id="register-container" className="max-w-md w-full space-y-6">
           <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            <h2 className="text-center text-3xl font-extrabold text-white">
               Create your account
             </h2>
             <p className="mt-2 text-center text-sm text-gray-300">
@@ -110,7 +141,7 @@ const Register: React.FC = () => {
               </Link>
             </p>
           </div>
-          <form className="mt-8 space-y-6" onSubmit={formik.handleSubmit}>
+          <form className="mt-6 space-y-6" onSubmit={formik.handleSubmit}>
             <div className="space-y-4">
               {/* Role Selection */}
               <div>

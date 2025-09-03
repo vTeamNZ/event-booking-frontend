@@ -22,7 +22,9 @@ import Contact from './pages/Contact';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import OrganizerDashboard from './pages/OrganizerDashboard';
-import OrganizerSalesDashboard from './pages/OrganizerSalesDashboard';
+import OrganizerSalesDashboardEnhanced from './pages/OrganizerSalesDashboardEnhanced';
+import OrganizerProfileEdit from './pages/OrganizerProfileEdit';
+import OrganizerProfileView from './pages/OrganizerProfileView';
 import CreateEvent from './pages/CreateEvent';
 import EventPreview from './pages/EventPreview';
 import AdminDashboard from './pages/AdminDashboard';
@@ -31,6 +33,7 @@ import AdminEvents from './pages/AdminEvents';
 import AdminUsers from './pages/AdminUsers';
 import AdminRevenueDashboard from './pages/AdminRevenueDashboard';
 import { VenueManagement } from './pages/VenueManagement';
+import AdminPageUnderDevelopment from './pages/AdminPageUnderDevelopment';
 import ManageFoodItems from './pages/ManageFoodItems';
 import EventPage from './pages/EventPage';
 import MyBookings from './pages/MyBookings';
@@ -113,7 +116,27 @@ const App: React.FC = () => {
           } />
           <Route path="/organizer/sales" element={
             <PrivateRoute>
-              <OrganizerSalesDashboard />
+              <OrganizerSalesDashboardEnhanced />
+            </PrivateRoute>
+          } />
+          <Route path="/organizer/profile/edit" element={
+            <PrivateRoute>
+              <OrganizerProfileEdit />
+            </PrivateRoute>
+          } />
+          <Route path="/organizer/profile" element={
+            <PrivateRoute>
+              <OrganizerProfileView />
+            </PrivateRoute>
+          } />
+          <Route path="/organizer/settings" element={
+            <PrivateRoute>
+              <OrganizerProfileView />
+            </PrivateRoute>
+          } />
+          <Route path="/organizer/events/edit/:id" element={
+            <PrivateRoute>
+              <OrganizerProfileView />
             </PrivateRoute>
           } />
           <Route path="/organizer/events/create" element={
@@ -156,6 +179,26 @@ const App: React.FC = () => {
           <Route path="/admin/revenue" element={
             <PrivateRoute>
               <AdminRevenueDashboard />
+            </PrivateRoute>
+          } />
+          <Route path="/admin/reports" element={
+            <PrivateRoute>
+              <AdminPageUnderDevelopment />
+            </PrivateRoute>
+          } />
+          <Route path="/admin/settings" element={
+            <PrivateRoute>
+              <AdminPageUnderDevelopment />
+            </PrivateRoute>
+          } />
+          <Route path="/admin/payments" element={
+            <PrivateRoute>
+              <AdminPageUnderDevelopment />
+            </PrivateRoute>
+          } />
+          <Route path="/admin/audit" element={
+            <PrivateRoute>
+              <AdminPageUnderDevelopment />
             </PrivateRoute>
           } />
           <Route 

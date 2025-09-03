@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -23,6 +23,37 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/';
+
+  // Auto-scroll to login form on page load
+  useEffect(() => {
+    const scrollToLogin = () => {
+      const loginContainer = document.getElementById('login-container');
+      if (loginContainer) {
+        // Use different scroll behavior for mobile vs desktop
+        const isMobile = window.innerWidth < 768;
+        if (isMobile) {
+          // On mobile, scroll with smaller offset to show the heading
+          const headerHeight = 150; // Further reduced to show the "Sign in to your account" heading
+          const elementTop = loginContainer.offsetTop - headerHeight;
+          window.scrollTo({
+            top: elementTop,
+            behavior: 'smooth'
+          });
+        } else {
+          // On desktop, use center positioning
+          loginContainer.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center',
+            inline: 'nearest'
+          });
+        }
+      }
+    };
+
+    // Small delay to ensure the page is fully loaded
+    const timeoutId = setTimeout(scrollToLogin, 150);
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   const formik = useFormik<LoginFormValues>({
     initialValues: {
@@ -49,14 +80,14 @@ const Login: React.FC = () => {
         description="Sign in to your KiwiLanka Tickets account to manage your ticket orders, view your bookings, and access exclusive member benefits." 
         keywords={["Sign In", "Account Login", "Ticket Booking Login", "Member Access"]}
       />
-      <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
+      <div className="min-h-screen flex items-start justify-center bg-gray-900 px-4 sm:px-6 lg:px-8 pt-16">
+        <div id="login-container" className="max-w-md w-full space-y-6">
           <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
+            <h2 className="text-center text-3xl font-extrabold text-white">
               Sign in to your account
             </h2>
           </div>
-          <form className="mt-8 space-y-6" onSubmit={formik.handleSubmit}>
+          <form className="mt-6 space-y-6" onSubmit={formik.handleSubmit}>
             <div className="rounded-md shadow-sm -space-y-px">
               <div>
                 <label htmlFor="email" className="sr-only">

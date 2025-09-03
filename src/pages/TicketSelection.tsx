@@ -374,16 +374,38 @@ const TicketSelection: React.FC = () => {
                     </div>
                     {/* Available tickets display */}
                     {ticketAvailability && (
-                      <div className="text-sm text-gray-400 mt-1">
+                      <div className="text-sm mt-1">
                         {ticketAvailability.hasLimit ? (
                           isSoldOut ? (
                             <span className="text-red-400">
                               {ticket.name.toLowerCase().includes('table') ? 'No tables available' : 'No tickets available'}
                             </span>
                           ) : (
-                            <span>
-                              {ticketAvailability.available} {ticket.name.toLowerCase().includes('table') ? 'table' : 'ticket'}{ticketAvailability.available !== 1 ? 's' : ''} available
-                            </span>
+                            (() => {
+                              // Calculate availability percentage (assuming total capacity from sold + available)
+                              const totalCapacity = ticketAvailability.sold + ticketAvailability.available;
+                              const availabilityPercentage = totalCapacity > 0 ? (ticketAvailability.available / totalCapacity) * 100 : 0;
+                              
+                              let colorClass = 'text-gray-400';
+                              let statusText = 'Available';
+                              
+                              if (availabilityPercentage > 75) {
+                                colorClass = 'text-green-400';
+                                statusText = ticket.name.toLowerCase().includes('table') ? '' : '';
+                              } else if (availabilityPercentage > 25) {
+                                colorClass = 'text-orange-400';
+                                statusText = ticket.name.toLowerCase().includes('table') ? 'Limited Tables Available' : 'Limited Tickets Available';
+                              } else {
+                                colorClass = 'text-red-400';
+                                statusText = ticket.name.toLowerCase().includes('table') ? 'Few Tables Remaining' : 'Few Tickets Remaining';
+                              }
+                              
+                              return (
+                                <span className={colorClass}>
+                                  {statusText}
+                                </span>
+                              );
+                            })()
                           )
                         ) : (
                           <span className="text-green-400">Unlimited availability</span>

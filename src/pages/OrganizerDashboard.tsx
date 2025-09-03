@@ -112,7 +112,8 @@ const OrganizerDashboard: React.FC = () => {
             Return to Draft
           </button>
         );
-      case 2: // Active
+      case 2: // Active - No actions allowed for active events
+        return null;
       case 3: // Inactive
         return (
           <button
@@ -208,8 +209,8 @@ const OrganizerDashboard: React.FC = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-6">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Organizer Dashboard</h1>
-                <p className="text-gray-600">Welcome back, {user.fullName}</p>
+                <h1 className="text-3xl font-bold text-white">Organizer Dashboard</h1>
+                <p className="text-gray-300">Welcome back, {user.fullName}</p>
               </div>
               <div className="flex items-center space-x-4">
                 {!organizer.isVerified && (
@@ -224,7 +225,7 @@ const OrganizerDashboard: React.FC = () => {
                   >
                     Create Event
                   </Link>
-                  <span className="text-xs text-gray-500 mt-1">Events require admin approval before activation</span>
+                  <span className="text-xs text-gray-300 mt-1">Events require admin approval before activation</span>
                 </div>
               </div>
             </div>
@@ -243,42 +244,42 @@ const OrganizerDashboard: React.FC = () => {
                     <p className="text-sm text-white">{organizer.name}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
-                    <p className="text-sm text-gray-900">{user.email}</p>
+                    <label className="block text-sm font-medium text-gray-300">Email</label>
+                    <p className="text-sm text-white">{user.email}</p>
                   </div>
                   {organizer.organizationName && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Organization</label>
-                      <p className="text-sm text-gray-900">{organizer.organizationName}</p>
+                      <label className="block text-sm font-medium text-gray-300">Organization</label>
+                      <p className="text-sm text-white">{organizer.organizationName}</p>
                     </div>
                   )}
                   {organizer.phoneNumber && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Phone</label>
-                      <p className="text-sm text-gray-900">{organizer.phoneNumber}</p>
+                      <label className="block text-sm font-medium text-gray-300">Phone</label>
+                      <p className="text-sm text-white">{organizer.phoneNumber}</p>
                     </div>
                   )}
                   {organizer.website && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Website</label>
+                      <label className="block text-sm font-medium text-gray-300">Website</label>
                       <a 
                         href={organizer.website} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-sm text-primary hover:text-error"
+                        className="text-sm text-blue-400 hover:text-blue-300"
                       >
                         {organizer.website}
                       </a>
                     </div>
                   )}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Member Since</label>
-                    <p className="text-sm text-gray-900">
+                    <label className="block text-sm font-medium text-gray-300">Member Since</label>
+                    <p className="text-sm text-white">
                       {new Date(organizer.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Status</label>
+                    <label className="block text-sm font-medium text-gray-300">Status</label>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                       organizer.isVerified 
                         ? 'bg-success/20 text-success' 
@@ -301,28 +302,6 @@ const OrganizerDashboard: React.FC = () => {
 
             {/* Main Content */}
             <div className="lg:col-span-2">
-              {/* Quick Stats */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="text-center">
-                    <p className="text-3xl font-bold text-primary">0</p>
-                    <p className="text-sm text-gray-600">Active Events</p>
-                  </div>
-                </div>
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="text-center">
-                    <p className="text-3xl font-bold text-success">0</p>
-                    <p className="text-sm text-gray-600">Total Bookings</p>
-                  </div>
-                </div>
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="text-center">
-                    <p className="text-3xl font-bold text-primary">$0</p>
-                    <p className="text-sm text-gray-600">Total Revenue</p>
-                  </div>
-                </div>
-              </div>
-
               {/* Sales Dashboard Link */}
               <div className="mb-8">
                 <div className="bg-white rounded-lg shadow p-6">
@@ -423,18 +402,22 @@ const OrganizerDashboard: React.FC = () => {
                               {getStatusActions(event)}
                             </div>
                             <div className="flex items-center space-x-2">
-                              <Link
-                                to={`/event/${event.id}/manage-food`}
-                                className="bg-success hover:bg-success/80 text-black px-3 py-1 rounded-md text-sm font-medium"
-                              >
-                                Manage Food
-                              </Link>
-                              <Link
-                                to={`/event/${event.id}/edit`}
-                                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md text-sm font-medium"
-                              >
-                                Edit Event
-                              </Link>
+                              {(event.status ?? (event.isActive ? 2 : 3)) !== 2 && (
+                                <>
+                                  <Link
+                                    to={`/event/${event.id}/manage-food`}
+                                    className="bg-success hover:bg-success/80 text-black px-3 py-1 rounded-md text-sm font-medium"
+                                  >
+                                    Manage Food
+                                  </Link>
+                                  <Link
+                                    to={`/event/${event.id}/edit`}
+                                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1 rounded-md text-sm font-medium"
+                                  >
+                                    Edit Event
+                                  </Link>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
