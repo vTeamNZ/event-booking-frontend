@@ -250,6 +250,12 @@ const EventsList: React.FC = () => {
     const isAdmin = currentUser && currentUser.roles && currentUser.roles.includes('Admin');
     const eventStatus = event.status ?? (event.isActive ? 2 : 3);
     
+    // Special redirect for Chakithaya event (ID: 34)
+    if (event.id === 34) {
+      window.open('https://www.trybooking.com/nz/YKL', '_blank');
+      return;
+    }
+    
     // Allow booking for:
     // - Active events (everyone)
     // - Draft events (organizers for testing)

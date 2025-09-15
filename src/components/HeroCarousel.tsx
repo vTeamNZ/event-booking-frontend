@@ -164,6 +164,12 @@ const HeroCarousel: React.FC = () => {
               style={{ width: '300px' }}
               className="cursor-pointer"
               onClick={() => {
+                // Special redirect for Chakithaya event (ID: 34)
+                if (event.id === 34) {
+                  window.open('https://www.trybooking.com/nz/YKL', '_blank');
+                  return;
+                }
+                
                 // Get current user to determine navigation logic
                 const currentUser = authService.getCurrentUser();
                 const isOrganizer = currentUser && currentUser.roles && currentUser.roles.includes('Organizer');
