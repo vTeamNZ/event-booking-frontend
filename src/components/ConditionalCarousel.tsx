@@ -41,8 +41,18 @@ const ConditionalCarousel: React.FC = () => {
     location.pathname === route || location.pathname.startsWith(route)
   );
   
+  // Check if current path is a single-segment path (likely an event slug)
+  // Single segment paths like /sanketha-2025, /wayo-concert etc. are event slugs
+  const pathSegments = location.pathname.split('/').filter(segment => segment.length > 0);
+  const isSingleSegmentPath = pathSegments.length === 1;
+  
   // If it's an event-specific page, don't show carousel
   if (isEventSpecificPage) {
+    return null;
+  }
+  
+  // If it's a single-segment path (event slug), don't show carousel
+  if (isSingleSegmentPath && !isKnownRoute) {
     return null;
   }
   
