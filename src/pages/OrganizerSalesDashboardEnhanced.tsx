@@ -7,6 +7,13 @@ import {
   BookingDetailView,
   TicketTypeBreakdown 
 } from '../services/organizerSalesService';
+import { 
+  RevenueAnalysisService,
+  TicketCapacityDTO,
+  StripeRevenueAnalysisDTO,
+  OrganizerRevenueDTO,
+  RevenueSummaryDTO
+} from '../services/revenueAnalysisService';
 import { api } from '../services/api';
 import SEO from '../components/SEO';
 import toast from 'react-hot-toast';
@@ -32,6 +39,7 @@ ChartJS.register(
 );
 
 type TabType = 'analytics' | 'bookings';
+type AnalyticsSubTab = 'ticket-capacity' | 'stripe-revenue' | 'organizer-revenue' | 'revenue-summary';
 
 const OrganizerSalesDashboardEnhanced: React.FC = () => {
   const [eventsList, setEventsList] = useState<any[]>([]);
@@ -40,6 +48,7 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
   const [bookings, setBookings] = useState<BookingDetailView[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('analytics');
+  const [activeAnalyticsTab, setActiveAnalyticsTab] = useState<AnalyticsSubTab>('ticket-capacity');
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [chartLoading, setChartLoading] = useState(false);
@@ -47,6 +56,13 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Revenue Analysis state for new tabs
+  const [ticketCapacityData, setTicketCapacityData] = useState<TicketCapacityDTO[]>([]);
+  const [stripeRevenueData, setStripeRevenueData] = useState<StripeRevenueAnalysisDTO | null>(null);
+  const [organizerRevenueData, setOrganizerRevenueData] = useState<OrganizerRevenueDTO | null>(null);
+  const [revenueSummaryData, setRevenueSummaryData] = useState<RevenueSummaryDTO | null>(null);
+  const [revenueLoading, setRevenueLoading] = useState(false);
   
   // Chart navigation state
   const [chartDays, setChartDays] = useState(() => {
@@ -270,6 +286,59 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
     }
   };
 
+  // Revenue Analysis Data Loading Functions
+  const loadTicketCapacityData = async (eventId: number) => {
+    try {
+      setRevenueLoading(true);
+      const data = await RevenueAnalysisService.getTicketCapacity(eventId);
+      setTicketCapacityData(data);
+    } catch (err: any) {
+      console.error('Error loading ticket capacity data:', err);
+      toast.error('Failed to load ticket capacity data');
+    } finally {
+      setRevenueLoading(false);
+    }
+  };
+
+  const loadStripeRevenueData = async (eventId: number) => {
+    try {
+      setRevenueLoading(true);
+      const data = await RevenueAnalysisService.getStripeRevenue(eventId);
+      setStripeRevenueData(data);
+    } catch (err: any) {
+      console.error('Error loading Stripe revenue data:', err);
+      toast.error('Failed to load Stripe revenue data');
+    } finally {
+      setRevenueLoading(false);
+    }
+  };
+
+  const loadOrganizerRevenueData = async (eventId: number) => {
+    try {
+      setRevenueLoading(true);
+      const data = await RevenueAnalysisService.getOrganizerRevenue(eventId);
+      setOrganizerRevenueData(data);
+    } catch (err: any) {
+      console.error('Error loading organizer revenue data:', err);
+      toast.error('Failed to load organizer revenue data');
+    } finally {
+      setRevenueLoading(false);
+    }
+  };
+
+  const loadRevenueSummaryData = async (eventId: number) => {
+    try {
+      setRevenueLoading(true);
+      const data = await RevenueAnalysisService.getRevenueSummary(eventId);
+      setRevenueSummaryData(data);
+    } catch (err: any) {
+      console.error('Error loading revenue summary data:', err);
+      toast.error('Failed to load revenue summary data');
+    } finally {
+      setRevenueLoading(false);
+    }
+  };
+
   const handleEventSelect = (eventId: number) => {
     console.log('🔥 Event selected:', eventId);
     setSelectedEventId(eventId);
@@ -284,6 +353,12 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
     console.log('🔥 Loading analytics for event:', eventId);
     loadDailyAnalytics(eventId);
     loadTicketBreakdown(eventId);
+    
+    // Load all revenue analysis data
+    loadTicketCapacityData(eventId);
+    loadStripeRevenueData(eventId);
+    loadOrganizerRevenueData(eventId);
+    loadRevenueSummaryData(eventId);
   };
 
   const handleTabChange = (tab: TabType) => {
@@ -294,6 +369,22 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
         loadTicketBreakdown(selectedEventId);
       } else if (tab === 'bookings') {
         loadBookings(selectedEventId);
+      }
+    }
+  };
+
+  const handleAnalyticsSubTabChange = (subTab: AnalyticsSubTab) => {
+    setActiveAnalyticsTab(subTab);
+    if (selectedEventId) {
+      // Load data for the specific sub-tab if not already loaded
+      if (subTab === 'ticket-capacity' && ticketCapacityData.length === 0) {
+        loadTicketCapacityData(selectedEventId);
+      } else if (subTab === 'stripe-revenue' && !stripeRevenueData) {
+        loadStripeRevenueData(selectedEventId);
+      } else if (subTab === 'organizer-revenue' && !organizerRevenueData) {
+        loadOrganizerRevenueData(selectedEventId);
+      } else if (subTab === 'revenue-summary' && !revenueSummaryData) {
+        loadRevenueSummaryData(selectedEventId);
       }
     }
   };
@@ -739,7 +830,7 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                   <h3 className="text-lg font-medium text-gray-900 mb-4">
                     {selectedEventDetail.eventTitle}
                   </h3>
-                  <nav className="flex space-x-8">
+                  <nav className="flex flex-wrap gap-4 lg:gap-8">
                     <button
                       onClick={() => handleTabChange('analytics')}
                       className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -768,114 +859,529 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
               <div className="p-6">
                 {activeTab === 'analytics' && (
                   <div className="space-y-6">
-                    {/* Chart Navigation */}
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
-                        <button
-                          onClick={goToPreviousDays}
-                          className="flex items-center gap-1 px-3 py-2 text-xs sm:text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors w-full sm:w-auto justify-center"
-                        >
-                          ← Previous {chartDays} days
-                        </button>
-                        <button
-                          onClick={goToNextDays}
-                          disabled={chartOffset === 0}
-                          className={`flex items-center gap-1 px-3 py-2 text-xs sm:text-sm rounded-md transition-colors w-full sm:w-auto justify-center ${
-                            chartOffset === 0 
-                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                              : 'bg-gray-100 hover:bg-gray-200'
-                          }`}
-                        >
-                          Next {chartDays} days →
-                        </button>
-                      </div>
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
-                        <span className="text-xs sm:text-sm text-gray-600 font-medium">View:</span>
-                        <div className="flex gap-1 sm:gap-2 w-full sm:w-auto">
-                          {[7, 14, 30].map((days) => (
-                            <button
-                              key={days}
-                              onClick={() => handleChartDaysChange(days)}
-                              className={`flex-1 sm:flex-none px-2 sm:px-3 py-1 sm:py-1 text-xs sm:text-sm rounded-md transition-colors ${
-                                chartDays === days
-                                  ? 'bg-blue-500 text-white'
-                                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                              }`}
-                            >
-                              {days}d
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Analytics Chart */}
-                    <div className="bg-gray-50 rounded-lg p-2 sm:p-4">
-                      {/* Mobile Chart Title */}
-                      <div className="sm:hidden mb-3 text-center">
-                        <h4 className="text-sm font-medium text-gray-700">
-                          Sales Trends ({chartDays} days)
-                        </h4>
+                    {/* Sales Chart - Always Visible at Top */}
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-lg font-semibold text-gray-900">📊 Sales Analytics Chart</h4>
                       </div>
                       
-                      {chartLoading ? (
-                        <div className="h-48 sm:h-64 flex items-center justify-center">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                      {/* Chart Navigation */}
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+                          <button
+                            onClick={goToPreviousDays}
+                            className="flex items-center gap-1 px-3 py-2 text-xs sm:text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors w-full sm:w-auto justify-center"
+                          >
+                            ← Previous {chartDays} days
+                          </button>
+                          <button
+                            onClick={goToNextDays}
+                            disabled={chartOffset === 0}
+                            className={`flex items-center gap-1 px-3 py-2 text-xs sm:text-sm rounded-md transition-colors w-full sm:w-auto justify-center ${
+                              chartOffset === 0 
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                : 'bg-gray-100 hover:bg-gray-200'
+                            }`}
+                          >
+                            Next {chartDays} days →
+                          </button>
                         </div>
-                      ) : dailyAnalytics.length > 0 ? (
-                        <div className="h-48 sm:h-64 md:h-80">
-                          <Bar data={chartData} options={chartOptions} />
-                        </div>
-                      ) : (
-                        <div className="h-48 sm:h-64 flex items-center justify-center text-gray-500">
-                          <div className="text-center">
-                            <svg className="w-12 h-12 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
-                            <p className="text-sm">No analytics data available</p>
-                            <p className="text-xs text-gray-400 mt-1">for the selected period</p>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+                          <span className="text-xs sm:text-sm text-gray-600 font-medium">View:</span>
+                          <div className="flex gap-1 sm:gap-2 w-full sm:w-auto">
+                            {[7, 14, 30].map((days) => (
+                              <button
+                                key={days}
+                                onClick={() => handleChartDaysChange(days)}
+                                className={`flex-1 sm:flex-none px-2 sm:px-3 py-1 sm:py-1 text-xs sm:text-sm rounded-md transition-colors ${
+                                  chartDays === days
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                                }`}
+                              >
+                                {days}d
+                              </button>
+                            ))}
                           </div>
                         </div>
-                      )}
+                      </div>
+
+                      {/* Analytics Chart */}
+                      <div className="bg-gray-50 rounded-lg p-2 sm:p-4">
+                        {/* Mobile Chart Title */}
+                        <div className="sm:hidden mb-3 text-center">
+                          <h4 className="text-sm font-medium text-gray-700">
+                            Sales Trends ({chartDays} days)
+                          </h4>
+                        </div>
+                        
+                        {chartLoading ? (
+                          <div className="h-48 sm:h-64 flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                          </div>
+                        ) : dailyAnalytics.length > 0 ? (
+                          <div className="h-48 sm:h-64 md:h-80">
+                            <Bar data={chartData} options={chartOptions} />
+                          </div>
+                        ) : (
+                          <div className="h-48 sm:h-64 flex items-center justify-center text-gray-500">
+                            <div className="text-center">
+                              <svg className="w-12 h-12 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                              </svg>
+                              <p className="text-sm">No analytics data available</p>
+                              <p className="text-xs text-gray-400 mt-1">for the selected period</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Ticket Breakdown */}
-                    {ticketBreakdown.length > 0 && (
-                      <div className="bg-gray-50 rounded-lg p-6">
-                        <h4 className="text-lg font-semibold text-gray-900 mb-4">Ticket Types Breakdown</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {ticketBreakdown.map((item, index) => (
-                            <div key={index} className="bg-white rounded-lg p-4 shadow-sm border">
-                              <h5 className="font-medium text-gray-900 mb-2">{item.ticketTypeName}</h5>
-                              <div className="space-y-1 text-sm">
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Price:</span>
-                                  <span className="font-medium">{organizerSalesService.formatCurrency(item.ticketPrice)}</span>
+                    {/* Revenue Analysis Sub-Tab Navigation - After Chart */}
+                    <div className="border-b border-gray-200">
+                      <nav className="flex flex-wrap gap-4 lg:gap-6">
+                        <button
+                          onClick={() => handleAnalyticsSubTabChange('ticket-capacity')}
+                          className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                            activeAnalyticsTab === 'ticket-capacity'
+                              ? 'border-blue-500 text-blue-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}
+                        >
+                          🎫 Ticket Capacity
+                        </button>
+                        <button
+                          onClick={() => handleAnalyticsSubTabChange('stripe-revenue')}
+                          className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                            activeAnalyticsTab === 'stripe-revenue'
+                              ? 'border-blue-500 text-blue-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}
+                        >
+                          💳 Stripe Revenue
+                        </button>
+                        <button
+                          onClick={() => handleAnalyticsSubTabChange('organizer-revenue')}
+                          className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                            activeAnalyticsTab === 'organizer-revenue'
+                              ? 'border-blue-500 text-blue-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}
+                        >
+                          🏢 Organizer Sales
+                        </button>
+                        <button
+                          onClick={() => handleAnalyticsSubTabChange('revenue-summary')}
+                          className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                            activeAnalyticsTab === 'revenue-summary'
+                              ? 'border-blue-500 text-blue-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}
+                        >
+                          💰 Revenue Summary
+                        </button>
+                      </nav>
+                    </div>
+
+                    {/* Revenue Analysis Sub-Tab Content */}
+
+                    {activeAnalyticsTab === 'ticket-capacity' && (
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-lg font-semibold text-gray-900">Ticket Capacity Analysis</h4>
+                          {revenueLoading && (
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                              Loading...
+                            </div>
+                          )}
+                        </div>
+                        
+                        {ticketCapacityData.length > 0 ? (
+                          <div className="space-y-4">
+                            {ticketCapacityData.map((ticketType) => (
+                              <div key={ticketType.ticketTypeId} className="bg-gray-50 rounded-lg p-4">
+                                <div className="flex justify-between items-center mb-2">
+                                  <h5 className="font-medium text-gray-900">{ticketType.ticketTypeName}</h5>
+                                  <span className="text-sm font-medium text-gray-600">
+                                    ${ticketType.ticketPrice.toFixed(2)}
+                                  </span>
                                 </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Sold:</span>
-                                  <span className="font-medium text-blue-600">{item.totalTickets}</span>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                  <div>
+                                    <span className="text-gray-500">Sold:</span>
+                                    <div className="font-semibold text-green-600">{ticketType.soldTickets}</div>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500">Available:</span>
+                                    <div className="font-semibold text-blue-600">{ticketType.availableTickets}</div>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500">Total Capacity:</span>
+                                    <div className="font-semibold text-gray-800">{ticketType.totalCapacity}</div>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500">Utilization:</span>
+                                    <div className="font-semibold text-purple-600">
+                                      {ticketType.utilizationPercentage.toFixed(1)}%
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Paid:</span>
-                                  <span className="font-medium text-green-600">{item.paidTickets}</span>
+                                <div className="mt-3">
+                                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                    <span>0</span>
+                                    <span>{ticketType.totalCapacity}</span>
+                                  </div>
+                                  <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div
+                                      className="bg-green-500 h-2 rounded-full"
+                                      style={{
+                                        width: `${Math.min(ticketType.utilizationPercentage, 100)}%`
+                                      }}
+                                    ></div>
+                                  </div>
                                 </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Organizer:</span>
-                                  <span className="font-medium text-purple-600">{item.organizerTickets}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <p>No ticket capacity data available</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {activeAnalyticsTab === 'stripe-revenue' && (
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-lg font-semibold text-gray-900">Stripe Revenue Analysis</h4>
+                          {revenueLoading && (
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                              Loading...
+                            </div>
+                          )}
+                        </div>
+                        
+                        {stripeRevenueData ? (
+                          <div className="space-y-6">
+                            {/* Summary Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                              <div className="bg-blue-50 rounded-lg p-4">
+                                <div className="text-sm text-blue-600">Total Revenue</div>
+                                <div className="text-2xl font-bold text-blue-800">
+                                  ${stripeRevenueData.totalStripeRevenue.toFixed(2)}
                                 </div>
-                                <div className="flex justify-between border-t pt-1 mt-2">
-                                  <span className="text-gray-600">Revenue:</span>
-                                  <span className="font-semibold text-gray-900">{organizerSalesService.formatCurrency(item.totalRevenue)}</span>
+                              </div>
+                              <div className="bg-green-50 rounded-lg p-4">
+                                <div className="text-sm text-green-600">Tickets Sold</div>
+                                <div className="text-2xl font-bold text-green-800">
+                                  {stripeRevenueData.totalStripeTickets}
                                 </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Net Revenue:</span>
-                                  <span className="font-semibold text-green-700">{organizerSalesService.formatCurrency(item.paidRevenue)}</span>
+                              </div>
+                              <div className="bg-purple-50 rounded-lg p-4">
+                                <div className="text-sm text-purple-600">Transactions</div>
+                                <div className="text-2xl font-bold text-purple-800">
+                                  {stripeRevenueData.totalStripeTransactions}
+                                </div>
+                              </div>
+                              <div className="bg-orange-50 rounded-lg p-4">
+                                <div className="text-sm text-orange-600">Avg. Price</div>
+                                <div className="text-2xl font-bold text-orange-800">
+                                  ${stripeRevenueData.averageTicketPrice.toFixed(2)}
                                 </div>
                               </div>
                             </div>
-                          ))}
+
+                            {/* Pricing Tiers */}
+                            <div>
+                              <h5 className="font-medium text-gray-900 mb-4">Revenue by Pricing Tier</h5>
+                              <div className="space-y-3">
+                                {stripeRevenueData.pricingTiers.map((tier, index) => (
+                                  <div key={index} className="bg-white border rounded-lg p-4">
+                                    <div className="flex justify-between items-center mb-2">
+                                      <span className="font-medium">${tier.ticketPrice.toFixed(2)} tickets</span>
+                                      <span className="text-sm text-gray-500">
+                                        {tier.revenuePercentage.toFixed(1)}% of total revenue
+                                      </span>
+                                    </div>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                      <div>
+                                        <span className="text-gray-500">Revenue:</span>
+                                        <div className="font-semibold">${tier.revenue.toFixed(2)}</div>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-500">Quantity:</span>
+                                        <div className="font-semibold">{tier.quantity}</div>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-500">Transactions:</span>
+                                        <div className="font-semibold">{tier.transactions}</div>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-500">Combinations:</span>
+                                        <div className="font-semibold">{tier.seatCombinations}</div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <p>No Stripe revenue data available</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {activeAnalyticsTab === 'organizer-revenue' && (
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-lg font-semibold text-gray-900">Organizer Direct Sales</h4>
+                          {revenueLoading && (
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                              Loading...
+                            </div>
+                          )}
                         </div>
+                        
+                        {organizerRevenueData ? (
+                          <div className="space-y-6">
+                            {/* Summary Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                              <div className="bg-blue-50 rounded-lg p-4">
+                                <div className="text-sm text-blue-600">Total Revenue</div>
+                                <div className="text-2xl font-bold text-blue-800">
+                                  ${organizerRevenueData.totalOrganizerRevenue.toFixed(2)}
+                                </div>
+                              </div>
+                              <div className="bg-green-50 rounded-lg p-4">
+                                <div className="text-sm text-green-600">Paid Revenue</div>
+                                <div className="text-2xl font-bold text-green-800">
+                                  ${organizerRevenueData.paidOrganizerRevenue.toFixed(2)}
+                                </div>
+                              </div>
+                              <div className="bg-red-50 rounded-lg p-4">
+                                <div className="text-sm text-red-600">Unpaid Revenue</div>
+                                <div className="text-2xl font-bold text-red-800">
+                                  ${organizerRevenueData.unpaidOrganizerRevenue.toFixed(2)}
+                                </div>
+                              </div>
+                              <div className="bg-purple-50 rounded-lg p-4">
+                                <div className="text-sm text-purple-600">Payment Rate</div>
+                                <div className="text-2xl font-bold text-purple-800">
+                                  {organizerRevenueData.overallPaymentPercentage.toFixed(1)}%
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Ticket Type Breakdown */}
+                            <div>
+                              <h5 className="font-medium text-gray-900 mb-4">Revenue by Ticket Type</h5>
+                              <div className="space-y-3">
+                                {organizerRevenueData.ticketTypes.map((ticketType) => (
+                                  <div key={ticketType.ticketTypeId} className="bg-white border rounded-lg p-4">
+                                    <div className="flex justify-between items-center mb-2">
+                                      <span className="font-medium">{ticketType.ticketTypeName}</span>
+                                      <span className="text-sm text-gray-500">
+                                        ${ticketType.ticketPrice.toFixed(2)} each
+                                      </span>
+                                    </div>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                      <div>
+                                        <span className="text-gray-500">Issued:</span>
+                                        <div className="font-semibold">{ticketType.issuedTickets}</div>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-500">Paid:</span>
+                                        <div className="font-semibold text-green-600">
+                                          {ticketType.paidTickets} (${ticketType.paidRevenue.toFixed(2)})
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-500">Unpaid:</span>
+                                        <div className="font-semibold text-red-600">
+                                          {ticketType.unpaidTickets} (${ticketType.unpaidRevenue.toFixed(2)})
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-500">Payment Rate:</span>
+                                        <div className="font-semibold text-purple-600">
+                                          {ticketType.paymentPercentage.toFixed(1)}%
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="mt-3">
+                                      <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                        <span>Paid: {ticketType.paidTickets}</span>
+                                        <span>Total: {ticketType.issuedTickets}</span>
+                                      </div>
+                                      <div className="w-full bg-gray-200 rounded-full h-2">
+                                        <div
+                                          className="bg-green-500 h-2 rounded-full"
+                                          style={{
+                                            width: `${Math.min(ticketType.paymentPercentage, 100)}%`
+                                          }}
+                                        ></div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <p>No organizer revenue data available</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {activeAnalyticsTab === 'revenue-summary' && (
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-lg font-semibold text-gray-900">Complete Revenue Summary</h4>
+                          {revenueLoading && (
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                              Loading...
+                            </div>
+                          )}
+                        </div>
+                        
+                        {revenueSummaryData ? (
+                          <div className="space-y-6">
+                            {/* Combined Summary Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                              <div className="bg-green-50 rounded-lg p-4">
+                                <div className="text-sm text-green-600">KiwiLanka Revenue</div>
+                                <div className="text-lg font-bold text-green-800">
+                                  ${revenueSummaryData.combinedSummary.kiwiLankaRevenue.toFixed(2)}
+                                </div>
+                                <div className="text-xs text-green-600">
+                                  {revenueSummaryData.combinedSummary.kiwiLankaPercentage.toFixed(1)}% of total
+                                </div>
+                              </div>
+                              <div className="bg-blue-50 rounded-lg p-4">
+                                <div className="text-sm text-blue-600">Organizer Revenue</div>
+                                <div className="text-lg font-bold text-blue-800">
+                                  ${revenueSummaryData.combinedSummary.organizerRevenue.toFixed(2)}
+                                </div>
+                                <div className="text-xs text-blue-600">
+                                  {revenueSummaryData.combinedSummary.organizerPercentage.toFixed(1)}% of total
+                                </div>
+                              </div>
+                              <div className="bg-purple-50 rounded-lg p-4">
+                                <div className="text-sm text-purple-600">Total Revenue</div>
+                                <div className="text-lg font-bold text-purple-800">
+                                  ${revenueSummaryData.combinedSummary.totalRevenue.toFixed(2)}
+                                </div>
+                                <div className="text-xs text-purple-600">
+                                  {revenueSummaryData.combinedSummary.overallEventUtilization.toFixed(1)}% utilized
+                                </div>
+                              </div>
+                              <div className="bg-orange-50 rounded-lg p-4">
+                                <div className="text-sm text-orange-600">Net to Organizer</div>
+                                <div className="text-lg font-bold text-orange-800">
+                                  ${revenueSummaryData.combinedSummary.estimatedNetToOrganizer.toFixed(2)}
+                                </div>
+                                <div className="text-xs text-orange-600">
+                                  After fees: {revenueSummaryData.combinedSummary.estimatedNetPercentage.toFixed(1)}%
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Revenue Panels */}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                              {/* Max Possible Revenue Panel */}
+                              <div className="bg-white border rounded-lg p-4">
+                                <h5 className="font-semibold text-gray-900 mb-3">
+                                  {revenueSummaryData.maxPossibleRevenuePanel.panelTitle}
+                                </h5>
+                                <div className="space-y-2">
+                                  {revenueSummaryData.maxPossibleRevenuePanel.breakdownItems.map((item, index) => (
+                                    <div key={index} className="text-sm">
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-600">{item.ticketTypeName}:</span>
+                                        <span className="font-medium">${item.revenue.toFixed(2)}</span>
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        ${item.ticketPrice.toFixed(2)} × {item.quantity}
+                                      </div>
+                                    </div>
+                                  ))}
+                                  <div className="border-t pt-2 mt-2">
+                                    <div className="flex justify-between font-semibold">
+                                      <span>Total:</span>
+                                      <span>${revenueSummaryData.maxPossibleRevenuePanel.totalRevenue.toFixed(2)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* KiwiLanka Revenue Panel */}
+                              <div className="bg-white border rounded-lg p-4">
+                                <h5 className="font-semibold text-gray-900 mb-3">
+                                  {revenueSummaryData.kiwiLankaRevenuePanel.panelTitle}
+                                </h5>
+                                <div className="space-y-2">
+                                  {revenueSummaryData.kiwiLankaRevenuePanel.breakdownItems.map((item, index) => (
+                                    <div key={index} className="text-sm">
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-600">{item.ticketTypeName}:</span>
+                                        <span className="font-medium">${item.revenue.toFixed(2)}</span>
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        ${item.ticketPrice.toFixed(2)} × {item.quantity}
+                                      </div>
+                                    </div>
+                                  ))}
+                                  <div className="border-t pt-2 mt-2">
+                                    <div className="flex justify-between font-semibold">
+                                      <span>Total:</span>
+                                      <span>${revenueSummaryData.kiwiLankaRevenuePanel.totalRevenue.toFixed(2)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Organizer Revenue Panel */}
+                              <div className="bg-white border rounded-lg p-4">
+                                <h5 className="font-semibold text-gray-900 mb-3">
+                                  {revenueSummaryData.organizerRevenuePanel.panelTitle}
+                                </h5>
+                                <div className="space-y-2">
+                                  {revenueSummaryData.organizerRevenuePanel.breakdownItems.map((item, index) => (
+                                    <div key={index} className="text-sm">
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-600">{item.ticketTypeName}:</span>
+                                        <span className="font-medium">${item.revenue.toFixed(2)}</span>
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        ${item.ticketPrice.toFixed(2)} × {item.quantity}
+                                      </div>
+                                    </div>
+                                  ))}
+                                  <div className="border-t pt-2 mt-2">
+                                    <div className="flex justify-between font-semibold">
+                                      <span>Total:</span>
+                                      <span>${revenueSummaryData.organizerRevenuePanel.totalRevenue.toFixed(2)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <p>No revenue summary data available</p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1066,6 +1572,7 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                     </div>
                   </div>
                 )}
+
               </div>
             </div>
           ) : (
