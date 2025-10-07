@@ -3,11 +3,25 @@ import { api } from './api';
 // Type definitions for our 4 revenue analysis tabs
 
 // Tab 1: Ticket Capacity Analysis
+export interface TicketCapacitySummaryDTO {
+  totalSoldTickets: number;
+  totalReservedTickets: number;
+  totalAvailableTickets: number;
+  totalMaxCapacity: number;
+  overallUtilizationPercentage: number;
+}
+
+export interface TicketCapacityResponseDTO {
+  summary: TicketCapacitySummaryDTO;
+  ticketTypes: TicketCapacityDTO[];
+}
+
 export interface TicketCapacityDTO {
   ticketTypeId: number;
   ticketTypeName: string;
   ticketPrice: number;
   soldTickets: number;
+  reservedTickets: number;
   availableTickets: number;
   totalCapacity: number;
   utilizationPercentage: number;
@@ -60,6 +74,7 @@ export interface OrganizerRevenueDTO {
   totalIssued: number;
   totalPaid: number;
   totalUnpaid: number;
+  totalTransactions: number; // New field for transaction count
   totalOrganizerRevenue: number;
   paidOrganizerRevenue: number;
   unpaidOrganizerRevenue: number;
@@ -90,10 +105,6 @@ export interface RevenueSummaryTotalsDTO {
   totalRevenue: number;
   remainingCapacityValue: number;
   overallEventUtilization: number;
-  estimatedPlatformCommission: number;
-  estimatedStripeFees: number;
-  estimatedNetToOrganizer: number;
-  estimatedNetPercentage: number;
 }
 
 export interface RevenueSummaryDTO {
@@ -112,10 +123,10 @@ export class RevenueAnalysisService {
   /**
    * Tab 1: Get ticket capacity analysis for an event
    */
-  static async getTicketCapacity(eventId: number): Promise<TicketCapacityDTO[]> {
+  static async getTicketCapacity(eventId: number): Promise<TicketCapacityResponseDTO> {
     try {
       const response = await api.get(`/Events/${eventId}/ticket-capacity`);
-      return response.data as TicketCapacityDTO[];
+      return response.data as TicketCapacityResponseDTO;
     } catch (error) {
       console.error('Error fetching ticket capacity data:', error);
       throw error;

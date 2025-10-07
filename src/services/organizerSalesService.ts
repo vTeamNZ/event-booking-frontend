@@ -40,6 +40,19 @@ export interface BookingDetailView {
   isOrganizerBooking: boolean;
 }
 
+export interface ReservedSeatView {
+  seatId: number;
+  seatNumber: string;
+  row: string;
+  number: number;
+  ticketTypeName: string;
+  seatPrice: number;
+  reservedUntil?: Date;
+  reservedBy?: string;
+  markedAsBookedTime: Date;
+  daysSinceBooked: number;
+}
+
 export interface TicketTypeBreakdown {
   ticketTypeId: number;
   ticketTypeName: string;
@@ -232,6 +245,53 @@ class OrganizerSalesService {
       paidRevenue: breakdown.PaidRevenue || breakdown.paidRevenue || 0,
       totalRevenue: breakdown.TotalRevenue || breakdown.totalRevenue || 0
     }));
+  }
+
+  /**
+   * Get list of seats marked as booked but without actual booking records
+   */
+  async getEventReservedSeats(
+    eventId: number,
+    page: number = 1,
+    pageSize: number = 50
+  ): Promise<{ reservedSeats: ReservedSeatView[], totalCount: number, page: number, pageSize: number }> {
+    if (!eventId) {
+      return {
+        reservedSeats: [],
+        totalCount: 0,
+        page: page,
+        pageSize: pageSize
+      };
+    }
+    
+    const params = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString()
+    });
+    
+    const response = await api.get(`/organizer/events/${eventId}/reserved-seats?${params}`);
+    const data = response.data as any;
+    
+    // Transform the response to expected format
+    const reservedSeats = (data.reservedSeats || data.ReservedSeats || []).map((seat: any) => ({
+      seatId: seat.SeatId || seat.seatId,
+      seatNumber: seat.SeatNumber || seat.seatNumber || '',
+      row: seat.Row || seat.row || '',
+      number: seat.Number || seat.number || 0,
+      ticketTypeName: seat.TicketTypeName || seat.ticketTypeName || '',
+      seatPrice: seat.SeatPrice || seat.seatPrice || 0,
+      reservedUntil: seat.ReservedUntil ? new Date(seat.ReservedUntil || seat.reservedUntil) : undefined,
+      reservedBy: seat.ReservedBy || seat.reservedBy || undefined,
+      markedAsBookedTime: new Date(seat.MarkedAsBookedTime || seat.markedAsBookedTime),
+      daysSinceBooked: seat.DaysSinceBooked || seat.daysSinceBooked || 0
+    }));
+    
+    return {
+      reservedSeats: reservedSeats,
+      totalCount: data.totalCount || data.TotalCount || 0,
+      page: data.page || data.Page || page,
+      pageSize: data.pageSize || data.PageSize || pageSize
+    };
   }
 
   /**

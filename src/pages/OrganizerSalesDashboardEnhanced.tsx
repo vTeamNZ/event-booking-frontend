@@ -5,11 +5,14 @@ import {
   EventSalesDetail, 
   DailyAnalytics,
   BookingDetailView,
-  TicketTypeBreakdown 
+  TicketTypeBreakdown,
+  ReservedSeatView 
 } from '../services/organizerSalesService';
 import { 
   RevenueAnalysisService,
   TicketCapacityDTO,
+  TicketCapacityResponseDTO,
+  TicketCapacitySummaryDTO,
   StripeRevenueAnalysisDTO,
   OrganizerRevenueDTO,
   RevenueSummaryDTO
@@ -58,7 +61,7 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   
   // Revenue Analysis state for new tabs
-  const [ticketCapacityData, setTicketCapacityData] = useState<TicketCapacityDTO[]>([]);
+  const [ticketCapacityData, setTicketCapacityData] = useState<TicketCapacityResponseDTO | null>(null);
   const [stripeRevenueData, setStripeRevenueData] = useState<StripeRevenueAnalysisDTO | null>(null);
   const [organizerRevenueData, setOrganizerRevenueData] = useState<OrganizerRevenueDTO | null>(null);
   const [revenueSummaryData, setRevenueSummaryData] = useState<RevenueSummaryDTO | null>(null);
@@ -76,6 +79,7 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
   const [emailFilter, setEmailFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [reservedSeats, setReservedSeats] = useState<ReservedSeatView[]>([]);
   const [pageSize] = useState(20);
   const [totalBookings, setTotalBookings] = useState(0);
 
@@ -264,20 +268,34 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
         pageSize
       });
       
-      const searchQuery = nameFilter || emailFilter ? `${nameFilter} ${emailFilter}`.trim() : undefined;
-      const statusQuery = statusFilter === 'all' ? undefined : statusFilter;
-      
-      const data = await organizerSalesService.getEventBookings(
-        eventId, 
-        currentPage, 
-        pageSize, 
-        searchQuery,
-        statusQuery
-      );
-      
-      console.log('📊 Bookings loaded:', data.bookings.length, 'total:', data.totalCount);
-      setBookings(data.bookings);
-      setTotalBookings(data.totalCount);
+      // If "Reserved Seats" filter is selected, load reserved seats instead
+      if (statusFilter === 'reserved') {
+        const data = await organizerSalesService.getEventReservedSeats(
+          eventId,
+          currentPage,
+          pageSize
+        );
+        console.log('🪑 Reserved seats loaded:', data.reservedSeats.length, 'total:', data.totalCount);
+        setReservedSeats(data.reservedSeats);
+        setBookings([]); // Clear bookings when showing reserved seats
+        setTotalBookings(data.totalCount);
+      } else {
+        const searchQuery = nameFilter || emailFilter ? `${nameFilter} ${emailFilter}`.trim() : undefined;
+        const statusQuery = statusFilter === 'all' ? undefined : statusFilter;
+        
+        const data = await organizerSalesService.getEventBookings(
+          eventId, 
+          currentPage, 
+          pageSize, 
+          searchQuery,
+          statusQuery
+        );
+        
+        console.log('📊 Bookings loaded:', data.bookings.length, 'total:', data.totalCount);
+        setBookings(data.bookings);
+        setReservedSeats([]); // Clear reserved seats when showing bookings
+        setTotalBookings(data.totalCount);
+      }
     } catch (err: any) {
       console.error('Error loading bookings:', err);
       toast.error('Failed to load booking details');
@@ -377,7 +395,7 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
     setActiveAnalyticsTab(subTab);
     if (selectedEventId) {
       // Load data for the specific sub-tab if not already loaded
-      if (subTab === 'ticket-capacity' && ticketCapacityData.length === 0) {
+      if (subTab === 'ticket-capacity' && (!ticketCapacityData || ticketCapacityData.ticketTypes.length === 0)) {
         loadTicketCapacityData(selectedEventId);
       } else if (subTab === 'stripe-revenue' && !stripeRevenueData) {
         loadStripeRevenueData(selectedEventId);
@@ -997,52 +1015,110 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                           )}
                         </div>
                         
-                        {ticketCapacityData.length > 0 ? (
-                          <div className="space-y-4">
-                            {ticketCapacityData.map((ticketType) => (
-                              <div key={ticketType.ticketTypeId} className="bg-gray-50 rounded-lg p-4">
-                                <div className="flex justify-between items-center mb-2">
-                                  <h5 className="font-medium text-gray-900">{ticketType.ticketTypeName}</h5>
-                                  <span className="text-sm font-medium text-gray-600">
-                                    ${ticketType.ticketPrice.toFixed(2)}
-                                  </span>
-                                </div>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                                  <div>
-                                    <span className="text-gray-500">Sold:</span>
-                                    <div className="font-semibold text-green-600">{ticketType.soldTickets}</div>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-500">Available:</span>
-                                    <div className="font-semibold text-blue-600">{ticketType.availableTickets}</div>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-500">Total Capacity:</span>
-                                    <div className="font-semibold text-gray-800">{ticketType.totalCapacity}</div>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-500">Utilization:</span>
-                                    <div className="font-semibold text-purple-600">
-                                      {ticketType.utilizationPercentage.toFixed(1)}%
-                                    </div>
+                        {ticketCapacityData && ticketCapacityData.ticketTypes.length > 0 ? (
+                          <div className="space-y-6">
+                            {/* Summary Totals Card */}
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-5">
+                              <h5 className="font-semibold text-gray-900 mb-4">Overall Summary</h5>
+                              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm mb-4">
+                                <div>
+                                  <span className="text-gray-600">Total Sold:</span>
+                                  <div className="font-semibold text-green-600 text-lg">
+                                    {ticketCapacityData.summary.totalSoldTickets}
                                   </div>
                                 </div>
-                                <div className="mt-3">
-                                  <div className="flex justify-between text-xs text-gray-500 mb-1">
-                                    <span>0</span>
-                                    <span>{ticketType.totalCapacity}</span>
+                                <div>
+                                  <span className="text-gray-600">Total Reserved:</span>
+                                  <div className="font-semibold text-orange-600 text-lg">
+                                    {ticketCapacityData.summary.totalReservedTickets}
                                   </div>
-                                  <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div
-                                      className="bg-green-500 h-2 rounded-full"
-                                      style={{
-                                        width: `${Math.min(ticketType.utilizationPercentage, 100)}%`
-                                      }}
-                                    ></div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">Total Available:</span>
+                                  <div className="font-semibold text-blue-600 text-lg">
+                                    {ticketCapacityData.summary.totalAvailableTickets}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">Max Capacity:</span>
+                                  <div className="font-semibold text-gray-800 text-lg">
+                                    {ticketCapacityData.summary.totalMaxCapacity}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">Overall Utilization:</span>
+                                  <div className="font-semibold text-purple-600 text-lg">
+                                    {ticketCapacityData.summary.overallUtilizationPercentage.toFixed(1)}%
                                   </div>
                                 </div>
                               </div>
-                            ))}
+                              <div className="mt-3">
+                                <div className="flex justify-between text-xs text-gray-600 mb-1">
+                                  <span>0</span>
+                                  <span>{ticketCapacityData.summary.totalMaxCapacity}</span>
+                                </div>
+                                <div className="w-full bg-gray-300 rounded-full h-3">
+                                  <div
+                                    className="bg-blue-500 h-3 rounded-full transition-all duration-300"
+                                    style={{
+                                      width: `${Math.min(ticketCapacityData.summary.overallUtilizationPercentage, 100)}%`
+                                    }}
+                                  ></div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Individual Ticket Types */}
+                            <div className="space-y-4">
+                              {ticketCapacityData.ticketTypes.map((ticketType) => (
+                                <div key={ticketType.ticketTypeId} className="bg-gray-50 rounded-lg p-4">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <h5 className="font-medium text-gray-900">{ticketType.ticketTypeName}</h5>
+                                    <span className="text-sm font-medium text-gray-600">
+                                      ${ticketType.ticketPrice.toFixed(2)}
+                                    </span>
+                                  </div>
+                                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                                    <div>
+                                      <span className="text-gray-500">Sold:</span>
+                                      <div className="font-semibold text-green-600">{ticketType.soldTickets}</div>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-500">Reserved:</span>
+                                      <div className="font-semibold text-orange-600">{ticketType.reservedTickets}</div>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-500">Available:</span>
+                                      <div className="font-semibold text-blue-600">{ticketType.availableTickets}</div>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-500">Total Capacity:</span>
+                                      <div className="font-semibold text-gray-800">{ticketType.totalCapacity}</div>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-500">Utilization:</span>
+                                      <div className="font-semibold text-purple-600">
+                                        {ticketType.utilizationPercentage.toFixed(1)}%
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="mt-3">
+                                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                      <span>0</span>
+                                      <span>{ticketType.totalCapacity}</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                      <div
+                                        className="bg-green-500 h-2 rounded-full"
+                                        style={{
+                                          width: `${Math.min(ticketType.utilizationPercentage, 100)}%`
+                                        }}
+                                      ></div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         ) : (
                           <div className="text-center py-8 text-gray-500">
@@ -1149,10 +1225,18 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                           )}
                         </div>
                         
+                        {organizerRevenueData && (
+                          <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                            <div className="text-sm text-gray-600">
+                              <strong>Summary:</strong> {organizerRevenueData.totalIssued} tickets issued in {organizerRevenueData.totalTransactions || 0} transactions
+                            </div>
+                          </div>
+                        )}
+                        
                         {organizerRevenueData ? (
                           <div className="space-y-6">
                             {/* Summary Cards */}
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                               <div className="bg-blue-50 rounded-lg p-4">
                                 <div className="text-sm text-blue-600">Total Revenue</div>
                                 <div className="text-2xl font-bold text-blue-800">
@@ -1175,6 +1259,18 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                                 <div className="text-sm text-purple-600">Payment Rate</div>
                                 <div className="text-2xl font-bold text-purple-800">
                                   {organizerRevenueData.overallPaymentPercentage.toFixed(1)}%
+                                </div>
+                              </div>
+                              <div className="bg-yellow-50 rounded-lg p-4">
+                                <div className="text-sm text-yellow-600">Total Tickets</div>
+                                <div className="text-2xl font-bold text-yellow-800">
+                                  {organizerRevenueData.totalIssued}
+                                </div>
+                              </div>
+                              <div className="bg-indigo-50 rounded-lg p-4">
+                                <div className="text-sm text-indigo-600">Transactions</div>
+                                <div className="text-2xl font-bold text-indigo-800">
+                                  {organizerRevenueData.totalTransactions || 0}
                                 </div>
                               </div>
                             </div>
@@ -1257,7 +1353,7 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                         {revenueSummaryData ? (
                           <div className="space-y-6">
                             {/* Combined Summary Cards */}
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                               <div className="bg-green-50 rounded-lg p-4">
                                 <div className="text-sm text-green-600">KiwiLanka Revenue</div>
                                 <div className="text-lg font-bold text-green-800">
@@ -1283,15 +1379,6 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                                 </div>
                                 <div className="text-xs text-purple-600">
                                   {revenueSummaryData.combinedSummary.overallEventUtilization.toFixed(1)}% utilized
-                                </div>
-                              </div>
-                              <div className="bg-orange-50 rounded-lg p-4">
-                                <div className="text-sm text-orange-600">Net to Organizer</div>
-                                <div className="text-lg font-bold text-orange-800">
-                                  ${revenueSummaryData.combinedSummary.estimatedNetToOrganizer.toFixed(2)}
-                                </div>
-                                <div className="text-xs text-orange-600">
-                                  After fees: {revenueSummaryData.combinedSummary.estimatedNetPercentage.toFixed(1)}%
                                 </div>
                               </div>
                             </div>
@@ -1438,6 +1525,7 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                             <option value="all">All Bookings</option>
                             <option value="paid">Paid Only</option>
                             <option value="organizer">Organizer Guests</option>
+                            <option value="reserved">Reserved Seats (No Booking)</option>
                           </select>
                         </div>
                         <div className="flex items-end">
@@ -1481,9 +1569,92 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                       {bookingsLoading ? (
                         <div className="p-8 text-center">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                          <p className="text-gray-600">Loading booking details...</p>
+                          <p className="text-gray-600">Loading {statusFilter === 'reserved' ? 'reserved seats' : 'booking details'}...</p>
+                        </div>
+                      ) : statusFilter === 'reserved' && reservedSeats.length > 0 ? (
+                        /* Reserved Seats Table */
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Seat Number
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Row / Number
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Ticket Type
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Price
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Days Since Booked
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Reservation Info
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {reservedSeats.map((seat) => (
+                                <tr key={seat.seatId} className="hover:bg-gray-50">
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm font-medium text-gray-900">
+                                      {seat.seatNumber}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm text-gray-900">
+                                      Row {seat.row}, Seat {seat.number}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm text-gray-900">
+                                      {seat.ticketTypeName}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm text-gray-900">
+                                      {organizerSalesService.formatCurrency(seat.seatPrice)}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                      seat.daysSinceBooked > 7 
+                                        ? 'bg-red-100 text-red-800' 
+                                        : seat.daysSinceBooked > 3
+                                        ? 'bg-yellow-100 text-yellow-800'
+                                        : 'bg-green-100 text-green-800'
+                                    }`}>
+                                      {seat.daysSinceBooked} {seat.daysSinceBooked === 1 ? 'day' : 'days'}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="text-sm text-gray-500">
+                                      {seat.reservedBy ? (
+                                        <div>
+                                          <div>Reserved by: {seat.reservedBy}</div>
+                                          {seat.reservedUntil && (
+                                            <div>Until: {new Date(seat.reservedUntil).toLocaleString()}</div>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div className="text-gray-400 italic">No reservation info</div>
+                                      )}
+                                      <div className="mt-1 text-xs">
+                                        Marked: {new Date(seat.markedAsBookedTime).toLocaleString()}
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       ) : bookings.length > 0 ? (
+                        /* Bookings Table */
                         <div className="overflow-x-auto">
                           <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
@@ -1559,14 +1730,112 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                         </div>
                       ) : (
                         <div className="text-center py-8 text-gray-500">
-                          <p>No bookings found for this event</p>
+                          <p>{statusFilter === 'reserved' ? 'No reserved seats found for this event' : 'No bookings found for this event'}</p>
                         </div>
                       )}
 
                       {/* Pagination Info */}
                       {totalBookings > 0 && (
-                        <div className="text-center text-sm text-gray-600 mt-4 p-4">
-                          Showing {bookings.length} of {totalBookings} bookings
+                        <div className="px-4 py-3 border-t border-gray-200">
+                          <div className="flex items-center justify-between">
+                            {/* Pagination Info */}
+                            <div className="text-sm text-gray-600">
+                              Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalBookings)} of {totalBookings} {statusFilter === 'reserved' ? 'reserved seats' : 'bookings'}
+                            </div>
+                            
+                            {/* Pagination Controls */}
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => {
+                                  if (currentPage > 1) {
+                                    setCurrentPage(currentPage - 1);
+                                  }
+                                }}
+                                disabled={currentPage === 1 || bookingsLoading}
+                                className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Previous
+                              </button>
+                              
+                              <div className="flex items-center space-x-1">
+                                {/* Show page numbers */}
+                                {(() => {
+                                  const totalPages = Math.ceil(totalBookings / pageSize);
+                                  const pages = [];
+                                  const maxVisiblePages = 5;
+                                  
+                                  let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                                  let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                                  
+                                  if (endPage - startPage < maxVisiblePages - 1) {
+                                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                                  }
+                                  
+                                  if (startPage > 1) {
+                                    pages.push(
+                                      <button
+                                        key={1}
+                                        onClick={() => setCurrentPage(1)}
+                                        className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
+                                      >
+                                        1
+                                      </button>
+                                    );
+                                    if (startPage > 2) {
+                                      pages.push(<span key="ellipsis1" className="px-2 text-gray-500">...</span>);
+                                    }
+                                  }
+                                  
+                                  for (let i = startPage; i <= endPage; i++) {
+                                    pages.push(
+                                      <button
+                                        key={i}
+                                        onClick={() => setCurrentPage(i)}
+                                        disabled={bookingsLoading}
+                                        className={`px-3 py-1 text-sm border rounded-md ${
+                                          currentPage === i
+                                            ? 'bg-blue-600 text-white border-blue-600'
+                                            : 'border-gray-300 hover:bg-gray-50'
+                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                      >
+                                        {i}
+                                      </button>
+                                    );
+                                  }
+                                  
+                                  if (endPage < totalPages) {
+                                    if (endPage < totalPages - 1) {
+                                      pages.push(<span key="ellipsis2" className="px-2 text-gray-500">...</span>);
+                                    }
+                                    pages.push(
+                                      <button
+                                        key={totalPages}
+                                        onClick={() => setCurrentPage(totalPages)}
+                                        className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
+                                      >
+                                        {totalPages}
+                                      </button>
+                                    );
+                                  }
+                                  
+                                  return pages;
+                                })()}
+                              </div>
+                              
+                              <button
+                                onClick={() => {
+                                  const totalPages = Math.ceil(totalBookings / pageSize);
+                                  if (currentPage < totalPages) {
+                                    setCurrentPage(currentPage + 1);
+                                  }
+                                }}
+                                disabled={currentPage >= Math.ceil(totalBookings / pageSize) || bookingsLoading}
+                                className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Next
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
