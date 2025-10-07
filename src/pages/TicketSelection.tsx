@@ -5,6 +5,7 @@ import { TicketType, TicketTypeDisplay, getTicketTypesForEvent } from '../servic
 import { ticketAvailabilityService, TicketAvailabilityInfo } from '../services/ticketAvailabilityService';
 import { useBooking, useEventDetails } from '../contexts/BookingContext';
 import { BookingNavigator } from '../utils/BookingNavigator';
+import { getAvailabilityStatus } from '../utils/availabilityStatus';
 import { BookingData } from '../types/booking';
 import SEO from '../components/SEO';
 import EventStructuredData from '../components/SEO/EventStructuredData';
@@ -382,27 +383,17 @@ const TicketSelection: React.FC = () => {
                             </span>
                           ) : (
                             (() => {
-                              // Calculate availability percentage (assuming total capacity from sold + available)
-                              const totalCapacity = ticketAvailability.sold + ticketAvailability.available;
-                              const availabilityPercentage = totalCapacity > 0 ? (ticketAvailability.available / totalCapacity) * 100 : 0;
-                              
-                              let colorClass = 'text-gray-400';
-                              let statusText = 'Available';
-                              
-                              if (availabilityPercentage > 75) {
-                                colorClass = 'text-green-400';
-                                statusText = ticket.name.toLowerCase().includes('table') ? '' : '';
-                              } else if (availabilityPercentage > 25) {
-                                colorClass = 'text-orange-400';
-                                statusText = ticket.name.toLowerCase().includes('table') ? 'Limited Tables Available' : 'Limited Tickets Available';
-                              } else {
-                                colorClass = 'text-red-400';
-                                statusText = ticket.name.toLowerCase().includes('table') ? 'Few Tables Remaining' : 'Few Tickets Remaining';
-                              }
+                              const isTable = ticket.name.toLowerCase().includes('table');
+                              const availabilityStatus = getAvailabilityStatus(
+                                ticketAvailability.available,
+                                ticketAvailability.sold,
+                                ticketAvailability.hasLimit,
+                                isTable
+                              );
                               
                               return (
-                                <span className={colorClass}>
-                                  {statusText}
+                                <span className={availabilityStatus.colorClass}>
+                                  {availabilityStatus.statusText}
                                 </span>
                               );
                             })()

@@ -9,6 +9,7 @@ import { getTicketTypesForEvent } from '../services/ticketTypeService';
 import { ticketAvailabilityService, TicketAvailabilityInfo } from '../services/ticketAvailabilityService';
 import { formatPrice } from '../utils/seatSelection';
 import { cn } from '../utils/seatSelection';
+import { getAvailabilityStatus } from '../utils/availabilityStatus';
 
 interface GeneralAdmissionTicketsProps {
   eventId: number;
@@ -198,15 +199,30 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
                     {ticketType.type}
                     {isSoldOut && <span className="ml-2 text-red-600 text-sm">(SOLD OUT)</span>}
                   </h4>
-                  {/* Availability indicator */}
-                  {availabilityInfo && availabilityInfo.hasLimit && (
-                    <p className={cn(
-                      "text-xs mt-1 font-medium",
-                      isSoldOut ? "text-red-600" : 
-                      availabilityInfo.available <= 5 ? "text-orange-600" : "text-green-600"
-                    )}>
-                      {isSoldOut ? "Sold Out" : `${availabilityInfo.available} tickets available`}
-                    </p>
+                  {/* Enhanced availability indicator using percentage-based status */}
+                  {availabilityInfo && (
+                    (() => {
+                      const availabilityStatus = getAvailabilityStatus(
+                        availabilityInfo.available,
+                        availabilityInfo.sold,
+                        availabilityInfo.hasLimit,
+                        false // not a table
+                      );
+                      
+                      return (
+                        <p className={cn(
+                          "text-xs mt-1 font-medium",
+                          availabilityStatus.colorClass
+                        )}>
+                          {availabilityStatus.statusText}
+                          {availabilityStatus.percentage < 100 && availabilityStatus.percentage > 0 && (
+                            <span className="ml-1 opacity-75">
+                              ({availabilityStatus.percentage}% available)
+                            </span>
+                          )}
+                        </p>
+                      );
+                    })()
                   )}
                 </div>
                 <div className="text-right">

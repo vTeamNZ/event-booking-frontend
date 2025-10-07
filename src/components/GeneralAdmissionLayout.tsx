@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import toast from 'react-hot-toast';
+import { getAvailabilityStatus } from '../utils/availabilityStatus';
 
 interface GeneralAdmissionProps {
   eventId: number;
@@ -163,9 +164,26 @@ export const GeneralAdmissionLayout: React.FC<GeneralAdmissionProps> = ({
                   {ticketType.description && (
                     <p className="text-sm text-gray-600 mt-1">{ticketType.description}</p>
                   )}
-                  <div className="flex items-center mt-2 text-sm text-gray-600">
-                    <span className="mr-4">Available: {availableCount}</span>
-                    <span>Max per order: {ticketType.maxPerOrder}</span>
+                  <div className="flex items-center mt-2 text-sm">
+                    {(() => {
+                      const availabilityStatus = getAvailabilityStatus(
+                        availableCount,
+                        ticketType.soldCount,
+                        true, // has limit for general admission
+                        false // not a table
+                      );
+                      
+                      return (
+                        <>
+                          <span className={`mr-4 font-medium ${availabilityStatus.colorClass}`}>
+                            {availabilityStatus.statusText}
+                          </span>
+                          <span className="text-gray-600">
+                            Max per order: {ticketType.maxPerOrder}
+                          </span>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
                 <div className="text-right ml-4">
