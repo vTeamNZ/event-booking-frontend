@@ -18,6 +18,9 @@ const RouteTracker = () => {
   
   useEffect(() => {
     if (window.gtag) {
+      window.gtag('config', 'G-V9HTB2CSZH', {
+        page_path: location.pathname + location.search
+      });
       window.gtag('config', 'AW-17215959436', {
         page_path: location.pathname + location.search
       });
