@@ -52,13 +52,21 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('analytics');
   const [activeAnalyticsTab, setActiveAnalyticsTab] = useState<AnalyticsSubTab>('ticket-capacity');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Changed from true to false since we use individual loading states
   const [detailLoading, setDetailLoading] = useState(false);
   const [chartLoading, setChartLoading] = useState(false);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  
+  // Individual tile loading states to prevent full-page loading
+  const [tilesLoading, setTilesLoading] = useState(false);
+  const [eventsListLoading, setEventsListLoading] = useState(true);
+
+  // Event data caching to prevent unnecessary reloads
+  const [eventDataCache, setEventDataCache] = useState<Map<number, any>>(new Map());
+  const [cacheTimestamps, setCacheTimestamps] = useState<Map<number, number>>(new Map());
+  const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes cache
   
   // Revenue Analysis state for new tabs
   const [ticketCapacityData, setTicketCapacityData] = useState<TicketCapacityResponseDTO | null>(null);
@@ -106,23 +114,39 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Load initial data effect (only runs once and when selectedEventId/activeTab changes)
   useEffect(() => {
-    // Load initial events list
-    loadEventsList();
-    
-    // Auto-refresh every 30 seconds if enabled
+    // Load initial events list only when component mounts or when needed
+    if (eventsList.length === 0) {
+      loadEventsList();
+    }
+
+    // Load event-specific data when event selection changes
+    if (selectedEventId) {
+      loadEventDetail(selectedEventId);
+      if (activeTab === 'analytics') {
+        loadDailyAnalytics(selectedEventId);
+        loadTicketBreakdown(selectedEventId);
+      } else if (activeTab === 'bookings') {
+        loadBookings(selectedEventId);
+      }
+    }
+  }, [selectedEventId, activeTab]);
+
+  // Separate auto-refresh effect to prevent unnecessary reloads
+  useEffect(() => {
     let refreshInterval: NodeJS.Timeout;
-    if (autoRefresh) {
+    
+    if (autoRefresh && selectedEventId) {
       refreshInterval = setInterval(() => {
-        refreshEventStats(); // Use the new refresh function for auto-refresh
-        if (selectedEventId) {
-          loadEventDetail(selectedEventId);
-          if (activeTab === 'analytics') {
-            loadDailyAnalytics(selectedEventId);
-            loadTicketBreakdown(selectedEventId);
-          } else if (activeTab === 'bookings') {
-            loadBookings(selectedEventId);
-          }
+        // Only refresh current data, don't reload everything
+        refreshEventStats();
+        loadEventDetail(selectedEventId);
+        if (activeTab === 'analytics') {
+          loadDailyAnalytics(selectedEventId);
+          loadTicketBreakdown(selectedEventId);
+        } else if (activeTab === 'bookings') {
+          loadBookings(selectedEventId);
         }
       }, 30000);
     }
@@ -134,28 +158,117 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
 
   const loadEventsList = async () => {
     try {
-      setLoading(true);
+      setEventsListLoading(true);
       setError(null);
       // Use the existing Events API to get organizer's events
       const response = await api.get('/organizer/events');
       const events = response.data as any[];
       
-      // Transform events data for display
+      // Filter for active events only
+      const activeEvents = events.filter(event => event.isActive === true);
+      
+      // Show basic event data immediately, then load stats in background
+      const eventsWithBasicData = activeEvents.map((event: any) => ({
+        eventId: event.id,
+        eventTitle: event.title,
+        eventDate: event.date,
+        status: event.isActive ? 'Active' : 'Draft',
+        totalTicketsSold: 0, // Will be updated by background loading
+        totalNetRevenue: 0,  // Will be updated by background loading
+        totalAttendance: 0
+      }));
+      
+      // Sort by event date (earliest first)
+      const sortedEvents = eventsWithBasicData.sort((a, b) => {
+        const dateA = new Date(a.eventDate);
+        const dateB = new Date(b.eventDate);
+        return dateA.getTime() - dateB.getTime();
+      });
+      
+      setEventsList(sortedEvents);
+      setEventsListLoading(false);
+      
+      // Auto-select the first event if no event is currently selected and events exist
+      if (sortedEvents.length > 0 && !selectedEventId) {
+        const firstEventId = sortedEvents[0].eventId;
+        console.log('🎯 Auto-selecting first event:', firstEventId);
+        handleEventSelect(firstEventId);
+      }
+      
+      // Load tile data in background without blocking UI
+      loadTileDataInBackground(activeEvents);
+      
+    } catch (error) {
+      console.error('Error loading events:', error);
+      setError('Failed to load events data');
+      setEventsListLoading(false);
+    }
+  };
+
+  // Cache helper functions
+  const isCacheValid = (eventId: number): boolean => {
+    const timestamp = cacheTimestamps.get(eventId);
+    if (!timestamp) return false;
+    return Date.now() - timestamp < CACHE_DURATION_MS;
+  };
+
+  const getCachedEventData = (eventId: number) => {
+    if (isCacheValid(eventId)) {
+      return eventDataCache.get(eventId);
+    }
+    return null;
+  };
+
+  const setCachedEventData = (eventId: number, data: any) => {
+    setEventDataCache(prev => new Map(prev.set(eventId, data)));
+    setCacheTimestamps(prev => new Map(prev.set(eventId, Date.now())));
+  };
+
+  const clearEventCache = (eventId?: number) => {
+    if (eventId) {
+      setEventDataCache(prev => {
+        const newCache = new Map(prev);
+        newCache.delete(eventId);
+        return newCache;
+      });
+      setCacheTimestamps(prev => {
+        const newTimestamps = new Map(prev);
+        newTimestamps.delete(eventId);
+        return newTimestamps;
+      });
+    } else {
+      // Clear all cache
+      setEventDataCache(new Map());
+      setCacheTimestamps(new Map());
+    }
+  };
+
+  // Load tile data in background without affecting UI
+  const loadTileDataInBackground = async (events: any[]) => {
+    try {
+      // Load stats data for each event in parallel
       const eventsWithStats = await Promise.all(events.map(async (event: any) => {
         try {
-          const salesDetail = await organizerSalesService.getEventSalesDetail(event.id);
+          // Get ticket capacity data for total sold tickets
+          const ticketCapacityData = await RevenueAnalysisService.getTicketCapacity(event.id);
+          const totalSoldTickets = ticketCapacityData?.summary?.totalSoldTickets || 0;
+          
+          // Get revenue summary data for total revenue
+          const revenueSummaryData = await RevenueAnalysisService.getRevenueSummary(event.id);
+          const totalRevenue = revenueSummaryData?.combinedSummary?.totalRevenue || 0;
+          
           return {
             eventId: event.id,
             eventTitle: event.title,
             eventDate: event.date,
             status: event.isActive ? 'Active' : 'Draft',
-            totalTicketsSold: salesDetail.totalTicketsSold || 0,
-            totalNetRevenue: salesDetail.totalNetRevenue || 0,
-            totalAttendance: salesDetail.totalTicketsSold || 0
+            totalTicketsSold: totalSoldTickets,
+            totalNetRevenue: totalRevenue,
+            totalAttendance: totalSoldTickets
           };
         } catch (error) {
-          console.error(`Failed to load sales data for event ${event.id}:`, error);
-          // If we can't get sales data, show basic event info
+          console.error(`Failed to load stats for event ${event.id}:`, error);
+          // Return existing data if stats fail
           return {
             eventId: event.id,
             eventTitle: event.title,
@@ -168,12 +281,17 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
         }
       }));
       
-      setEventsList(eventsWithStats);
+      // Sort by event date (earliest first)
+      const sortedEvents = eventsWithStats.sort((a, b) => {
+        const dateA = new Date(a.eventDate);
+        const dateB = new Date(b.eventDate);
+        return dateA.getTime() - dateB.getTime();
+      });
+      
+      // Update events list with stats data
+      setEventsList(sortedEvents);
     } catch (error) {
-      console.error('Error loading events:', error);
-      setError('Failed to load events data');
-    } finally {
-      setLoading(false);
+      console.error('Error loading tile data in background:', error);
     }
   };
 
@@ -181,46 +299,106 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
     if (eventsList.length === 0) return;
     
     try {
-      setRefreshing(true);
+      setTilesLoading(true);
       
-      // Update sales data for existing events without re-fetching the events list
+      // Clear cache for all events since we're refreshing
+      clearEventCache();
+      
+      // Update events data with proper ticket capacity and revenue summary data
       const updatedEvents = await Promise.all(eventsList.map(async (event: any) => {
         try {
-          const salesDetail = await organizerSalesService.getEventSalesDetail(event.eventId);
+          // Get ticket capacity data for total sold tickets
+          const ticketCapacityData = await RevenueAnalysisService.getTicketCapacity(event.eventId);
+          const totalSoldTickets = ticketCapacityData?.summary?.totalSoldTickets || 0;
+          
+          // Get revenue summary data for total revenue
+          const revenueSummaryData = await RevenueAnalysisService.getRevenueSummary(event.eventId);
+          const totalRevenue = revenueSummaryData?.combinedSummary?.totalRevenue || 0;
+          
           return {
             ...event, // Keep all existing event data
-            totalTicketsSold: salesDetail.totalTicketsSold || 0,
-            totalNetRevenue: salesDetail.totalNetRevenue || 0,
-            totalAttendance: salesDetail.totalTicketsSold || 0
+            totalTicketsSold: totalSoldTickets,
+            totalNetRevenue: totalRevenue,
+            totalAttendance: totalSoldTickets
           };
         } catch (error) {
-          console.error(`Failed to refresh sales data for event ${event.eventId}:`, error);
-          // Keep existing data if refresh fails
+          console.error(`Failed to refresh stats for event ${event.eventId}:`, error);
+          // If refresh fails, keep existing data
           return event;
         }
       }));
       
       setEventsList(updatedEvents);
       
-      // Also refresh the selected event detail if one is selected
+      // Also refresh the selected event detail if one is selected (force refresh to bypass cache)
       if (selectedEventId) {
-        loadEventDetail(selectedEventId);
+        loadEventDetail(selectedEventId, true);
       }
     } catch (error) {
       console.error('Error refreshing event stats:', error);
     } finally {
-      setRefreshing(false);
+      setTilesLoading(false);
     }
   };
 
-  const loadEventDetail = async (eventId: number) => {
+  const loadEventDetail = async (eventId: number, forceRefresh = false) => {
     try {
       console.log('🔥 Loading event detail for:', eventId);
+      
+      // Check cache first unless force refresh is requested
+      if (!forceRefresh) {
+        const cachedData = getCachedEventData(eventId);
+        if (cachedData) {
+          console.log('📦 Using cached event detail for:', eventId);
+          setSelectedEventDetail(cachedData.eventDetail);
+          setSelectedEventId(eventId);
+          
+          // Update all related data from cache
+          if (cachedData.ticketCapacityData) setTicketCapacityData(cachedData.ticketCapacityData);
+          if (cachedData.revenueSummaryData) setRevenueSummaryData(cachedData.revenueSummaryData);
+          if (cachedData.stripeRevenueData) setStripeRevenueData(cachedData.stripeRevenueData);
+          if (cachedData.organizerRevenueData) setOrganizerRevenueData(cachedData.organizerRevenueData);
+          
+          return; // Exit early with cached data
+        }
+      }
+      
       setDetailLoading(true);
-      const data = await organizerSalesService.getEventSalesDetail(eventId);
-      console.log('🔥 Event detail loaded:', data);
-      setSelectedEventDetail(data);
+      
+      // Load all event data in parallel
+      const [
+        eventDetailData,
+        ticketCapacityData,
+        revenueSummaryData,
+        stripeRevenueData,
+        organizerRevenueData
+      ] = await Promise.all([
+        organizerSalesService.getEventSalesDetail(eventId),
+        RevenueAnalysisService.getTicketCapacity(eventId).catch(() => null),
+        RevenueAnalysisService.getRevenueSummary(eventId).catch(() => null),
+        RevenueAnalysisService.getStripeRevenue(eventId).catch(() => null),
+        RevenueAnalysisService.getOrganizerRevenue(eventId).catch(() => null)
+      ]);
+
+      console.log('🔥 Event detail loaded:', eventDetailData);
+      
+      // Update all state
+      setSelectedEventDetail(eventDetailData);
       setSelectedEventId(eventId);
+      setTicketCapacityData(ticketCapacityData);
+      setRevenueSummaryData(revenueSummaryData);
+      setStripeRevenueData(stripeRevenueData);
+      setOrganizerRevenueData(organizerRevenueData);
+      
+      // Cache the loaded data
+      setCachedEventData(eventId, {
+        eventDetail: eventDetailData,
+        ticketCapacityData,
+        revenueSummaryData,
+        stripeRevenueData,
+        organizerRevenueData
+      });
+      
     } catch (err: any) {
       console.error('Error loading event detail:', err);
       const errorMessage = err.response?.data?.message || 'Failed to load event detail';
@@ -361,32 +539,34 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
     console.log('🔥 Event selected:', eventId);
     setSelectedEventId(eventId);
     
-    // Load event detail first
+    // Load event detail with all data (using cache if available)
     loadEventDetail(eventId);
     
     // Set active tab to analytics
     setActiveTab('analytics');
     
-    // Load analytics data
+    // Load additional analytics data that's not cached in main event detail
     console.log('🔥 Loading analytics for event:', eventId);
     loadDailyAnalytics(eventId);
     loadTicketBreakdown(eventId);
-    
-    // Load all revenue analysis data
-    loadTicketCapacityData(eventId);
-    loadStripeRevenueData(eventId);
-    loadOrganizerRevenueData(eventId);
-    loadRevenueSummaryData(eventId);
   };
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
     if (selectedEventId) {
       if (tab === 'analytics') {
-        loadDailyAnalytics(selectedEventId);
-        loadTicketBreakdown(selectedEventId);
+        // Only load analytics data if not cached or missing
+        if (!dailyAnalytics.length) {
+          loadDailyAnalytics(selectedEventId);
+        }
+        if (!ticketBreakdown.length) {
+          loadTicketBreakdown(selectedEventId);
+        }
       } else if (tab === 'bookings') {
-        loadBookings(selectedEventId);
+        // Only load bookings if not already loaded
+        if (bookings.length === 0 && !bookingsLoading) {
+          loadBookings(selectedEventId);
+        }
       }
     }
   };
@@ -688,7 +868,7 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
 
                 {/* Events List */}
                 <div className="max-h-96 lg:max-h-96 md:max-h-80 sm:max-h-64 overflow-y-auto bg-gray-50">
-                  {loading ? (
+                  {eventsListLoading ? (
                     <div className="p-6 text-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                       <p className="text-gray-500 mt-2">Loading events...</p>
@@ -803,18 +983,18 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                         <div className="text-xs text-gray-500">Total Revenue</div>
                       </div>
                     </div>
-                    {/* Refresh Button */}
-                    <div className="flex justify-center">
+                    {/* Refresh Button and Cache Controls */}
+                    <div className="flex justify-center gap-2">
                       <button 
                         onClick={() => refreshEventStats()}
-                        disabled={refreshing}
+                        disabled={tilesLoading}
                         className={`font-medium text-xs px-3 py-1 rounded-md transition-colors ${
-                          refreshing 
+                          tilesLoading 
                             ? 'text-gray-400 bg-gray-100 cursor-not-allowed' 
                             : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
                         }`}
                       >
-                        {refreshing ? (
+                        {tilesLoading ? (
                           <div className="flex items-center">
                             <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600 mr-1"></div>
                             Refreshing...
@@ -823,6 +1003,21 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                           'Refresh'
                         )}
                       </button>
+                      
+                      {/* Cache Indicator */}
+                      {eventDataCache.size > 0 && (
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 bg-green-500 rounded-full" title="Data cached"></div>
+                          <span className="text-xs text-gray-500">{eventDataCache.size} cached</span>
+                          <button
+                            onClick={() => clearEventCache()}
+                            className="text-xs text-gray-400 hover:text-red-600 transition-colors"
+                            title="Clear all cache"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1225,18 +1420,12 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                           )}
                         </div>
                         
-                        {organizerRevenueData && (
-                          <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                            <div className="text-sm text-gray-600">
-                              <strong>Summary:</strong> {organizerRevenueData.totalIssued} tickets issued in {organizerRevenueData.totalTransactions || 0} transactions
-                            </div>
-                          </div>
-                        )}
+
                         
                         {organizerRevenueData ? (
                           <div className="space-y-6">
                             {/* Summary Cards */}
-                            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                               <div className="bg-blue-50 rounded-lg p-4">
                                 <div className="text-sm text-blue-600">Total Revenue</div>
                                 <div className="text-2xl font-bold text-blue-800">
@@ -1253,12 +1442,6 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                                 <div className="text-sm text-red-600">Unpaid Revenue</div>
                                 <div className="text-2xl font-bold text-red-800">
                                   ${organizerRevenueData.unpaidOrganizerRevenue.toFixed(2)}
-                                </div>
-                              </div>
-                              <div className="bg-purple-50 rounded-lg p-4">
-                                <div className="text-sm text-purple-600">Payment Rate</div>
-                                <div className="text-2xl font-bold text-purple-800">
-                                  {organizerRevenueData.overallPaymentPercentage.toFixed(1)}%
                                 </div>
                               </div>
                               <div className="bg-yellow-50 rounded-lg p-4">

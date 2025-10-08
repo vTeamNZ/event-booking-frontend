@@ -215,11 +215,6 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
                           availabilityStatus.colorClass
                         )}>
                           {availabilityStatus.statusText}
-                          {availabilityStatus.percentage < 100 && availabilityStatus.percentage > 0 && (
-                            <span className="ml-1 opacity-75">
-                              ({availabilityStatus.percentage}% available)
-                            </span>
-                          )}
                         </p>
                       );
                     })()
