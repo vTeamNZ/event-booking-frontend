@@ -75,8 +75,8 @@ const EventsList: React.FC = () => {
         let eventsWithDetails;
         
         if (isOrganizer) {
-          // Fetch organizer's events using the by-organizer endpoint
-          eventsResponse = await api.get<EventFromAPI[]>('/Events/by-organizer');
+          // Fetch organizer's events using the latest organizer endpoint
+          eventsResponse = await api.get<EventFromAPI[]>('/organizer/events');
           console.log('Organizer events from API:', eventsResponse.data);
           
           // Ensure we have a valid array

@@ -50,7 +50,7 @@ const HeroCarousel: React.FC = () => {
 
         if (isOrganizer) {
           // Organizers see their own events (including drafts for testing)
-          const response = await api.get<Event[]>('/Events/by-organizer');
+          const response = await api.get<Event[]>('/organizer/events');
           eventsData = Array.isArray(response.data) ? response.data : [];
           
           // Filter organizer events to show upcoming events and recent drafts/pending

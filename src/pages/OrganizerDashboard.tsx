@@ -27,9 +27,14 @@ interface UserProfile {
 interface Event {
   id: number;
   title: string;
+  description: string;
   date: string;
   location: string;
+  price?: number;
+  capacity?: number;
   isActive: boolean;
+  imageUrl?: string;
+  createdAt: string;
   status?: number; // 0=Draft, 1=Pending, 2=Active, 3=Inactive
   statusText?: string;
 }
@@ -74,7 +79,7 @@ const OrganizerDashboard: React.FC = () => {
         await api.put(`/Events/${event.id}/submit-for-review`);
         toast.success('Event submitted for review successfully');
         // Refresh events
-        const eventsResponse = await api.get<Event[]>('/Events/by-organizer');
+        const eventsResponse = await api.get<Event[]>('/organizer/events');
         setEvents(eventsResponse.data || []);
       } catch (error) {
         toast.error('Failed to submit event for review');
@@ -86,7 +91,7 @@ const OrganizerDashboard: React.FC = () => {
         await api.put(`/Events/${event.id}/return-to-draft`);
         toast.success('Event returned to draft successfully');
         // Refresh events
-        const eventsResponse = await api.get<Event[]>('/Events/by-organizer');
+        const eventsResponse = await api.get<Event[]>('/organizer/events');
         setEvents(eventsResponse.data || []);
       } catch (error) {
         toast.error('Failed to return event to draft');
@@ -143,8 +148,9 @@ const OrganizerDashboard: React.FC = () => {
         setDashboardData(dashboardResponse as DashboardData);
         
         try {
-          // Then get the events data
-          const eventsResponse = await api.get<Event[]>('/Events/by-organizer');
+          // Then get the events data using the latest organizer-specific endpoint
+          // Note: Changed from '/Events/by-organizer' to '/organizer/events' for consistency
+          const eventsResponse = await api.get<Event[]>('/organizer/events');
           setEvents(eventsResponse.data || []);
         } catch (eventErr: any) {
           const errorMessage = eventErr.response?.data?.message;

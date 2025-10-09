@@ -57,7 +57,7 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
   const [chartLoading, setChartLoading] = useState(false);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [autoRefresh, setAutoRefresh] = useState(false);
   
   // Individual tile loading states to prevent full-page loading
   const [tilesLoading, setTilesLoading] = useState(false);
@@ -90,6 +90,11 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
   const [reservedSeats, setReservedSeats] = useState<ReservedSeatView[]>([]);
   const [pageSize] = useState(20);
   const [totalBookings, setTotalBookings] = useState(0);
+  
+  // Booking breakdown counts for "All Bookings" display
+  const [stripeBookingsCount, setStripeBookingsCount] = useState(0);
+  const [organizerBookingsCount, setOrganizerBookingsCount] = useState(0);
+  const [reservedSeatsCount, setReservedSeatsCount] = useState(0);
 
   // Ticket breakdown state
   const [ticketBreakdown, setTicketBreakdown] = useState<TicketTypeBreakdown[]>([]);
@@ -116,6 +121,12 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
 
   // Load initial data effect (only runs once and when selectedEventId/activeTab changes)
   useEffect(() => {
+    // Clear cache when event selection changes to prevent data conflicts
+    if (selectedEventId) {
+      setEventDataCache(new Map());
+      setCacheTimestamps(new Map());
+    }
+
     // Load initial events list only when component mounts or when needed
     if (eventsList.length === 0) {
       loadEventsList();
@@ -127,9 +138,8 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
       if (activeTab === 'analytics') {
         loadDailyAnalytics(selectedEventId);
         loadTicketBreakdown(selectedEventId);
-      } else if (activeTab === 'bookings') {
-        loadBookings(selectedEventId);
       }
+      // Note: Bookings are loaded by the filter effect below to ensure correct filter values
     }
   }, [selectedEventId, activeTab]);
 
@@ -137,24 +147,47 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
   useEffect(() => {
     let refreshInterval: NodeJS.Timeout;
     
+    // Only set up auto-refresh if it's enabled and we have a selected event
     if (autoRefresh && selectedEventId) {
       refreshInterval = setInterval(() => {
-        // Only refresh current data, don't reload everything
-        refreshEventStats();
-        loadEventDetail(selectedEventId);
-        if (activeTab === 'analytics') {
-          loadDailyAnalytics(selectedEventId);
-          loadTicketBreakdown(selectedEventId);
-        } else if (activeTab === 'bookings') {
-          loadBookings(selectedEventId);
-        }
-      }, 30000);
+        performUnifiedRefresh();
+      }, 30000); // 30 seconds
     }
 
     return () => {
       if (refreshInterval) clearInterval(refreshInterval);
     };
   }, [autoRefresh, selectedEventId, activeTab]);
+
+  // Unified refresh function used by both manual refresh and auto-refresh
+  const performUnifiedRefresh = async () => {
+    if (!selectedEventId) return;
+    
+    try {
+      // 1. Refresh event statistics for the events list
+      await refreshEventStats();
+      
+      // 2. Refresh the selected event details
+      await loadEventDetail(selectedEventId, true); // Force refresh to bypass cache
+      
+      // 3. Refresh tab-specific data
+      if (activeTab === 'analytics') {
+        await Promise.all([
+          loadDailyAnalytics(selectedEventId),
+          loadTicketBreakdown(selectedEventId)
+        ]);
+      }
+      // Note: Bookings are automatically refreshed by the filter effect when filters change
+      
+    } catch (error) {
+      console.error('Error during unified refresh:', error);
+    }
+  };
+
+  // Manual refresh function for the button
+  const performManualRefresh = async () => {
+    await performUnifiedRefresh();
+  };
 
   const loadEventsList = async () => {
     try {
@@ -461,6 +494,15 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
         const searchQuery = nameFilter || emailFilter ? `${nameFilter} ${emailFilter}`.trim() : undefined;
         const statusQuery = statusFilter === 'all' ? undefined : statusFilter;
         
+        console.log('🔍 Sending booking request:', {
+          eventId,
+          currentPage,
+          pageSize,
+          searchQuery,
+          statusQuery,
+          statusFilter
+        });
+        
         const data = await organizerSalesService.getEventBookings(
           eventId, 
           currentPage, 
@@ -470,9 +512,20 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
         );
         
         console.log('📊 Bookings loaded:', data.bookings.length, 'total:', data.totalCount);
+        console.log('📊 Booking sources breakdown:', {
+          stripe: data.stripeCount || data.bookings.filter(b => b.paymentStatus !== 'OrganizerDirect' && b.paymentStatus !== 'Reserved').length,
+          organizer: data.organizerCount || data.bookings.filter(b => b.paymentStatus === 'OrganizerDirect').length,
+          reserved: data.reservedCount || data.bookings.filter(b => b.paymentStatus === 'Reserved').length,
+          statusFilter: statusFilter
+        });
         setBookings(data.bookings);
         setReservedSeats([]); // Clear reserved seats when showing bookings
         setTotalBookings(data.totalCount);
+        
+        // Set breakdown counts for "All Bookings" display
+        setStripeBookingsCount(data.stripeCount || data.bookings.filter(b => b.paymentStatus !== 'OrganizerDirect' && b.paymentStatus !== 'Reserved').length);
+        setOrganizerBookingsCount(data.organizerCount || data.bookings.filter(b => b.paymentStatus === 'OrganizerDirect').length);
+        setReservedSeatsCount(data.reservedCount || data.bookings.filter(b => b.paymentStatus === 'Reserved').length);
       }
     } catch (err: any) {
       console.error('Error loading bookings:', err);
@@ -562,12 +615,8 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
         if (!ticketBreakdown.length) {
           loadTicketBreakdown(selectedEventId);
         }
-      } else if (tab === 'bookings') {
-        // Only load bookings if not already loaded
-        if (bookings.length === 0 && !bookingsLoading) {
-          loadBookings(selectedEventId);
-        }
       }
+      // Note: Bookings are loaded by the filter effect to ensure correct filter values
     }
   };
 
@@ -615,17 +664,7 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
     }
   };
 
-  const handleFilterChange = useCallback(() => {
-    setCurrentPage(1);
-    if (selectedEventId) {
-      // Add a small delay to ensure state has updated
-      setTimeout(() => {
-        loadBookings(selectedEventId);
-      }, 100);
-    }
-  }, [selectedEventId, nameFilter, emailFilter, statusFilter, currentPage, pageSize]);
-
-  // Effect to handle filter changes
+  // Effect to handle filter changes - Debounced to prevent too many API calls
   useEffect(() => {
     if (selectedEventId && activeTab === 'bookings') {
       const timeoutId = setTimeout(() => {
@@ -828,6 +867,31 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
+                  {/* Manual Refresh Button */}
+                  <button 
+                    onClick={() => performManualRefresh()}
+                    disabled={tilesLoading}
+                    className={`bg-white/10 hover:bg-white/20 rounded-lg px-4 py-2 transition-colors ${
+                      tilesLoading ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    title="Refresh all data"
+                  >
+                    {tilesLoading ? (
+                      <div className="flex items-center text-white text-sm">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Refreshing...
+                      </div>
+                    ) : (
+                      <div className="flex items-center text-white text-sm">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Refresh
+                      </div>
+                    )}
+                  </button>
+                  
+                  {/* Auto-refresh Toggle */}
                   <div className="bg-white/10 rounded-lg px-4 py-2">
                     <label className="text-white text-sm flex items-center cursor-pointer">
                       <input
@@ -836,9 +900,25 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                         onChange={(e) => setAutoRefresh(e.target.checked)}
                         className="mr-2 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <span className="select-none">Auto-refresh</span>
+                      <span className="select-none">Auto-refresh (30s)</span>
                     </label>
                   </div>
+                  
+                  {/* Cache Indicator */}
+                  {eventDataCache.size > 0 && (
+                    <div className="bg-white/10 rounded-lg px-3 py-2 flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-400 rounded-full" title="Data cached"></div>
+                      <span className="text-xs text-white">{eventDataCache.size} cached</span>
+                      <button
+                        onClick={() => clearEventCache()}
+                        className="text-xs text-white/70 hover:text-red-300 transition-colors ml-2"
+                        title="Clear all cache"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  )}
+                  
                   <div className="text-white text-sm">
                     <div className="text-xs text-blue-200">Total Events</div>
                     <div className="text-lg font-bold">{eventsList.length}</div>
@@ -982,42 +1062,6 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                         </div>
                         <div className="text-xs text-gray-500">Total Revenue</div>
                       </div>
-                    </div>
-                    {/* Refresh Button and Cache Controls */}
-                    <div className="flex justify-center gap-2">
-                      <button 
-                        onClick={() => refreshEventStats()}
-                        disabled={tilesLoading}
-                        className={`font-medium text-xs px-3 py-1 rounded-md transition-colors ${
-                          tilesLoading 
-                            ? 'text-gray-400 bg-gray-100 cursor-not-allowed' 
-                            : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-                        }`}
-                      >
-                        {tilesLoading ? (
-                          <div className="flex items-center">
-                            <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600 mr-1"></div>
-                            Refreshing...
-                          </div>
-                        ) : (
-                          'Refresh'
-                        )}
-                      </button>
-                      
-                      {/* Cache Indicator */}
-                      {eventDataCache.size > 0 && (
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-green-500 rounded-full" title="Data cached"></div>
-                          <span className="text-xs text-gray-500">{eventDataCache.size} cached</span>
-                          <button
-                            onClick={() => clearEventCache()}
-                            className="text-xs text-gray-400 hover:text-red-600 transition-colors"
-                            title="Clear all cache"
-                          >
-                            Clear
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -1568,32 +1612,6 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
 
                             {/* Revenue Panels */}
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                              {/* Max Possible Revenue Panel */}
-                              <div className="bg-white border rounded-lg p-4">
-                                <h5 className="font-semibold text-gray-900 mb-3">
-                                  {revenueSummaryData.maxPossibleRevenuePanel.panelTitle}
-                                </h5>
-                                <div className="space-y-2">
-                                  {revenueSummaryData.maxPossibleRevenuePanel.breakdownItems.map((item, index) => (
-                                    <div key={index} className="text-sm">
-                                      <div className="flex justify-between">
-                                        <span className="text-gray-600">{item.ticketTypeName}:</span>
-                                        <span className="font-medium">${item.revenue.toFixed(2)}</span>
-                                      </div>
-                                      <div className="text-xs text-gray-500">
-                                        ${item.ticketPrice.toFixed(2)} × {item.quantity}
-                                      </div>
-                                    </div>
-                                  ))}
-                                  <div className="border-t pt-2 mt-2">
-                                    <div className="flex justify-between font-semibold">
-                                      <span>Total:</span>
-                                      <span>${revenueSummaryData.maxPossibleRevenuePanel.totalRevenue.toFixed(2)}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
                               {/* KiwiLanka Revenue Panel */}
                               <div className="bg-white border rounded-lg p-4">
                                 <h5 className="font-semibold text-gray-900 mb-3">
@@ -1641,6 +1659,32 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                                     <div className="flex justify-between font-semibold">
                                       <span>Total:</span>
                                       <span>${revenueSummaryData.organizerRevenuePanel.totalRevenue.toFixed(2)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Max Possible Revenue Panel */}
+                              <div className="bg-white border rounded-lg p-4">
+                                <h5 className="font-semibold text-gray-900 mb-3">
+                                  {revenueSummaryData.maxPossibleRevenuePanel.panelTitle}
+                                </h5>
+                                <div className="space-y-2">
+                                  {revenueSummaryData.maxPossibleRevenuePanel.breakdownItems.map((item, index) => (
+                                    <div key={index} className="text-sm">
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-600">{item.ticketTypeName}:</span>
+                                        <span className="font-medium">${item.revenue.toFixed(2)}</span>
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        ${item.ticketPrice.toFixed(2)} × {item.quantity}
+                                      </div>
+                                    </div>
+                                  ))}
+                                  <div className="border-t pt-2 mt-2">
+                                    <div className="flex justify-between font-semibold">
+                                      <span>Total:</span>
+                                      <span>${revenueSummaryData.maxPossibleRevenuePanel.totalRevenue.toFixed(2)}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -1749,6 +1793,19 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
 
                     {/* Bookings Table */}
                     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                      {/* Status Info Bar - Shows what data is being displayed */}
+                      {!bookingsLoading && statusFilter === 'all' && totalBookings > 0 && (
+                        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
+                          <div className="text-sm text-blue-800">
+                            {reservedSeatsCount > 0 ? (
+                              `Showing: ${stripeBookingsCount} Online Bookings + ${organizerBookingsCount} Organizer Guests + ${reservedSeatsCount} Reserved Seats = ${totalBookings} Total`
+                            ) : (
+                              `Showing: ${stripeBookingsCount} Online Bookings + ${organizerBookingsCount} Organizer Guests = ${totalBookings} Total Bookings`
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
                       {bookingsLoading ? (
                         <div className="p-8 text-center">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>

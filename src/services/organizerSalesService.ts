@@ -168,7 +168,7 @@ class OrganizerSalesService {
     pageSize: number = 50,
     search?: string,
     paymentStatus?: string
-  ): Promise<{ bookings: BookingDetailView[], totalCount: number, page: number, pageSize: number }> {
+  ): Promise<{ bookings: BookingDetailView[], totalCount: number, stripeCount?: number, organizerCount?: number, reservedCount?: number, page: number, pageSize: number }> {
     if (!eventId) {
       return {
         bookings: [],
@@ -215,9 +215,17 @@ class OrganizerSalesService {
     // Get totalCount from response headers or fallback to array length
     const totalCount = parseInt(response.headers['x-total-count'] || '0') || processedBookings.length;
     
+    // Get breakdown counts from response headers for "All Bookings" display
+    const stripeCount = parseInt(response.headers['x-stripe-count'] || '0');
+    const organizerCount = parseInt(response.headers['x-organizer-count'] || '0');
+    const reservedCount = parseInt(response.headers['x-reserved-count'] || '0');
+    
     return {
       bookings: processedBookings,
       totalCount: totalCount,
+      stripeCount: stripeCount,
+      organizerCount: organizerCount,
+      reservedCount: reservedCount,
       page: page,
       pageSize: pageSize
     };
