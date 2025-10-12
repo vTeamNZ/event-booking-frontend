@@ -226,6 +226,13 @@ const TicketSelection: React.FC = () => {
     
     // Check availability if increasing quantity and availability data exists
     if (delta > 0) {
+      // Business rule: Maximum 10 tickets per ticket type to prevent system overload
+      const MAX_TICKETS_PER_TYPE = 10;
+      if (newQty > MAX_TICKETS_PER_TYPE) {
+        toast.error(`Maximum ${MAX_TICKETS_PER_TYPE} tickets allowed per ticket type`);
+        return;
+      }
+      
       const ticketAvailability = availability[ticketId];
       
       if (ticketAvailability?.hasLimit) {
@@ -350,7 +357,10 @@ const TicketSelection: React.FC = () => {
             {ticketTypes.map((ticket) => {
               const ticketAvailability = availability[ticket.id];
               const currentQty = quantities[ticket.id] || 0;
-              const isAtLimit = ticketAvailability?.hasLimit && currentQty >= ticketAvailability.available;
+              const MAX_TICKETS_PER_TYPE = 10;
+              const isAtAvailabilityLimit = ticketAvailability?.hasLimit && currentQty >= ticketAvailability.available;
+              const isAtMaxLimit = currentQty >= MAX_TICKETS_PER_TYPE;
+              const isAtLimit = isAtAvailabilityLimit || isAtMaxLimit;
               const isSoldOut = ticketAvailability?.hasLimit && ticketAvailability.available === 0;
               
               return (
@@ -401,6 +411,18 @@ const TicketSelection: React.FC = () => {
                         ) : (
                           <span className="text-green-400">Unlimited availability</span>
                         )}
+                      </div>
+                    )}
+                    
+                    {/* Maximum purchase limit indicator */}
+                    {currentQty >= 8 && currentQty < MAX_TICKETS_PER_TYPE && (
+                      <div className="text-xs mt-1 text-orange-400">
+                        Max {MAX_TICKETS_PER_TYPE} tickets per type ({MAX_TICKETS_PER_TYPE - currentQty} remaining)
+                      </div>
+                    )}
+                    {currentQty >= MAX_TICKETS_PER_TYPE && (
+                      <div className="text-xs mt-1 text-red-400">
+                        Maximum limit reached ({MAX_TICKETS_PER_TYPE} tickets)
                       </div>
                     )}
                   </div>

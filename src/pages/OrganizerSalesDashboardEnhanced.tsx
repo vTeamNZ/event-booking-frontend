@@ -17,6 +17,9 @@ import {
   OrganizerRevenueDTO,
   RevenueSummaryDTO
 } from '../services/revenueAnalysisService';
+import OrganizerSalesManagementService from '../services/organizerSalesManagementService';
+import { OrganizerTicketSalesDTO, SalesManagementFilters, UpdateCustomerDetailsRequest } from '../types/salesManagement';
+import SalesManagementTable from '../components/SalesManagementTable';
 import { api } from '../services/api';
 import SEO from '../components/SEO';
 import toast from 'react-hot-toast';
@@ -41,7 +44,7 @@ ChartJS.register(
   Legend
 );
 
-type TabType = 'analytics' | 'bookings';
+type TabType = 'analytics' | 'bookings' | 'sales-management';
 type AnalyticsSubTab = 'ticket-capacity' | 'stripe-revenue' | 'organizer-revenue' | 'revenue-summary';
 
 const OrganizerSalesDashboardEnhanced: React.FC = () => {
@@ -99,6 +102,15 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
   // Ticket breakdown state
   const [ticketBreakdown, setTicketBreakdown] = useState<TicketTypeBreakdown[]>([]);
   const [ticketBreakdownLoading, setTicketBreakdownLoading] = useState(false);
+
+  // Sales Management state
+  const [salesTickets, setSalesTickets] = useState<OrganizerTicketSalesDTO[]>([]);
+  const [salesLoading, setSalesLoading] = useState(false);
+  const [salesFilters, setSalesFilters] = useState<SalesManagementFilters>({
+    search: '',
+    status: 'all'
+  });
+  const [editingTicket, setEditingTicket] = useState<number | null>(null);
 
   // Mobile detection state
   const [isMobileView, setIsMobileView] = useState(false);
@@ -174,7 +186,15 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
       if (activeTab === 'analytics') {
         await Promise.all([
           loadDailyAnalytics(selectedEventId),
-          loadTicketBreakdown(selectedEventId)
+          loadTicketBreakdown(selectedEventId),
+          // Always refresh revenue data as it can be affected by sales management changes
+          loadOrganizerRevenueData(selectedEventId)
+        ]);
+      } else if (activeTab === 'sales-management') {
+        // Also refresh organizer revenue when refreshing sales management
+        await Promise.all([
+          loadSalesManagementData(selectedEventId),
+          loadOrganizerRevenueData(selectedEventId)
         ]);
       }
       // Note: Bookings are automatically refreshed by the filter effect when filters change
@@ -565,7 +585,19 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
   const loadOrganizerRevenueData = async (eventId: number) => {
     try {
       setRevenueLoading(true);
+      console.log(`🔄 Loading organizer revenue data for event ${eventId}...`);
       const data = await RevenueAnalysisService.getOrganizerRevenue(eventId);
+      console.log('📊 Raw organizer revenue response:', data);
+      console.log('📊 Organizer revenue data properties:', {
+        totalOrganizerRevenue: data.totalOrganizerRevenue,
+        paidOrganizerRevenue: data.paidOrganizerRevenue,
+        unpaidOrganizerRevenue: data.unpaidOrganizerRevenue,
+        overallPaymentPercentage: data.overallPaymentPercentage,
+        ticketTypes: data.ticketTypes?.length || 0,
+        dataType: typeof data,
+        hasTicketTypes: !!data.ticketTypes,
+        allKeys: Object.keys(data || {})
+      });
       setOrganizerRevenueData(data);
     } catch (err: any) {
       console.error('Error loading organizer revenue data:', err);
@@ -585,6 +617,19 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
       toast.error('Failed to load revenue summary data');
     } finally {
       setRevenueLoading(false);
+    }
+  };
+
+  const loadSalesManagementData = async (eventId: number) => {
+    try {
+      setSalesLoading(true);
+      const tickets = await OrganizerSalesManagementService.getTicketsForSalesManagement(eventId);
+      setSalesTickets(tickets);
+    } catch (err: any) {
+      console.error('Error loading sales management data:', err);
+      toast.error('Failed to load sales management data');
+    } finally {
+      setSalesLoading(false);
     }
   };
 
@@ -615,6 +660,9 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
         if (!ticketBreakdown.length) {
           loadTicketBreakdown(selectedEventId);
         }
+      } else if (tab === 'sales-management') {
+        // Load sales management data
+        loadSalesManagementData(selectedEventId);
       }
       // Note: Bookings are loaded by the filter effect to ensure correct filter values
     }
@@ -1108,6 +1156,16 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                     >
                       📋 Booking Details
                     </button>
+                    <button
+                      onClick={() => handleTabChange('sales-management')}
+                      className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                        activeTab === 'sales-management'
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      🎫 Sales Management
+                    </button>
                   </nav>
                 </div>
               </div>
@@ -1473,25 +1531,25 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                               <div className="bg-blue-50 rounded-lg p-4">
                                 <div className="text-sm text-blue-600">Total Revenue</div>
                                 <div className="text-2xl font-bold text-blue-800">
-                                  ${organizerRevenueData.totalOrganizerRevenue.toFixed(2)}
+                                  ${(organizerRevenueData.totalOrganizerRevenue || 0).toFixed(2)}
                                 </div>
                               </div>
                               <div className="bg-green-50 rounded-lg p-4">
                                 <div className="text-sm text-green-600">Paid Revenue</div>
                                 <div className="text-2xl font-bold text-green-800">
-                                  ${organizerRevenueData.paidOrganizerRevenue.toFixed(2)}
+                                  ${(organizerRevenueData.paidOrganizerRevenue || 0).toFixed(2)}
                                 </div>
                               </div>
                               <div className="bg-red-50 rounded-lg p-4">
                                 <div className="text-sm text-red-600">Unpaid Revenue</div>
                                 <div className="text-2xl font-bold text-red-800">
-                                  ${organizerRevenueData.unpaidOrganizerRevenue.toFixed(2)}
+                                  ${(organizerRevenueData.unpaidOrganizerRevenue || 0).toFixed(2)}
                                 </div>
                               </div>
                               <div className="bg-yellow-50 rounded-lg p-4">
                                 <div className="text-sm text-yellow-600">Total Tickets</div>
                                 <div className="text-2xl font-bold text-yellow-800">
-                                  {organizerRevenueData.totalIssued}
+                                  {organizerRevenueData.totalIssued || 0}
                                 </div>
                               </div>
                               <div className="bg-indigo-50 rounded-lg p-4">
@@ -1506,35 +1564,35 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                             <div>
                               <h5 className="font-medium text-gray-900 mb-4">Revenue by Ticket Type</h5>
                               <div className="space-y-3">
-                                {organizerRevenueData.ticketTypes.map((ticketType) => (
+                                {(organizerRevenueData.ticketTypes || []).map((ticketType) => (
                                   <div key={ticketType.ticketTypeId} className="bg-white border rounded-lg p-4">
                                     <div className="flex justify-between items-center mb-2">
-                                      <span className="font-medium">{ticketType.ticketTypeName}</span>
+                                      <span className="font-medium">{ticketType.ticketTypeName || 'Unknown'}</span>
                                       <span className="text-sm text-gray-500">
-                                        ${ticketType.ticketPrice.toFixed(2)} each
+                                        ${(ticketType.ticketPrice || 0).toFixed(2)} each
                                       </span>
                                     </div>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                       <div>
                                         <span className="text-gray-500">Issued:</span>
-                                        <div className="font-semibold">{ticketType.issuedTickets}</div>
+                                        <div className="font-semibold">{ticketType.issuedTickets || 0}</div>
                                       </div>
                                       <div>
                                         <span className="text-gray-500">Paid:</span>
                                         <div className="font-semibold text-green-600">
-                                          {ticketType.paidTickets} (${ticketType.paidRevenue.toFixed(2)})
+                                          {ticketType.paidTickets || 0} (${(ticketType.paidRevenue || 0).toFixed(2)})
                                         </div>
                                       </div>
                                       <div>
                                         <span className="text-gray-500">Unpaid:</span>
                                         <div className="font-semibold text-red-600">
-                                          {ticketType.unpaidTickets} (${ticketType.unpaidRevenue.toFixed(2)})
+                                          {ticketType.unpaidTickets || 0} (${(ticketType.unpaidRevenue || 0).toFixed(2)})
                                         </div>
                                       </div>
                                       <div>
                                         <span className="text-gray-500">Payment Rate:</span>
                                         <div className="font-semibold text-purple-600">
-                                          {ticketType.paymentPercentage.toFixed(1)}%
+                                          {(ticketType.paymentPercentage || 0).toFixed(1)}%
                                         </div>
                                       </div>
                                     </div>
@@ -2079,6 +2137,130 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                         </div>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* Sales Management Tab */}
+                {activeTab === 'sales-management' && (
+                  <div className="space-y-6">
+                    {/* Search and Filter Controls */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Search Customers
+                          </label>
+                          <input
+                            type="text"
+                            value={salesFilters.search}
+                            onChange={(e) => setSalesFilters(prev => ({ ...prev, search: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Search by name or email..."
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Status Filter
+                          </label>
+                          <select
+                            value={salesFilters.status}
+                            onChange={(e) => setSalesFilters(prev => ({ ...prev, status: e.target.value as 'all' | 'active' | 'cancelled' }))}
+                            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="all">All Tickets</option>
+                            <option value="active">Active Only</option>
+                            <option value="cancelled">Cancelled Only</option>
+                          </select>
+                        </div>
+                        <button
+                          onClick={() => loadSalesManagementData(selectedEventId!)}
+                          disabled={salesLoading}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        >
+                          {salesLoading ? 'Refreshing...' : 'Refresh'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Sales Management Table */}
+                    {salesLoading ? (
+                      <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200 text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                        <p className="text-gray-500">Loading sales data...</p>
+                      </div>
+                    ) : (
+                      <SalesManagementTable
+                        tickets={salesTickets}
+                        filters={salesFilters}
+                        onUpdateCustomer={async (ticketId: number, customerData: UpdateCustomerDetailsRequest) => {
+                          try {
+                            await OrganizerSalesManagementService.updateCustomerDetails(ticketId, customerData);
+                            toast.success('Customer details updated successfully');
+                            await loadSalesManagementData(selectedEventId!); // Refresh data
+                          } catch (error) {
+                            console.error('Error updating customer details:', error);
+                            toast.error('Failed to update customer details');
+                            throw error;
+                          }
+                        }}
+                        onTogglePayment={async (ticketId: number, isPaid: boolean) => {
+                          try {
+                            console.log(`🔄 Toggling payment status for ticket ${ticketId} to ${isPaid ? 'PAID' : 'UNPAID'}`);
+                            
+                            // Log current revenue before update
+                            console.log('📊 Revenue BEFORE toggle:', {
+                              totalRevenue: organizerRevenueData?.totalOrganizerRevenue,
+                              paidRevenue: organizerRevenueData?.paidOrganizerRevenue,
+                              unpaidRevenue: organizerRevenueData?.unpaidOrganizerRevenue
+                            });
+                            
+                            await OrganizerSalesManagementService.togglePaymentStatus(ticketId, { isPaid });
+                            toast.success(isPaid ? 'Marked as paid' : 'Marked as unpaid');
+                            
+                            // Refresh data and log results
+                            await loadSalesManagementData(selectedEventId!); // Refresh sales management data
+                            await loadOrganizerRevenueData(selectedEventId!); // Refresh organizer revenue data
+                            
+                            // Log revenue after update (will log in next render)
+                            setTimeout(() => {
+                              console.log('📊 Revenue AFTER toggle:', {
+                                totalRevenue: organizerRevenueData?.totalOrganizerRevenue,
+                                paidRevenue: organizerRevenueData?.paidOrganizerRevenue,
+                                unpaidRevenue: organizerRevenueData?.unpaidOrganizerRevenue
+                              });
+                            }, 1000);
+                            
+                          } catch (error) {
+                            console.error('Error toggling payment status:', error);
+                            toast.error('Failed to update payment status');
+                          }
+                        }}
+                        onCancelTicket={async (ticketId: number) => {
+                          try {
+                            await OrganizerSalesManagementService.cancelTicket(ticketId);
+                            toast.success('Ticket cancelled successfully');
+                            await loadSalesManagementData(selectedEventId!); // Refresh sales management data
+                            await loadOrganizerRevenueData(selectedEventId!); // Refresh organizer revenue data
+                          } catch (error) {
+                            console.error('Error cancelling ticket:', error);
+                            toast.error('Failed to cancel ticket');
+                          }
+                        }}
+                        onRestoreTicket={async (ticketId: number) => {
+                          try {
+                            await OrganizerSalesManagementService.restoreTicket(ticketId);
+                            toast.success('Ticket restored successfully');
+                            await loadSalesManagementData(selectedEventId!); // Refresh sales management data
+                            await loadOrganizerRevenueData(selectedEventId!); // Refresh organizer revenue data
+                          } catch (error) {
+                            console.error('Error restoring ticket:', error);
+                            toast.error('Failed to restore ticket');
+                          }
+                        }}
+                        editingTicket={editingTicket}
+                        setEditingTicket={setEditingTicket}
+                      />
+                    )}
                   </div>
                 )}
 

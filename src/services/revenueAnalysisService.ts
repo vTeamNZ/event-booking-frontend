@@ -68,17 +68,16 @@ export interface OrganizerTicketTypeRevenueDTO {
 }
 
 export interface OrganizerRevenueDTO {
-  eventId: number;
-  eventTitle: string;
   ticketTypes: OrganizerTicketTypeRevenueDTO[];
   totalIssued: number;
   totalPaid: number;
   totalUnpaid: number;
-  totalTransactions: number; // New field for transaction count
+  totalTransactions: number;
   totalOrganizerRevenue: number;
   paidOrganizerRevenue: number;
   unpaidOrganizerRevenue: number;
   overallPaymentPercentage: number;
+  lastUpdated: string;
 }
 
 // Tab 4: Revenue Summary
