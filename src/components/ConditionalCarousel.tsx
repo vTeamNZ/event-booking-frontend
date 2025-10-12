@@ -5,8 +5,6 @@ import HeroCarousel from './HeroCarousel';
 const ConditionalCarousel: React.FC = () => {
   const location = useLocation();
   
-  console.log('[ConditionalCarousel] Current path:', location.pathname);
-  
   // Define routes where carousel should NOT be shown (event-specific pages)
   const eventSpecificRoutes = [
     '/event/',           // Any event route
@@ -53,30 +51,21 @@ const ConditionalCarousel: React.FC = () => {
   const pathSegments = location.pathname.split('/').filter(segment => segment.length > 0);
   const isSingleSegmentPath = pathSegments.length === 1;
   
-  console.log('[ConditionalCarousel] isEventSpecificPage:', isEventSpecificPage);
-  console.log('[ConditionalCarousel] isKnownRoute:', isKnownRoute);
-  console.log('[ConditionalCarousel] isSingleSegmentPath:', isSingleSegmentPath);
-  console.log('[ConditionalCarousel] pathSegments:', pathSegments);
-  
   // If it's an event-specific page, don't show carousel
   if (isEventSpecificPage) {
-    console.log('[ConditionalCarousel] Hiding carousel - event specific page');
     return null;
   }
   
   // If it's a single-segment path (event slug), don't show carousel
   if (isSingleSegmentPath && !isKnownRoute) {
-    console.log('[ConditionalCarousel] Hiding carousel - single segment event slug');
     return null;
   }
   
   // If it's not a known route, assume it's a direct event slug route and don't show carousel
   if (!isKnownRoute) {
-    console.log('[ConditionalCarousel] Hiding carousel - unknown route assumed to be event slug');
     return null;
   }
   
-  console.log('[ConditionalCarousel] Showing carousel - general page');
   // Show carousel on general pages (home, about, contact, etc.)
   return <HeroCarousel />;
 };

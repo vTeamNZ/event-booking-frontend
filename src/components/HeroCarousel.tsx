@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay, Pagination, EffectCoverflow } from 'swiper/modules';
+import { Pagination, EffectCoverflow } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/effect-coverflow';
@@ -73,7 +73,6 @@ const HeroCarousel: React.FC = () => {
         }
 
         console.log('Carousel events data:', eventsData);
-        console.log('Valid events with images:', eventsData.filter(event => event.imageUrl));
         
         // Only show events with images for better carousel display
         const validEvents = Array.isArray(eventsData) ? eventsData.filter(event => event.imageUrl) : [];
@@ -82,13 +81,6 @@ const HeroCarousel: React.FC = () => {
         setIsLoading(false);
       } catch (err) {
         console.error('Error fetching events for carousel:', err);
-        if (err && typeof err === 'object' && 'response' in err) {
-          const axiosError = err as { response?: { data: any, status: number } };
-          console.error('API Error Details:', {
-            response: axiosError.response?.data,
-            status: axiosError.response?.status
-          });
-        }
         setIsLoading(false);
       }
     };
@@ -113,14 +105,6 @@ const HeroCarousel: React.FC = () => {
     );
   }
 
-  // Debug carousel configuration
-  console.log('Carousel configuration:', {
-    eventsCount: events.length,
-    loopEnabled: events.length > 2,
-    autoplayDelay: 4000,
-    speed: 1000
-  });
-
   return (
     <div className="relative w-full overflow-hidden pt-20">
       {/* Background image layer */}
@@ -134,19 +118,13 @@ const HeroCarousel: React.FC = () => {
       {/* Swiper carousel */}
       <div className="relative z-10 py-10 px-4 max-w-7xl mx-auto">
         <Swiper
-          modules={[Autoplay, Pagination, EffectCoverflow]}
+          modules={[Pagination, EffectCoverflow]}
           effect={'coverflow'}
           grabCursor={true}
           centeredSlides={true}
           slidesPerView={'auto'}
           loop={events.length > 2} // Only enable loop mode if we have more than 2 slides
           speed={1000} // Smooth transition speed (1s)
-          autoplay={{
-            delay: 4000, // 4 seconds between slides
-            disableOnInteraction: false,
-            pauseOnMouseEnter: true,
-            reverseDirection: false,
-          }}
           coverflowEffect={{
             rotate: 30,
             stretch: 0,
