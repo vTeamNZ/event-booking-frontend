@@ -35,6 +35,7 @@ interface Event {
 const HeroCarousel: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [swiper, setSwiper] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -88,6 +89,18 @@ const HeroCarousel: React.FC = () => {
     fetchEvents();
   }, []);
 
+  // Simple rotation mechanism
+  useEffect(() => {
+    if (events.length <= 1 || !swiper) return;
+
+    const interval = setInterval(() => {
+      const nextSlide = (swiper.realIndex + 1) % events.length;
+      swiper.slideTo(nextSlide);
+    }, 4000); // Rotate every 4 seconds
+
+    return () => clearInterval(interval);
+  }, [events.length, swiper]);
+
   // Only show carousel if we have events
   if (isLoading) {
     return (
@@ -119,21 +132,22 @@ const HeroCarousel: React.FC = () => {
       <div className="relative z-10 py-10 px-4 max-w-7xl mx-auto">
         <Swiper
           modules={[Pagination, EffectCoverflow]}
+          onSwiper={setSwiper}
           effect={'coverflow'}
           grabCursor={true}
           centeredSlides={true}
           slidesPerView={'auto'}
-          loop={events.length > 2} // Only enable loop mode if we have more than 2 slides
-          speed={1000} // Smooth transition speed (1s)
+          loop={events.length >= 3}
+          speed={800}
+          spaceBetween={30}
           coverflowEffect={{
-            rotate: 30,
+            rotate: 15,
             stretch: 0,
             depth: 100,
-            modifier: 1,
+            modifier: 2,
             slideShadows: true,
           }}
           pagination={{ clickable: true }}
-          watchSlidesProgress={true}
           allowTouchMove={true}
           >
           {events.map((event) => (
