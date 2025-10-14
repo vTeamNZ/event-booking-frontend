@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../services/api';
-import { TicketType, TicketTypeDisplay, getTicketTypesForEvent } from '../services/ticketTypeService';
+import { TicketTypeWithState, getVisibleTicketTypesForCustomers } from '../services/ticketTypeService';
 import { ticketAvailabilityService, TicketAvailabilityInfo } from '../services/ticketAvailabilityService';
 import { useBooking, useEventDetails } from '../contexts/BookingContext';
 import { BookingNavigator } from '../utils/BookingNavigator';
 import { getAvailabilityStatus } from '../utils/availabilityStatus';
+import { getTicketStatus, getTicketStatusMessage } from '../types/ticketTypes';
 import { BookingData } from '../types/booking';
 import SEO from '../components/SEO';
 import EventStructuredData from '../components/SEO/EventStructuredData';
@@ -60,7 +61,7 @@ const TicketSelection: React.FC = () => {
   const [isActive, setIsActive] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [ticketTypes, setTicketTypes] = useState<TicketTypeDisplay[]>([]);
+  const [ticketTypes, setTicketTypes] = useState<TicketTypeWithState[]>([]);
   const [availability, setAvailability] = useState<Record<number, TicketAvailabilityInfo>>({});
   const [quantities, setQuantities] = useState<Record<number, number>>({});
   const [eventSeatSelectionMode, setEventSeatSelectionMode] = useState<number>(SEAT_SELECTION_MODE.GENERAL_ADMISSION);
@@ -162,9 +163,9 @@ const TicketSelection: React.FC = () => {
       try {
         setLoading(true);
         
-        // Fetch ticket types and availability
+        // Fetch visible ticket types and availability using new state-aware API
         const [types, availabilityData] = await Promise.all([
-          getTicketTypesForEvent(eventId),
+          getVisibleTicketTypesForCustomers(eventId),
           ticketAvailabilityService.getEventTicketAvailability(eventId)
         ]);
         
@@ -358,33 +359,62 @@ const TicketSelection: React.FC = () => {
               const ticketAvailability = availability[ticket.id];
               const currentQty = quantities[ticket.id] || 0;
               const MAX_TICKETS_PER_TYPE = 10;
+              
+              // Check ticket state
+              const ticketStatus = getTicketStatus(ticket);
+              const isDisabled = ticketStatus === 'disabled';
+              const isAvailable = ticketStatus === 'available';
+              const statusMessage = getTicketStatusMessage(ticket);
+              
               const isAtAvailabilityLimit = ticketAvailability?.hasLimit && currentQty >= ticketAvailability.available;
               const isAtMaxLimit = currentQty >= MAX_TICKETS_PER_TYPE;
               const isAtLimit = isAtAvailabilityLimit || isAtMaxLimit;
               const isSoldOut = ticketAvailability?.hasLimit && ticketAvailability.available === 0;
               
+              // Can only purchase if ticket is available and not sold out
+              const canPurchase = isAvailable && !isSoldOut;
+              
               return (
                 <div 
                   key={ticket.id} 
                   className={`flex items-center justify-between p-4 bg-gray-750 rounded-lg transition-colors duration-200 ${
+                    isDisabled ? 'opacity-75 border border-orange-400' :
                     isSoldOut ? 'opacity-50' : 'hover:bg-gray-700'
                   }`}
                 >
                   <div className="flex-1">
                     <div className="flex items-baseline">
-                      <span className="text-lg font-semibold text-white capitalize">{ticket.name}</span>
+                      <span className={`text-lg font-semibold capitalize ${
+                        isDisabled ? 'text-orange-300 line-through' : 'text-white'
+                      }`}>
+                        {ticket.name}
+                      </span>
                       {!ticket.name.toLowerCase().includes('table') && (
                         <span className="ml-2 text-sm text-gray-400">ticket</span>
                       )}
                       {isSoldOut && (
                         <span className="ml-2 px-2 py-1 text-xs bg-red-600 text-white rounded">SOLD OUT</span>
                       )}
+                      {isDisabled && (
+                        <span className="ml-2 px-2 py-1 text-xs bg-orange-600 text-white rounded">NO LONGER AVAILABLE</span>
+                      )}
                     </div>
-                    <div className="text-primary font-medium">
+                    
+                    <div className={`font-medium ${
+                      isDisabled ? 'text-orange-400 line-through' : 'text-primary'
+                    }`}>
                       ${ticket.price.toFixed(2)}
                     </div>
-                    {/* Available tickets display */}
-                    {ticketAvailability && (
+                    
+                    {/* Status message for disabled tickets */}
+                    {statusMessage && (
+                      <div className="text-sm mt-1 text-orange-400">
+                        {statusMessage}
+                      </div>
+                    )}
+                    
+                    {/* Available tickets display - only for active tickets */}
+                    {ticketAvailability && isAvailable && (
                       <div className="text-sm mt-1">
                         {ticketAvailability.hasLimit ? (
                           isSoldOut ? (
@@ -431,7 +461,7 @@ const TicketSelection: React.FC = () => {
                     <button 
                       onClick={() => handleQtyChange(ticket.id, -1)}
                       className="w-10 h-10 rounded-full bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-gray-300 hover:text-white transition-colors duration-200"
-                      disabled={currentQty === 0}
+                      disabled={currentQty === 0 || !canPurchase}
                     >
                       -
                     </button>
@@ -441,11 +471,11 @@ const TicketSelection: React.FC = () => {
                     <button 
                       onClick={() => handleQtyChange(ticket.id, 1)}
                       className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-200 ${
-                        isSoldOut || isAtLimit
+                        !canPurchase || isAtLimit
                           ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                           : 'bg-primary hover:bg-primary-dark text-black'
                       }`}
-                      disabled={isSoldOut || isAtLimit}
+                      disabled={!canPurchase || isAtLimit}
                     >
                       +
                     </button>

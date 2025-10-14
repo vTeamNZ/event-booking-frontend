@@ -2238,23 +2238,12 @@ const OrganizerSalesDashboardEnhanced: React.FC = () => {
                         onCancelTicket={async (ticketId: number) => {
                           try {
                             await OrganizerSalesManagementService.cancelTicket(ticketId);
-                            toast.success('Ticket cancelled successfully');
+                            toast.success('Ticket cancelled permanently');
                             await loadSalesManagementData(selectedEventId!); // Refresh sales management data
                             await loadOrganizerRevenueData(selectedEventId!); // Refresh organizer revenue data
                           } catch (error) {
                             console.error('Error cancelling ticket:', error);
                             toast.error('Failed to cancel ticket');
-                          }
-                        }}
-                        onRestoreTicket={async (ticketId: number) => {
-                          try {
-                            await OrganizerSalesManagementService.restoreTicket(ticketId);
-                            toast.success('Ticket restored successfully');
-                            await loadSalesManagementData(selectedEventId!); // Refresh sales management data
-                            await loadOrganizerRevenueData(selectedEventId!); // Refresh organizer revenue data
-                          } catch (error) {
-                            console.error('Error restoring ticket:', error);
-                            toast.error('Failed to restore ticket');
                           }
                         }}
                         editingTicket={editingTicket}

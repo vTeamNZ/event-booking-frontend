@@ -5,6 +5,7 @@ export interface OrganizerTicketSalesDTO {
   customerFirstName: string;
   customerLastName: string;
   customerEmail: string;
+  seatDetails?: string;
   ticketPrice: number;
   isPaid: boolean;
   status: string;

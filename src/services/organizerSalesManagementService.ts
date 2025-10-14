@@ -63,7 +63,7 @@ export class OrganizerSalesManagementService {
   }
 
   /**
-   * Cancel a ticket
+   * Cancel a ticket (permanent action)
    */
   static async cancelTicket(paymentId: number): Promise<SimpleOperationResponse> {
     try {
@@ -73,21 +73,6 @@ export class OrganizerSalesManagementService {
       return response.data;
     } catch (error) {
       console.error('Error cancelling ticket:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Restore a cancelled ticket
-   */
-  static async restoreTicket(paymentId: number): Promise<SimpleOperationResponse> {
-    try {
-      const response = await api.put<SimpleOperationResponse>(
-        `/organizer/payments/${paymentId}/restore`
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error restoring ticket:', error);
       throw error;
     }
   }

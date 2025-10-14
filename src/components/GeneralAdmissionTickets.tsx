@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Minus, Ticket, Users, AlertTriangle } from 'lucide-react';
+import { Plus, Minus, Ticket, Users, AlertTriangle, Ban } from 'lucide-react';
 import { 
   GeneralTicketSelection
 } from '../types/seatSelection';
-import { TicketType } from '../types/ticketTypes';
-import { getTicketTypesForEvent } from '../services/ticketTypeService';
+import { TicketTypeWithState } from '../types/ticketTypes';
+import { getVisibleTicketTypesForCustomers } from '../services/ticketTypeService';
 import { ticketAvailabilityService, TicketAvailabilityInfo } from '../services/ticketAvailabilityService';
 import { formatPrice } from '../utils/seatSelection';
 import { cn } from '../utils/seatSelection';
 import { getAvailabilityStatus } from '../utils/availabilityStatus';
+import { getTicketStatus, getTicketStatusMessage } from '../types/ticketTypes';
 
 interface GeneralAdmissionTicketsProps {
   eventId: number;
@@ -26,7 +27,7 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
   embedded = false,
   clearSelections = false
 }) => {
-  const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
+  const [ticketTypes, setTicketTypes] = useState<TicketTypeWithState[]>([]);
   const [selections, setSelections] = useState<GeneralTicketSelection[]>([]);
   const [availability, setAvailability] = useState<Record<number, TicketAvailabilityInfo>>({});
   const [loading, setLoading] = useState(true);
@@ -38,14 +39,14 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
       try {
         setLoading(true);
         
-        // Load ticket types using the proper service
-        const fetchedTicketTypes = await getTicketTypesForEvent(eventId);
-        console.log('[GeneralAdmissionTickets] Fetched ticket types:', fetchedTicketTypes);
+        // Load visible ticket types using the new state-aware service
+        const fetchedTicketTypes = await getVisibleTicketTypesForCustomers(eventId);
+        console.log('[GeneralAdmissionTickets] Fetched ticket types with state:', fetchedTicketTypes);
         console.log('[GeneralAdmissionTickets] standingOnly mode:', standingOnly);
         
         // Filter for standing tickets only if in hybrid mode
         const filteredTicketTypes = standingOnly 
-          ? fetchedTicketTypes.filter((tt: any) => {
+          ? fetchedTicketTypes.filter((tt) => {
               console.log(`[GeneralAdmissionTickets] Checking ticket ${tt.name}: isStanding=${tt.isStanding}`);
               return tt.isStanding === true;
             })
@@ -58,8 +59,8 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
         const availabilityData = await ticketAvailabilityService.getEventTicketAvailability(eventId);
         setAvailability(availabilityData);
         
-        // Initialize selections with 0 quantity for each ticket type
-        const initialSelections = filteredTicketTypes.map((ticketType: any) => ({
+        // Initialize selections with 0 quantity for each ticket type (only for available tickets)
+        const initialSelections = filteredTicketTypes.map((ticketType) => ({
           ticketType,
           quantity: 0
         }));
@@ -174,8 +175,19 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
               const selection = selections.find(s => s.ticketType.id === ticketType.id);
               const quantity = selection?.quantity || 0;
               const availabilityInfo = availability[ticketType.id];
+              
+              // Check ticket state
+              const ticketStatus = getTicketStatus(ticketType);
+              const isDisabled = ticketStatus === 'disabled';
+              const isAvailable = ticketStatus === 'available';
+              const statusMessage = getTicketStatusMessage(ticketType);
+              
+              // Check sold out status
               const isSoldOut = availabilityInfo?.hasLimit && availabilityInfo.available === 0;
-              const canIncrease = !availabilityInfo?.hasLimit || quantity < availabilityInfo.available;
+              const canIncrease = isAvailable && (!availabilityInfo?.hasLimit || quantity < availabilityInfo.available);
+              
+              // Determine if user can interact with this ticket
+              const canPurchase = isAvailable && !isSoldOut;
           
           return (
             <motion.div
@@ -184,6 +196,7 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
               animate={{ opacity: 1, y: 0 }}
               className={cn(
                 'border rounded-lg p-4 transition-all duration-200',
+                isDisabled ? 'border-orange-200 bg-orange-50' :
                 isSoldOut ? 'border-red-200 bg-red-50 opacity-75' :
                 quantity > 0 
                   ? 'border-blue-300 bg-blue-50' 
@@ -194,13 +207,26 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
                 <div className="flex-1">
                   <h4 className={cn(
                     "font-semibold",
+                    isDisabled ? "text-orange-700" :
                     isSoldOut ? "text-red-700" : "text-gray-900"
                   )}>
                     {ticketType.type}
                     {isSoldOut && <span className="ml-2 text-red-600 text-sm">(SOLD OUT)</span>}
+                    {isDisabled && <span className="ml-2 text-orange-600 text-sm">(NO LONGER AVAILABLE)</span>}
                   </h4>
+                  
+                  {/* Show status message for disabled tickets */}
+                  {statusMessage && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <Ban size={14} className="text-orange-600" />
+                      <p className="text-sm text-orange-700 font-medium">
+                        {statusMessage}
+                      </p>
+                    </div>
+                  )}
+                  
                   {/* Enhanced availability indicator using percentage-based status */}
-                  {availabilityInfo && (
+                  {availabilityInfo && isAvailable && (
                     (() => {
                       const availabilityStatus = getAvailabilityStatus(
                         availabilityInfo.available,
@@ -223,6 +249,7 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
                 <div className="text-right">
                   <div className={cn(
                     "text-lg font-bold",
+                    isDisabled ? "text-orange-700 line-through" :
                     isSoldOut ? "text-red-700" : "text-gray-900"
                   )}>
                     {formatPrice(ticketType.price)}
@@ -235,8 +262,13 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => updateQuantity(ticketType.id, quantity - 1)}
-                    disabled={quantity === 0 || isSoldOut}
-                    className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    disabled={quantity === 0 || !canPurchase}
+                    className={cn(
+                      "w-8 h-8 rounded-full border flex items-center justify-center transition-colors",
+                      canPurchase && quantity > 0
+                        ? "border-gray-300 hover:bg-gray-50"
+                        : "border-gray-200 opacity-50 cursor-not-allowed"
+                    )}
                   >
                     <Minus size={16} />
                   </button>
@@ -247,14 +279,19 @@ const GeneralAdmissionTickets: React.FC<GeneralAdmissionTicketsProps> = ({
                   
                   <button
                     onClick={() => updateQuantity(ticketType.id, quantity + 1)}
-                    disabled={isSoldOut || !canIncrease}
-                    className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    disabled={!canPurchase || !canIncrease}
+                    className={cn(
+                      "w-8 h-8 rounded-full border flex items-center justify-center transition-colors",
+                      canPurchase && canIncrease
+                        ? "border-gray-300 hover:bg-gray-50"
+                        : "border-gray-200 opacity-50 cursor-not-allowed"
+                    )}
                   >
                     <Plus size={16} />
                   </button>
                 </div>
 
-                {quantity > 0 && (
+                {quantity > 0 && canPurchase && (
                   <div className="text-right">
                     <div className="text-lg font-bold text-blue-600">
                       {formatPrice(ticketType.price * quantity)}

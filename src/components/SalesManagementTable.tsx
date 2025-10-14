@@ -7,7 +7,6 @@ interface SalesManagementTableProps {
   onUpdateCustomer: (ticketId: number, customerData: UpdateCustomerDetailsRequest) => Promise<void>;
   onTogglePayment: (ticketId: number, isPaid: boolean) => Promise<void>;
   onCancelTicket: (ticketId: number) => Promise<void>;
-  onRestoreTicket: (ticketId: number) => Promise<void>;
   editingTicket: number | null;
   setEditingTicket: (ticketId: number | null) => void;
 }
@@ -24,7 +23,6 @@ const SalesManagementTable: React.FC<SalesManagementTableProps> = ({
   onUpdateCustomer,
   onTogglePayment,
   onCancelTicket,
-  onRestoreTicket,
   editingTicket,
   setEditingTicket
 }) => {
@@ -84,14 +82,8 @@ const SalesManagementTable: React.FC<SalesManagementTableProps> = ({
   };
 
   const handleCancelWithConfirm = async (ticketId: number) => {
-    if (window.confirm('Are you sure you want to cancel this ticket?')) {
+    if (window.confirm('Are you sure you want to cancel this ticket? This action cannot be undone.')) {
       await onCancelTicket(ticketId);
-    }
-  };
-
-  const handleRestoreWithConfirm = async (ticketId: number) => {
-    if (window.confirm('Are you sure you want to restore this ticket?')) {
-      await onRestoreTicket(ticketId);
     }
   };
 
@@ -125,14 +117,17 @@ const SalesManagementTable: React.FC<SalesManagementTableProps> = ({
       </div>
       
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '900px' }}>
+        <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '1100px' }}>
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '80px' }}>
                 ID
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ minWidth: '280px', width: '35%' }}>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ minWidth: '280px', width: '30%' }}>
                 Customer Details
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '150px' }}>
+                Seat Details
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '100px' }}>
                 Price
@@ -222,6 +217,15 @@ const SalesManagementTable: React.FC<SalesManagementTableProps> = ({
                     </div>
                   )}
                 </td>
+                <td className="px-6 py-4 text-sm text-gray-900" style={{ width: '150px' }}>
+                  {ticket.seatDetails ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {ticket.seatDetails}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400 text-xs">No seat assigned</span>
+                  )}
+                </td>
                 <td className="px-6 py-4 text-sm text-gray-900" style={{ width: '100px' }}>
                   ${ticket.ticketPrice.toFixed(2)}
                 </td>
@@ -256,12 +260,9 @@ const SalesManagementTable: React.FC<SalesManagementTableProps> = ({
                       Cancel
                     </button>
                   ) : (
-                    <button
-                      onClick={() => handleRestoreWithConfirm(ticket.id)}
-                      className="text-green-600 hover:text-green-900 px-3 py-1 bg-green-50 hover:bg-green-100 rounded text-xs"
-                    >
-                      Restore
-                    </button>
+                    <span className="text-gray-500 text-xs px-3 py-1 bg-gray-50 rounded">
+                      Cancelled
+                    </span>
                   )}
                 </td>
               </tr>
